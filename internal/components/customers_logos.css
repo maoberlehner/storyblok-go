@@ -1,0 +1,101 @@
+.customers-logos {
+  --marquee-duration: 20s;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: var(--spacing-3xl) auto;
+  max-width: var(--default-container-max-width);
+  padding-inline: var(--default-container-padding-inline);
+}
+
+.customers-logos__headline {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-xl);
+  margin: 0 0 var(--spacing-2xl);
+  text-align: center;
+}
+
+.customers-logos__marquee {
+  margin-block: calc(var(--outline-width) * -2);
+  mask-image: linear-gradient(to right, rgb(from var(--black) r g b / 0) 0, var(--black) 30%, var(--black) 70%, rgb(from var(--black) r g b / 0) 100%);
+  overflow: hidden;
+  padding-block: calc(var(--outline-width) * 2);
+  position: relative;
+  width: 100%;
+}
+
+.customers-logos__track {
+  align-items: center;
+  animation: customers-logos-marquee var(--marquee-duration) linear infinite;
+  display: flex;
+  flex-wrap: nowrap;
+  width: max-content;
+}
+
+:is(.customers-logos__marquee:hover, .customers-logos__marquee:focus-within) .customers-logos__track {
+  animation-play-state: paused;
+}
+
+/* The track holds three copies of the list, so shifting by one copy loops seamlessly. */
+@keyframes customers-logos-marquee {
+  from {
+    translate: 0;
+  }
+  to {
+    translate: -33.3333%;
+  }
+}
+
+.customers-logos__list {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  list-style-type: "";
+  margin-block: 0;
+  padding-inline-start: 0;
+}
+
+.customers-logos__item a {
+  display: flow-root;
+}
+
+.customers-logos__item img {
+  display: block;
+  height: auto;
+  margin: var(--spacing-xl) var(--spacing-2xl);
+  max-height: 35px;
+  max-width: 190px;
+  transition: translate .2s;
+  width: auto;
+}
+
+:is(.customers-logos__item a:hover, .customers-logos__item a:focus-visible) img {
+  translate: 0 -5px;
+}
+
+.customers-logos__cta {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-block-start: 20px;
+}
+
+@media (prefers-reduced-motion) {
+  .customers-logos__marquee {
+    mask-image: unset;
+  }
+
+  .customers-logos__track {
+    animation: none;
+    width: 100%;
+  }
+
+  .customers-logos__list {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .customers-logos__list[aria-hidden="true"] {
+    display: none;
+  }
+}

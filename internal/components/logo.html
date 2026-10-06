@@ -1,0 +1,10 @@
+{{define "logo"}}<span {{editable .}} class="logo">{{template "logo_image" .}}</span>{{end}}
+
+{{/* Logos are rendered at a fixed height; width follows the aspect ratio. */}}
+{{define "logo_image" -}}
+{{if .Link.IsZero}}{{template "logo_img" .}}{{else}}<a href="{{.Link.Href}}"{{if .Link.IsExternal}} target="_blank" rel="noopener"{{end}}>{{template "logo_img" .}}</a>{{end}}
+{{- end}}
+
+{{define "logo_img" -}}
+<img src="{{.Logo.Resize 0 70}}" width="{{.WidthAt 35}}" height="35" alt="{{.Logo.Alt}}" loading="lazy">
+{{- end}}

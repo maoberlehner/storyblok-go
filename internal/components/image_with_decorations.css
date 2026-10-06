@@ -1,0 +1,69 @@
+.image-with-decorations {
+  --decoration-top-offset: 25px;
+  --decoration-side-offset: 20px;
+  --decoration-bottom-offset: 70px;
+  --decoration-width: 44px;
+  --rotated-image-inline-overflow: 13px;
+  margin: 0 auto;
+  width: 90%;
+}
+
+@media (width >= 992px) {
+  .image-with-decorations {
+    width: 100%;
+  }
+}
+
+.image-with-decorations--rotate {
+  transform: rotate(-2deg);
+}
+
+@media (width >= 992px) {
+  .image-with-decorations--rotate {
+    width: calc(100% - var(--rotated-image-inline-overflow) * 2);
+  }
+}
+
+.image-with-decorations__wrapper {
+  position: relative;
+}
+
+.image-with-decorations__wrapper img {
+  border-radius: var(--border-radius-2xl);
+  display: block;
+  height: auto;
+  max-width: 100%;
+  width: 100%;
+}
+
+.image-with-decorations__decoration {
+  position: absolute;
+}
+
+.image-with-decorations__decoration svg {
+  display: block;
+  height: auto;
+  width: var(--decoration-width);
+}
+
+.image-with-decorations__decoration--attention_top {
+  left: calc(var(--decoration-side-offset) * -1);
+  top: calc(var(--decoration-top-offset) * -1);
+}
+
+.image-with-decorations__decoration--stars_bottom {
+  bottom: calc(var(--decoration-bottom-offset) * -1);
+  left: 50%;
+}
+
+.image-with-decorations__decoration--attention_bottom {
+  bottom: calc(var(--decoration-top-offset) * -1);
+  right: calc(var(--decoration-side-offset) * -1);
+  transform: rotate(176deg);
+}
+
+.image-with-decorations__decoration--swirl_top {
+  left: 50%;
+  top: calc(var(--decoration-side-offset) * -1);
+  transform: translate(-50%);
+}
