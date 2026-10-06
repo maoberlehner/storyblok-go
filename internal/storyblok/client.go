@@ -60,6 +60,10 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	}
 	res, err := c.httpClient.Do(req)
 	if err != nil {
+		// The request URL carries the access token, so it must not end up in logs.
+		if urlErr, ok := errors.AsType[*url.Error](err); ok {
+			err = urlErr.Err
+		}
 		return nil, fmt.Errorf("storyblok: fetching story %q: %w", slug, err)
 	}
 	defer res.Body.Close()

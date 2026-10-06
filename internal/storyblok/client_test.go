@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"storyblok-go-website/internal/storyblok"
@@ -62,4 +63,12 @@ func TestClientStory(t *testing.T) {
 			t.Errorf("err = %v, want ErrNotFound", err)
 		}
 	})
+}
+
+func TestClientStoryErrorsDoNotLeakToken(t *testing.T) {
+	client := storyblok.NewClient("http://127.0.0.1:1", "secret-token")
+	_, err := client.Story(t.Context(), "home", storyblok.StoryOptions{Version: storyblok.Published})
+	if err == nil || strings.Contains(err.Error(), "secret-token") {
+		t.Errorf("err = %v, want error without the token", err)
+	}
 }
