@@ -1,0 +1,4 @@
+.env
+/static/fonts/*.woff2
+/storyblok-go-website
+.worktrees/
