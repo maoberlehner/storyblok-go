@@ -13,6 +13,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap">
   <link rel="stylesheet" href="{{.StylesheetURL}}">
+  {{- with .DevToolbar}}
+  <link rel="stylesheet" href="/assets/dev-toolbar.css">
+  <script src="/assets/dev-toolbar.js" data-space-id="{{.SpaceID}}" data-story-id="{{.StoryID}}" defer></script>
+  {{- end}}
   {{- if .Preview}}
   <script src="https://app.storyblok.com/f/storyblok-v2-latest.js" defer></script>
   <script src="https://unpkg.com/idiomorph@0.8.0/dist/idiomorph.min.js" defer></script>

@@ -24,8 +24,8 @@ import (
 
 const (
 	previewToken = "preview-token"
-	homeStory    = `{"name": "Home", "content": {
-		"component": "enterprise_page",
+	homeStory    = `{"id": 7, "name": "Home", "content": {
+		"component": "enterprise_page", "_uid": "u1",
 		"meta_title": "Welcome",
 		"_editable": "<!--#storyblok#{\"name\": \"enterprise_page\", \"uid\": \"u1\", \"id\": \"1\"}-->",
 		"body": [{"component": "not_built_yet", "_uid": "u2", "_editable": "<!--#storyblok#{\"name\": \"not_built_yet\", \"uid\": \"u2\", \"id\": \"1\"}-->"}]
@@ -66,9 +66,9 @@ func removeEditable(node any) {
 	}
 }
 
-func newServer(t *testing.T) *httptest.Server {
+func newServer(t *testing.T, opts ...components.RendererOption) *httptest.Server {
 	t.Helper()
-	renderer, err := components.NewRenderer()
+	renderer, err := components.NewRenderer(opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,6 +150,26 @@ func TestPreviewStory(t *testing.T) {
 	t.Run("rejects requests without a valid preview token", func(t *testing.T) {
 		if status, _ := do(t, http.MethodPut, ts.URL+"/", edited); status != http.StatusForbidden {
 			t.Errorf("status = %d, want 403", status)
+		}
+	})
+}
+
+func TestDevToolbar(t *testing.T) {
+	ts := newServer(t, components.WithDevToolbar(99))
+
+	t.Run("marks blocks for opening them in the Visual Editor", func(t *testing.T) {
+		_, body := do(t, http.MethodGet, ts.URL+"/", "")
+		for _, want := range []string{`data-dev-blok="u1"`, `data-space-id="99"`, `data-story-id="7"`, "dev-toolbar.js"} {
+			if !strings.Contains(body, want) {
+				t.Errorf("body does not contain %q", want)
+			}
+		}
+	})
+
+	t.Run("is left out inside the Visual Editor", func(t *testing.T) {
+		_, body := do(t, http.MethodGet, ts.URL+"/"+previewQuery(), "")
+		if strings.Contains(body, "dev-toolbar.js") || strings.Contains(body, "data-dev-blok") {
+			t.Error("preview page contains dev toolbar markup")
 		}
 	})
 }

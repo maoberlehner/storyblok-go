@@ -7,6 +7,7 @@
 //	ADDR                     listen address (default: :8080)
 //	TLS_CERT_FILE            certificate for serving HTTPS, which the Visual
 //	TLS_KEY_FILE             Editor requires for preview URLs (optional)
+//	DEV_TOOLBAR              "1" adds a toolbar to open blocks in the editor
 package main
 
 import (
@@ -45,11 +46,22 @@ func run(logger *slog.Logger) error {
 	addr := cmp.Or(os.Getenv("ADDR"), ":8080")
 	certFile, keyFile := os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE")
 
-	renderer, err := components.NewRenderer()
+	client := storyblok.NewClient(apiURL, previewToken)
+	var rendererOpts []components.RendererOption
+	if os.Getenv("DEV_TOOLBAR") == "1" {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		spaceID, err := client.SpaceID(ctx)
+		cancel()
+		if err != nil {
+			return err
+		}
+		rendererOpts = append(rendererOpts, components.WithDevToolbar(spaceID))
+	}
+	renderer, err := components.NewRenderer(rendererOpts...)
 	if err != nil {
 		return err
 	}
-	srv := server.New(storyblok.NewClient(apiURL, previewToken), renderer, static.FS, previewToken, logger)
+	srv := server.New(client, renderer, static.FS, previewToken, logger)
 	httpServer := &http.Server{
 		Addr:              addr,
 		Handler:           srv.Handler(),
