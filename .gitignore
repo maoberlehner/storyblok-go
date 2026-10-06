@@ -2,3 +2,4 @@
 /static/fonts/*.woff2
 /storyblok-go-website
 .worktrees/
+.certs/

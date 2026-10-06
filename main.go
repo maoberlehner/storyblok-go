@@ -5,6 +5,8 @@
 //	STORYBLOK_PREVIEW_TOKEN  preview access token of the space (required)
 //	STORYBLOK_API_URL        Content Delivery API base URL (default: EU region)
 //	ADDR                     listen address (default: :8080)
+//	TLS_CERT_FILE            certificate for serving HTTPS, which the Visual
+//	TLS_KEY_FILE             Editor requires for preview URLs (optional)
 package main
 
 import (
@@ -41,6 +43,7 @@ func run(logger *slog.Logger) error {
 	}
 	apiURL := cmp.Or(os.Getenv("STORYBLOK_API_URL"), storyblok.DefaultBaseURL)
 	addr := cmp.Or(os.Getenv("ADDR"), ":8080")
+	certFile, keyFile := os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE")
 
 	renderer, err := components.NewRenderer()
 	if err != nil {
@@ -58,7 +61,12 @@ func run(logger *slog.Logger) error {
 
 	errs := make(chan error, 1)
 	go func() {
-		logger.Info("listening", "addr", addr)
+		if certFile != "" {
+			logger.Info("listening", "url", "https://localhost"+addr)
+			errs <- httpServer.ListenAndServeTLS(certFile, keyFile)
+			return
+		}
+		logger.Info("listening", "url", "http://localhost"+addr)
 		errs <- httpServer.ListenAndServe()
 	}()
 
