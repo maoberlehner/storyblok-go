@@ -15,4 +15,4 @@ type Configuration struct {
 	FooterSocials      Blocks             `json:"new_footer_socials"`
 }
 
-func (*Configuration) Logo() template.HTML { return icon("storyblok-logo") }
+func (*Configuration) Logo() template.HTML { return brandSVG("storyblok-logo") }
