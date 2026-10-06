@@ -1,0 +1,30 @@
+{{define "richtext_heading_with_description_and_ctas" -}}
+<div {{editable .}} class="section-heading section-heading--{{.LayoutClass}} section-heading--{{if .IsCentered}}center{{else}}left{{end}}{{if .Eyebrow}} section-heading--has-eyebrow{{end}}">
+  <div class="section-heading__content">
+    {{- if .Eyebrow}}
+    <span class="section-heading__eyebrow"{{with .EyebrowAccentColor.Value}} style="--eyebrow-accent-color: {{.}}"{{end}}>{{.EyebrowIcon.SVG}} {{.Eyebrow}}</span>
+    {{- end}}
+    {{- if .IsLarge}}
+    <h1 class="section-heading__headline section-heading__headline--large">{{richtextInline .Headline}}</h1>
+    {{- else}}
+    <h2 class="section-heading__headline">{{richtextInline .Headline}}</h2>
+    {{- end}}
+    {{- if not .Description.IsEmpty}}
+    <div class="section-heading__text richtext">{{richtext .Description}}</div>
+    {{- end}}
+  </div>
+  {{- if or .Ctas .HasSmallPrint}}
+  <div class="section-heading__ctas">
+    {{- if .Ctas}}
+    <div class="button-group{{if .IsCentered}} button-group--centered{{end}}">{{renderAll .Ctas}}</div>
+    {{- end}}
+    {{- if .HasSmallPrint}}
+    <p class="section-heading__small-print">
+      {{- with .SmallPrintInlineImage}}{{if not .IsZero}}<img src="{{.Filename}}" alt="{{.Alt}}" width="{{.Width}}" height="{{.Height}}" loading="lazy"> {{end}}{{end -}}
+      {{.SmallPrintText}}
+    </p>
+    {{- end}}
+  </div>
+  {{- end}}
+</div>
+{{- end}}

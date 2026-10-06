@@ -1,0 +1,11 @@
+{{define "card_grid" -}}
+<div {{editable .}} class="card-grid{{if eq .Alignment "center"}} card-grid--center{{end}}">
+  {{- if not .Headline.IsEmpty}}
+  <h2 class="card-grid__headline">{{richtextInline .Headline}}</h2>
+  {{- end}}
+  {{- with .Subheadline}}
+  <p class="card-grid__subheadline">{{.}}</p>
+  {{- end}}
+  <div class="card-grid__grid">{{renderAll .Cards}}</div>
+</div>
+{{- end}}
