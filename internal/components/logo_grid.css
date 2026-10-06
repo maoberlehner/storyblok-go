@@ -199,3 +199,8 @@
     font-size: var(--font-size-2xl);
   }
 }
+
+.width-limited-container .logo-grid {
+  max-width: 100%;
+  padding-inline: unset;
+}

@@ -3,8 +3,8 @@
   <div class="feature-showcase__card-container">
     <div class="feature-showcase__card{{if .AssetFirst}} feature-showcase__card--asset-first{{end}}">
       <div class="feature-showcase__content">
-        <div class="feature-showcase__title">{{richtext .Title}}</div>
-        <div class="feature-showcase__description">{{richtext .Description}}</div>
+        <div class="feature-showcase__title richtext">{{richtext .Title}}</div>
+        <div class="feature-showcase__description richtext">{{richtext .Description}}</div>
         {{with .CTA}}<div class="feature-showcase__button">{{renderAll .}}</div>{{end}}
       </div>
       <div class="feature-showcase__media">{{template "feature_showcase_media" .}}</div>
