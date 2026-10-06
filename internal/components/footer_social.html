@@ -1,0 +1,7 @@
+{{define "footer_social" -}}
+<li {{editable .}}>
+  <a class="site-footer__social" href="{{.Link.Href}}" target="_blank" rel="noopener">
+    {{- .Icon}}<span class="visually-hidden">{{.Display}} (opens in a new window)</span>
+  </a>
+</li>
+{{- end}}
