@@ -10,7 +10,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/failsafe-go/failsafe-go"
 )
@@ -31,6 +34,11 @@ type Client struct {
 	token      string
 	httpClient *http.Client
 	executor   failsafe.Executor[*http.Response]
+	pacing     *adaptiveRateLimiter
+
+	cacheMu       sync.Mutex
+	cacheVersion  int64
+	nextCVRefresh time.Time
 }
 
 func NewClient(baseURL, token string) *Client {
@@ -39,6 +47,7 @@ func NewClient(baseURL, token string) *Client {
 		token:      token,
 		httpClient: &http.Client{Timeout: requestTimeout},
 		executor:   newHTTPExecutor(),
+		pacing:     newAdaptiveRateLimiter(),
 	}
 }
 
@@ -55,6 +64,11 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	defer cancel()
 
 	query := url.Values{"token": {c.token}, "version": {string(opts.Version)}}
+	if opts.Version == Published {
+		if cv := c.currentCacheVersion(); cv > 0 {
+			query.Set("cv", strconv.FormatInt(cv, 10))
+		}
+	}
 	if len(opts.ResolveRelations) > 0 {
 		query.Set("resolve_relations", strings.Join(opts.ResolveRelations, ","))
 	}
@@ -84,9 +98,13 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	var payload struct {
 		Story jsontext.Value   `json:"story"`
 		Rels  []map[string]any `json:"rels"`
+		CV    int64            `json:"cv"`
 	}
 	if err := json.UnmarshalRead(res.Body, &payload); err != nil {
 		return nil, fmt.Errorf("storyblok: decoding story %q: %w", slug, err)
+	}
+	if opts.Version == Published {
+		c.updateCacheVersion(payload.CV, !query.Has("cv"))
 	}
 	if len(payload.Rels) == 0 {
 		return payload.Story, nil
