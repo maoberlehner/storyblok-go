@@ -1,0 +1,15 @@
+{{define "card_with_logo" -}}
+<div {{editable .}} class="card{{if not .Link.IsZero}} card--linked{{end}}{{if .BackgroundColor}} card--custom-background{{end}}"
+  {{- with .BackgroundColor}} style="--card-background-color: {{.}}"{{end}}>
+  {{- if not .Logo.IsZero}}
+  <div class="card__logo"><img src="{{.Logo.Resize 408 0}}" alt="" aria-hidden="true" width="{{.Logo.Width}}" height="{{.Logo.Height}}" loading="lazy"></div>
+  {{- end}}
+  {{- if .Link.IsZero}}
+  <span class="card__title">{{.Title}}</span>
+  {{- else}}
+  <a class="card__title" href="{{.Link.Href}}">{{.Title}}</a>
+  {{- end}}
+  <div class="card__text richtext">{{richtext .Text}}</div>
+  {{- if not .Link.IsZero}}{{template "card_arrow"}}{{end}}
+</div>
+{{- end}}
