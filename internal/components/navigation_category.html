@@ -1,0 +1,9 @@
+{{define "navigation_category" -}}
+<div class="site-subnav__category" {{editable .}}>
+  {{- with .Headline}}<div class="site-subnav__category-name">{{.}}</div>{{end}}
+  <ul class="site-subnav__items">{{renderAll .NavigationItems}}</ul>
+  {{- if and .GroupLinkText (not .GroupLink.IsZero)}}
+  <a class="site-subnav__category-link" href="{{.GroupLink.Href}}">{{.GroupLinkText}}</a>
+  {{- end}}
+</div>
+{{- end}}
