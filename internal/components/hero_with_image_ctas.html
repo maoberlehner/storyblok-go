@@ -1,0 +1,31 @@
+{{define "hero_with_image_ctas"}}
+<div {{editable .}} class="hero-with-image-ctas">
+  <div class="hero-with-image-ctas__container">
+    <div class="hero-with-image-ctas__content">
+      <div class="richtext hero-with-image-ctas__text">{{richtext .Text}}</div>
+      {{- with .Quote.Story}}
+      <figure class="hero-with-image-ctas__quote">
+        <blockquote><p>{{.Content.Text}}</p></blockquote>
+        <figcaption class="hero-with-image-ctas__author">{{.Content.FullName}}{{with .Content.Role}}, {{.}}{{end}}</figcaption>
+      </figure>
+      {{- end}}
+      {{- with .Ctas}}
+      <div class="hero-with-image-ctas__ctas">{{renderAll .}}</div>
+      {{- end}}
+    </div>
+    {{- if not .Image.IsZero}}
+    <div class="hero-with-image-ctas__image">
+      <div class="hero-with-image-ctas__image-wrapper">
+        {{- range .Decorations}}
+        <div class="hero-with-image-ctas__decoration hero-with-image-ctas__decoration--{{.}}" aria-hidden="true">{{$.DecorationSVG .}}</div>
+        {{- end}}
+        <img src="{{.Image.Resize 578 386}}" srcset="{{.Image.SrcSet 289 578 867 1156}}" sizes="(min-width: 992px) 578px, 90vw" width="578" height="386" alt="{{.Image.Alt}}" fetchpriority="high">
+      </div>
+    </div>
+    {{- end}}
+  </div>
+  {{- with .ShapeSVG}}
+  <div class="hero-with-image-ctas__shape"{{with $.ShapeColour.Value}} style="--shape-background-color: {{.}}"{{end}}>{{.}}</div>
+  {{- end}}
+</div>
+{{end}}

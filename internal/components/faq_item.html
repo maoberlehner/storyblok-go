@@ -1,0 +1,12 @@
+{{define "faq_item"}}
+<li {{editable .}} class="faq-item">
+  <details class="faq-item__details">
+    <summary class="faq-item__summary">
+      <span class="faq-item__number">{{.Number}}</span>
+      <span>{{.Question}}</span>
+      <span class="faq-item__indicator" aria-hidden="true"></span>
+    </summary>
+    <div class="faq-item__answer"><div class="richtext">{{richtext .Answer}}</div></div>
+  </details>
+</li>
+{{end}}
