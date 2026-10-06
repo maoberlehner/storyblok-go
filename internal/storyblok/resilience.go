@@ -12,7 +12,6 @@ import (
 
 	"github.com/failsafe-go/failsafe-go"
 	"github.com/failsafe-go/failsafe-go/failsafehttp"
-	"github.com/failsafe-go/failsafe-go/ratelimiter"
 )
 
 const requestTimeout = 10 * time.Second
@@ -21,7 +20,7 @@ func newHTTPExecutor() failsafe.Executor[*http.Response] {
 	retry := failsafehttp.NewRetryPolicyBuilder().
 		WithMaxRetries(3).
 		WithDelayFunc(retryDelay).
-		AbortOnErrors(context.DeadlineExceeded, ratelimiter.ErrExceeded).
+		AbortOnErrors(context.DeadlineExceeded, errRateLimitWait).
 		AbortOnErrorTypes(x509.UnknownAuthorityError{}, x509.CertificateInvalidError{}, x509.HostnameError{}, (*tls.CertificateVerificationError)(nil)).
 		ReturnLastFailure().
 		OnRetryScheduled(func(event failsafe.ExecutionScheduledEvent[*http.Response]) {
@@ -34,19 +33,18 @@ func newHTTPExecutor() failsafe.Executor[*http.Response] {
 			}
 		}).Build()
 
-	// This app only fetches individual stories and space metadata. Stay below
-	// Storyblok's 50/s single-entry allowance, sharing permits across page,
-	// configuration, and retry requests. Bound queueing for interactive SSR.
-	limiter := ratelimiter.NewSmoothBuilder[*http.Response](25, time.Second).
-		WithMaxWaitTime(time.Second).Build()
-
-	// Every retry acquires a permit; sharing this executor shares the limiter.
-	return failsafe.With(retry, limiter)
+	return failsafe.With(retry)
 }
 
 func (c *Client) do(request *http.Request) (*http.Response, error) {
 	return c.executor.WithContext(request.Context()).Get(func() (*http.Response, error) {
-		return c.httpClient.Do(request)
+		// Acquire on every attempt so retries use the same adaptive budget.
+		if err := c.pacing.wait(request); err != nil {
+			return nil, err
+		}
+		response, err := c.httpClient.Do(request)
+		c.pacing.observe(request, response)
+		return response, err
 	})
 }
 
