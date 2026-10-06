@@ -16,4 +16,4 @@ type FooterSocial struct {
 	IconName string `json:"icon"`
 }
 
-func (s *FooterSocial) Icon() template.HTML { return icon("social-" + s.IconName) }
+func (s *FooterSocial) Icon() template.HTML { return brandSVG("social-" + s.IconName) }
