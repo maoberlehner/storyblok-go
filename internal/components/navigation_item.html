@@ -1,0 +1,5 @@
+{{define "navigation_item" -}}
+<li class="site-nav__item" {{editable .}}>
+  <a class="site-nav__link" href="{{.Link.Href}}"{{if .Link.IsExternal}} target="_blank" rel="noopener"{{end}}>{{.Display}}</a>
+</li>
+{{- end}}
