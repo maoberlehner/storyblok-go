@@ -138,3 +138,15 @@
 .quote-text > p:last-child::after {
   content: close-quote;
 }
+
+.width-limited-container .quotes {
+  max-width: 100%;
+  padding-inline: unset;
+}
+
+@media (width >= 992px) {
+  .width-limited-container .quotes__container {
+    --quotes-container-inline-padding: var(--spacing-5xl);
+    flex-direction: column;
+  }
+}

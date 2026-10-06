@@ -54,22 +54,9 @@
   }
 }
 
-.feature-showcase__title > *,
-.feature-showcase__description > :first-child {
-  margin-block-start: 0;
-}
-
-.feature-showcase__title > *,
-.feature-showcase__description > :last-child {
-  margin-block-end: 0;
-}
-
 .feature-showcase__title :is(h1, h2, h3) {
   font-size: var(--h2-font-size);
-  font-weight: 900;
   line-height: var(--h2-line-height);
-  overflow-wrap: anywhere;
-  text-wrap: balance;
 }
 
 .feature-showcase__description {
@@ -140,4 +127,9 @@
   height: 100%;
   object-fit: cover;
   width: 100%;
+}
+
+.width-limited-container .feature-showcase__card-container {
+  max-width: 100%;
+  padding-inline: unset;
 }

@@ -10,7 +10,7 @@ import (
 
 func init() { register[FeatureShowcase]("feature_showcase") }
 
-const defaultVideoAspectRatio = 16.0 / 9.0
+const showcaseFallbackAspectRatio = 16.0 / 9.0
 
 type FeatureShowcase struct {
 	storyblok.Blok
@@ -31,7 +31,7 @@ func (f *FeatureShowcase) AssetFirst() bool { return f.AssetPosition == "right" 
 func (f *FeatureShowcase) AspectRatio() float64 {
 	w, h := f.Image.Size()
 	if w == 0 || h == 0 {
-		return defaultVideoAspectRatio
+		return showcaseFallbackAspectRatio
 	}
 	return float64(w) / float64(h)
 }

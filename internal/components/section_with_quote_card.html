@@ -2,7 +2,7 @@
 <div {{editable .}} class="section-quote-card"{{with .BackgroundColor.Value}} style="--section-background-color: {{.}}"{{end}}>
   <div class="section-quote-card__container">
     <div class="section-quote-card__left">
-      <div class="section-quote-card__description">{{richtext .Description}}</div>
+      <div class="section-quote-card__description richtext">{{richtext .Description}}</div>
       {{with .CTAs}}<div class="section-quote-card__ctas">{{renderAll .}}</div>{{end}}
     </div>
     <figure class="section-quote-card__card">
