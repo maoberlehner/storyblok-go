@@ -1,6 +1,10 @@
 package components
 
-import "storyblok-go-website/internal/storyblok"
+import (
+	"html/template"
+
+	"storyblok-go-website/internal/storyblok"
+)
 
 // Configuration is the global "config" story holding site-wide navigation.
 type Configuration struct {
@@ -10,3 +14,5 @@ type Configuration struct {
 	Footer             Blocks             `json:"new_footer"`
 	FooterSocials      Blocks             `json:"new_footer_socials"`
 }
+
+func (*Configuration) Logo() template.HTML { return brandSVG("storyblok-logo") }

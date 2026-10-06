@@ -1,0 +1,20 @@
+.metric {
+  display: block;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  line-height: var(--line-height-2xl);
+  margin-block-end: var(--spacing-xs);
+}
+
+@media (width >= 768px) {
+  .metric {
+    font-size: var(--font-size-3xl);
+    line-height: var(--line-height-3xl);
+  }
+}
+
+.metric__label {
+  display: block;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}

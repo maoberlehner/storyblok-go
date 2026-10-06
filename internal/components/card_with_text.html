@@ -1,0 +1,14 @@
+{{define "card_with_text" -}}
+<div {{editable .}} class="card card--text-only{{if not .Link.IsZero}} card--linked{{end}}">
+  {{- with .Decoration.SVG}}
+  <span class="card__decoration"{{with $.AccentColor.Value}} style="--decoration-color: {{.}}"{{end}}>{{.}}</span>
+  {{- end}}
+  {{- if .Link.IsZero}}
+  <span class="card__title card__title--narrow">{{.Title}}</span>
+  {{- else}}
+  <a class="card__title card__title--narrow" href="{{.Link.Href}}">{{.Title}}</a>
+  {{- end}}
+  <div class="card__text richtext">{{richtext .Description}}</div>
+  {{- if not .Link.IsZero}}{{template "card_arrow"}}{{end}}
+</div>
+{{- end}}

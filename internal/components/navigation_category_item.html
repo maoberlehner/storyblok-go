@@ -1,0 +1,15 @@
+{{define "navigation_category_item" -}}
+<li class="site-subnav__item" {{editable .}}>
+  <a href="{{.Link.Href}}" title="{{.Display}}"{{if .Link.IsExternal}} target="_blank" rel="noopener"{{end}}>
+    {{- if not .Icon.IsZero}}
+    <span class="site-subnav__icon"><img src="{{.Icon.Filename}}" width="36" height="36" alt="" loading="lazy"></span>
+    {{- end}}
+    <span>
+      <span class="site-subnav__title">{{.Display}}{{with .Badge}} <span class="nav-badge">{{.}}</span>{{end}}</span>
+      {{- with .Text}}
+      <span class="site-subnav__text">{{.}}</span>
+      {{- end}}
+    </span>
+  </a>
+</li>
+{{- end}}

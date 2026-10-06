@@ -1,0 +1,19 @@
+.tiles-grid {
+  max-width: var(--default-container-max-width);
+  padding-inline: var(--default-container-padding-inline);
+  grid-template-columns: minmax(0,1fr);
+  grid-auto-rows: auto;
+  justify-content: space-between;
+  align-items: start;
+  gap: 40px;
+  width: 100%;
+  margin-inline: auto;
+  display: grid;
+}
+
+@media (width>=768px) {
+  .tiles-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    grid-auto-rows: 1fr;
+  }
+}
