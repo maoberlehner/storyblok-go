@@ -146,3 +146,32 @@ func walkBloks(node any, visit func(map[string]any)) {
 		}
 	}
 }
+
+// SpaceID returns the ID of the space the access token belongs to.
+func (c *Client) SpaceID(ctx context.Context) (int64, error) {
+	endpoint := c.baseURL + "/spaces/me?" + url.Values{"token": {c.token}}.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return 0, err
+	}
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		if urlErr, ok := errors.AsType[*url.Error](err); ok {
+			err = urlErr.Err
+		}
+		return 0, fmt.Errorf("storyblok: fetching space: %w", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("storyblok: fetching space: unexpected status %s", res.Status)
+	}
+	var payload struct {
+		Space struct {
+			ID int64 `json:"id"`
+		} `json:"space"`
+	}
+	if err := json.UnmarshalRead(res.Body, &payload); err != nil {
+		return 0, fmt.Errorf("storyblok: decoding space: %w", err)
+	}
+	return payload.Space.ID, nil
+}

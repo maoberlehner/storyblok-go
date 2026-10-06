@@ -46,12 +46,21 @@ type Page struct {
 
 	stylesheetURL    string
 	resolveRelations []string
+	storyID          int64
+	devToolbar       *DevToolbar
+}
+
+// DevToolbar links rendered blocks to the Visual Editor during local
+// development.
+type DevToolbar struct {
+	SpaceID int64
+	StoryID int64
 }
 
 // NewPage prepares a story for rendering. Content types that implement
 // Metadata() provide the document title and description.
 func NewPage(story storyblok.Story[AnyBlock]) Page {
-	page := Page{Metadata: Metadata{Title: story.Name}, Content: story.Content.Block}
+	page := Page{Metadata: Metadata{Title: story.Name}, Content: story.Content.Block, storyID: story.ID}
 	if m, ok := story.Content.Block.(interface{ Metadata() Metadata }); ok {
 		meta := m.Metadata()
 		meta.Title = cmp.Or(meta.Title, story.Name)
@@ -62,19 +71,32 @@ func NewPage(story storyblok.Story[AnyBlock]) Page {
 
 func (p Page) StylesheetURL() string      { return p.stylesheetURL }
 func (p Page) ResolveRelations() []string { return p.resolveRelations }
+func (p Page) DevToolbar() *DevToolbar    { return p.devToolbar }
 
 type Renderer struct {
 	templates      *template.Template
 	stylesheet     []byte
 	stylesheetHash string
+	devSpaceID     int64
 }
 
-func NewRenderer() (*Renderer, error) {
+type RendererOption func(*Renderer)
+
+// WithDevToolbar marks every block with its UID and adds a toolbar that opens
+// the clicked block in the Visual Editor of the given space.
+func WithDevToolbar(spaceID int64) RendererOption {
+	return func(r *Renderer) { r.devSpaceID = spaceID }
+}
+
+func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 	r := &Renderer{}
+	for _, opt := range opts {
+		opt(r)
+	}
 	templates, err := template.New("").Funcs(template.FuncMap{
 		"render":         r.renderBlock,
 		"renderAll":      r.renderBlocks,
-		"editable":       editableAttrs,
+		"editable":       r.editableAttrs,
 		"richtext":       r.richtext,
 		"richtextInline": r.richtextInline,
 		"join":           strings.Join,
@@ -97,6 +119,10 @@ func NewRenderer() (*Renderer, error) {
 func (r *Renderer) Page(w io.Writer, page Page) error {
 	page.stylesheetURL = "/assets/app.css?v=" + r.stylesheetHash
 	page.resolveRelations = ResolveRelations
+	// Inside the Visual Editor the bridge already makes blocks clickable.
+	if r.devSpaceID != 0 && !page.Preview {
+		page.devToolbar = &DevToolbar{SpaceID: r.devSpaceID, StoryID: page.storyID}
+	}
 	return r.templates.ExecuteTemplate(w, "layout", page)
 }
 
@@ -141,14 +167,20 @@ func (r *Renderer) renderBlocks(blocks Blocks) (template.HTML, error) {
 }
 
 // editableAttrs returns the attributes the Visual Editor uses to make a blok
-// clickable. Published content has no editable marker, so this is empty.
-func editableAttrs(block Block) template.HTMLAttr {
+// clickable. Published content has no editable marker, so this is empty
+// unless the dev toolbar needs the blok's UID.
+func (r *Renderer) editableAttrs(block Block) template.HTMLAttr {
 	if block == nil {
 		return ""
 	}
-	options, uid, ok := block.Meta().EditableOptions()
+	meta := block.Meta()
+	options, uid, ok := meta.EditableOptions()
 	if !ok {
-		return ""
+		if r.devSpaceID == 0 || meta.UID == "" {
+			return ""
+		}
+		return template.HTMLAttr(`data-dev-blok="` + template.HTMLEscapeString(meta.UID) +
+			`" data-dev-component="` + template.HTMLEscapeString(meta.Component) + `"`)
 	}
 	return template.HTMLAttr(`data-blok-c="` + template.HTMLEscapeString(options) +
 		`" data-blok-uid="` + template.HTMLEscapeString(uid) + `"`)

@@ -5,7 +5,7 @@ KEY := .certs/localhost-key.pem
 
 # Serves HTTPS because the Visual Editor only loads https preview URLs.
 run: static/fonts/ABCMarfa-Regular.woff2 $(CERT)
-	set -a && . ./.env && set +a && TLS_CERT_FILE=$(CERT) TLS_KEY_FILE=$(KEY) go run .
+	set -a && . ./.env && set +a && DEV_TOOLBAR=1 TLS_CERT_FILE=$(CERT) TLS_KEY_FILE=$(KEY) go run .
 
 test:
 	go test ./...
