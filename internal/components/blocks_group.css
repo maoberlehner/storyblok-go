@@ -1,0 +1,96 @@
+.blocks-group--spacing-small {
+  padding-block: var(--spacing-4xl);
+}
+
+.blocks-group--spacing-large {
+  padding-block: var(--spacing-5xl);
+}
+
+.blocks-group--colored {
+  position: relative;
+}
+
+.blocks-group--colored::before {
+  background-color: var(--blocks-group-background-color, transparent);
+  content: "";
+  inset: 0;
+  position: absolute;
+  z-index: -1;
+}
+
+.blocks-group--rounded::before {
+  border-radius: 0 clamp(100px, 15vw, 300px) 0 0;
+  margin: 0 auto;
+}
+
+@media (width >= 1480px) {
+  .blocks-group--rounded::before {
+    border-radius: var(--border-radius-2xl) clamp(100px, 15vw, 300px) var(--border-radius-2xl) var(--border-radius-2xl);
+    left: var(--default-container-padding-inline);
+    max-width: calc(var(--breakpoint-xxl) + var(--spacing-5xl));
+    right: var(--default-container-padding-inline);
+  }
+}
+
+.blocks-group--with-shape {
+  overflow: clip;
+  position: relative;
+}
+
+.blocks-group__content {
+  margin: 0 auto;
+}
+
+.blocks-group__content > :first-child {
+  margin-top: 0;
+}
+
+.blocks-group__content > :last-child {
+  margin-bottom: 0;
+}
+
+.blocks-group__content--medium-large { max-width: 1200px; }
+.blocks-group__content--medium { max-width: 1006px; }
+.blocks-group__content--small { max-width: var(--small-container-max-width); }
+
+.blocks-group__shape {
+  --block-offset: 25%;
+  color: var(--background-color);
+  inset: 0;
+  margin: 0 auto;
+  max-width: var(--default-container-max-width);
+  position: absolute;
+  z-index: -1;
+}
+
+.blocks-group__shape svg {
+  height: auto;
+  max-width: 66vw;
+  position: absolute;
+}
+
+.blocks-group__shape--top-right svg {
+  right: 0;
+  rotate: 180deg;
+  top: 0;
+  translate: var(--block-offset) calc(var(--block-offset) * -1);
+}
+
+.blocks-group__shape--top-left svg {
+  left: 0;
+  rotate: 180deg;
+  top: 0;
+  translate: calc(var(--block-offset) * -1) calc(var(--block-offset) * -1);
+}
+
+.blocks-group__shape--bottom-right svg {
+  bottom: 0;
+  right: 0;
+  translate: var(--block-offset) var(--block-offset);
+}
+
+.blocks-group__shape--bottom-left svg {
+  bottom: 0;
+  left: 0;
+  translate: calc(var(--block-offset) * -1) var(--block-offset);
+}
