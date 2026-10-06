@@ -1,0 +1,27 @@
+{{define "logo_grid"}}
+<div {{editable .}} class="logo-grid">
+  <div class="logo-grid__wrapper" style="--columns: {{.Columns}}; --items: {{len .Items}}"
+    {{- if .MultiRow}} data-multi-row="true"{{end}}{{if .NamedLogos}} data-named-logos="true"{{end}}>
+    <div class="logo-grid__grid">{{renderAll .Items}}</div>
+  </div>
+</div>
+{{end}}
+
+{{define "logo_grid_item"}}
+<div {{editable .}} class="logo-grid-item">
+  {{if .Link.IsZero -}}
+  <div class="logo-grid-item__content">{{template "logo_grid_item_content" .}}</div>
+  {{- else -}}
+  <a class="logo-grid-item__content" href="{{.Link.Href}}">{{template "logo_grid_item_content" .}}</a>
+  {{- end}}
+  <div class="logo-grid-item__cross"></div>
+  <div class="logo-grid-item__cross"></div>
+</div>
+{{end}}
+
+{{define "logo_grid_item_content"}}
+<div class="logo-grid-item__logo">
+  <img src="{{.Logo.Resize 0 150}}" width="{{.Logo.Width}}" height="{{.Logo.Height}}" alt="{{.Logo.Alt}}" loading="lazy">
+</div>
+{{with .Name}}<p class="logo-grid-item__name">{{.}}</p>{{end}}
+{{end}}

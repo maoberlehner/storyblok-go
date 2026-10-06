@@ -1,0 +1,22 @@
+{{define "section_with_quote_card"}}
+<div {{editable .}} class="section-quote-card"{{with .BackgroundColor.Value}} style="--section-background-color: {{.}}"{{end}}>
+  <div class="section-quote-card__container">
+    <div class="section-quote-card__left">
+      <div class="section-quote-card__description">{{richtext .Description}}</div>
+      {{with .CTAs}}<div class="section-quote-card__ctas">{{renderAll .}}</div>{{end}}
+    </div>
+    <figure class="section-quote-card__card">
+      {{with .Decoration}}<span class="section-quote-card__decoration">{{template "svg_decoration" .}}</span>{{end}}
+      {{with .QuoteTitle}}<h2 class="section-quote-card__card-heading">{{.}}</h2>{{end}}
+      {{with .Quote.Story}}{{with .Content}}
+      <blockquote class="quote-text"><p>{{.Text}}</p></blockquote>
+      <figcaption class="section-quote-card__author-container">
+        {{if not .Image.IsZero}}<div class="section-quote-card__avatar"><img src="{{.Image.Resize 192 192}}" width="96" height="96" alt="{{.FullName}}" loading="lazy"></div>{{end}}
+        <p class="section-quote-card__author"><b>{{.FullName}}</b>{{with .Role}}<br>{{.}}{{end}}</p>
+      </figcaption>
+      {{end}}{{end}}
+    </figure>
+    {{template "svg_decoration" "blob"}}
+  </div>
+</div>
+{{end}}

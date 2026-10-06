@@ -1,0 +1,31 @@
+{{define "feature_showcase"}}
+<div {{editable .}} class="feature-showcase">
+  <div class="feature-showcase__card-container">
+    <div class="feature-showcase__card{{if .AssetFirst}} feature-showcase__card--asset-first{{end}}">
+      <div class="feature-showcase__content">
+        <div class="feature-showcase__title">{{richtext .Title}}</div>
+        <div class="feature-showcase__description">{{richtext .Description}}</div>
+        {{with .CTA}}<div class="feature-showcase__button">{{renderAll .}}</div>{{end}}
+      </div>
+      <div class="feature-showcase__media">{{template "feature_showcase_media" .}}</div>
+    </div>
+  </div>
+  {{if .ShowCornerDecoration}}<div class="feature-showcase__decoration"><span>{{template "svg_decoration" "rays"}}</span></div>{{end}}
+</div>
+{{end}}
+
+{{define "feature_showcase_media"}}
+{{- if .YouTubeEmbedURL}}
+<div class="feature-showcase__video" style="--feature-showcase__video-aspect-ratio: {{.AspectRatio}}">
+  <iframe srcdoc="{{.YouTubePlaceholder}}" title="{{.Image.Alt}}" loading="lazy"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+{{- else if not .VideoAsset.IsZero}}
+<div class="feature-showcase__video" style="--feature-showcase__video-aspect-ratio: {{.AspectRatio}}">
+  <video src="{{.VideoAsset.Filename}}"{{if not .Image.IsZero}} poster="{{.Image.Resize 1280 0}}"{{end}} controls preload="none" playsinline></video>
+</div>
+{{- else if not .Image.IsZero}}
+<img class="feature-showcase__image" src="{{.Image.Resize 1280 0}}" srcset="{{.Image.SrcSet 640 960 1280 1920}}"
+  sizes="(width >= 768px) 60vw, 100vw" width="{{.Image.Width}}" height="{{.Image.Height}}" alt="{{.Image.Alt}}" loading="lazy">
+{{- end}}
+{{end}}

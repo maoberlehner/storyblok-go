@@ -1,0 +1,201 @@
+.logo-grid {
+  margin-inline: auto;
+  max-width: var(--default-container-max-width);
+  padding-inline: var(--default-container-padding-inline);
+}
+
+.logo-grid__wrapper {
+  --grid-line-overflow: calc(0px - var(--spacing-2xl));
+  --line-thickness: 1px;
+  --line-color: var(--light-gray-100);
+  --cross-size: 5px;
+  overflow-x: scroll;
+  padding-block: 30px;
+}
+
+/* Scroll shadows hint at more logos on narrow screens. */
+@supports (background-attachment: local, local, scroll, scroll) {
+  .logo-grid__wrapper {
+    background:
+      linear-gradient(to right, var(--background-color) 30%, rgb(from var(--background-color) r g b / 0)) 0,
+      linear-gradient(to right, rgb(from var(--background-color) r g b / 0), var(--background-color) 70%) 100%,
+      radial-gradient(farthest-side at 0 50%, rgb(from var(--text-color) r g b / 20%), rgb(from var(--text-color) r g b / 0)) 0,
+      radial-gradient(farthest-side at 100% 50%, rgb(from var(--text-color) r g b / 20%), rgb(from var(--text-color) r g b / 0)) 100%;
+    background-attachment: local, local, scroll, scroll;
+    background-repeat: no-repeat;
+    background-size: var(--spacing-3xl) 100%, var(--spacing-3xl) 100%, var(--spacing-lg) 100%, var(--spacing-lg) 100%;
+  }
+}
+
+@media (width >= 768px) {
+  .logo-grid__wrapper {
+    margin-inline: auto;
+    max-width: var(--default-container-max-width);
+    overflow-x: visible;
+    padding: var(--spacing-2xl) var(--default-container-padding-inline);
+  }
+}
+
+.logo-grid__grid {
+  --mobile-item-max-width: 33vw;
+  display: grid;
+  grid-template-columns: repeat(var(--items), minmax(var(--mobile-item-max-width), 1fr));
+  position: relative;
+  width: fit-content;
+}
+
+@media (width >= 480px) {
+  .logo-grid__grid {
+    --mobile-item-max-width: 150px;
+  }
+}
+
+@media (width >= 576px) {
+  .logo-grid__grid {
+    --mobile-item-max-width: 200px;
+  }
+}
+
+@media (width >= 768px) {
+  .logo-grid__grid {
+    grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+    width: 100%;
+  }
+}
+
+.logo-grid__grid::after {
+  background-color: var(--line-color);
+  bottom: -1px;
+  content: "";
+  height: var(--line-thickness);
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.logo-grid-item {
+  align-items: stretch;
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  position: relative;
+}
+
+@media (width >= 992px) {
+  .logo-grid-item {
+    padding: var(--spacing-3xl) var(--spacing-2xl);
+  }
+}
+
+.logo-grid-item::before,
+.logo-grid-item::after {
+  background-color: var(--line-color);
+  content: "";
+  position: absolute;
+}
+
+.logo-grid-item::before {
+  height: var(--line-thickness);
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+.logo-grid-item:not(:last-child)::after {
+  bottom: var(--grid-line-overflow);
+  right: 0;
+  top: var(--grid-line-overflow);
+  width: var(--line-thickness);
+}
+
+@media (width >= 768px) {
+  [data-multi-row="true"] .logo-grid-item:nth-child(4n)::after {
+    width: 0;
+  }
+}
+
+:not([data-multi-row="true"]) > * > .logo-grid-item:last-child .logo-grid-item__cross,
+[data-multi-row="true"] .logo-grid-item:nth-child(4n) .logo-grid-item__cross {
+  display: none;
+}
+
+.logo-grid-item__cross {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.logo-grid-item__cross + .logo-grid-item__cross {
+  bottom: 0;
+  top: unset;
+}
+
+.logo-grid-item__cross::before,
+.logo-grid-item__cross::after {
+  background-color: var(--purple-500);
+  content: "";
+  position: absolute;
+  z-index: 1;
+}
+
+.logo-grid-item__cross::before {
+  height: var(--line-thickness);
+  right: -2px;
+  top: 0;
+  width: var(--cross-size);
+}
+
+.logo-grid-item__cross::after {
+  height: var(--cross-size);
+  right: 0;
+  top: -2px;
+  width: var(--line-thickness);
+}
+
+.logo-grid-item__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+  justify-content: space-between;
+  text-decoration: none;
+  width: 100%;
+}
+
+.logo-grid-item__content[href]::after {
+  content: "";
+  cursor: pointer;
+  inset: 0;
+  position: absolute;
+}
+
+.logo-grid-item__logo {
+  align-items: center;
+  display: flex;
+  flex: auto;
+}
+
+.logo-grid-item__logo img {
+  display: block;
+  height: auto;
+  max-height: 30px;
+  width: 100%;
+}
+
+[data-named-logos="true"] .logo-grid-item__logo img {
+  max-height: 75px;
+}
+
+.logo-grid-item__name {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  margin-block: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+@media (width >= 992px) {
+  .logo-grid-item__name {
+    font-size: var(--font-size-2xl);
+  }
+}
