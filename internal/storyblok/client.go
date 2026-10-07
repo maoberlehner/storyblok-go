@@ -83,19 +83,16 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	}
 	endpoint := c.baseURL + "/stories/" + url.PathEscape(slug) + "?" + query.Encode()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	res, err := c.get(ctx, endpoint)
 	if err != nil {
-		return nil, err
-	}
-	res, err := c.do(req)
-	if err != nil {
-		// The request URL carries the access token, so it must not end up in logs.
-		if urlErr, ok := errors.AsType[*url.Error](err); ok {
-			err = urlErr.Err
-		}
 		return nil, fmt.Errorf("storyblok: fetching story %q: %w", slug, err)
 	}
 	defer res.Body.Close()
+	// Storyblok redirects published requests without a current cv to the
+	// current one, also for missing stories.
+	if res.Request != nil {
+		reportedCV, _ = strconv.ParseInt(res.Request.URL.Query().Get("cv"), 10, 64)
+	}
 
 	switch {
 	case res.StatusCode == http.StatusNotFound:
@@ -117,6 +114,21 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 		return payload.Story, nil
 	}
 	return inlineRelations(payload.Story, payload.Rels, opts.ResolveRelations)
+}
+
+func (c *Client) get(ctx context.Context, endpoint string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err == nil {
+		var res *http.Response
+		if res, err = c.do(req); err == nil {
+			return res, nil
+		}
+	}
+	// The request URL carries the access token, so it must not end up in logs.
+	if urlErr, ok := errors.AsType[*url.Error](err); ok {
+		err = urlErr.Err
+	}
+	return nil, err
 }
 
 func (c *Client) recordCacheVersion(cv int64, discovered bool) {
@@ -191,15 +203,8 @@ func (c *Client) SpaceID(ctx context.Context) (int64, error) {
 	defer cancel()
 
 	endpoint := c.baseURL + "/spaces/me?" + url.Values{"token": {c.token}}.Encode()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	res, err := c.get(ctx, endpoint)
 	if err != nil {
-		return 0, err
-	}
-	res, err := c.do(req)
-	if err != nil {
-		if urlErr, ok := errors.AsType[*url.Error](err); ok {
-			err = urlErr.Err
-		}
 		return 0, fmt.Errorf("storyblok: fetching space: %w", err)
 	}
 	defer res.Body.Close()
