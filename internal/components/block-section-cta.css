@@ -1,9 +1,12 @@
 .block-section-cta {
   container-type: inline-size;
+  padding-block: 2.5rem;
+}
+
+.block-section-cta__layout {
   display: grid;
   gap: 1.5rem;
   justify-items: start;
-  padding: 2.5rem 1.5rem;
 }
 
 .block-section-cta__content {
@@ -23,10 +26,11 @@
   white-space: pre-line;
 }
 
+/* A container can't query itself, so the layout lives on an inner element. */
 @container (inline-size >= 48rem) {
-  .block-section-cta {
+  .block-section-cta__layout {
     grid-template-columns: 1fr auto;
     align-items: center;
-    padding: 3rem;
+    padding: 0.5rem 1.5rem;
   }
 }
