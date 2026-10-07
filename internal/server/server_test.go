@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 
 const (
 	previewToken = "preview-token"
+	rateLimited  = "rate-limited"
 	homeStory    = `{"id": 7, "name": "Home", "content": {
 		"component": "enterprise_page", "_uid": "u1",
 		"meta_title": "Welcome",
@@ -40,6 +42,9 @@ func (f fakeContent) Story(_ context.Context, slug string, opts storyblok.StoryO
 	story, ok := f[slug]
 	if !ok {
 		return nil, storyblok.ErrNotFound
+	}
+	if story == rateLimited {
+		return nil, fmt.Errorf("storyblok: fetching story %q: %w", slug, storyblok.ErrRateLimited)
 	}
 	if opts.Version == storyblok.Draft {
 		return jsontext.Value(story), nil
@@ -72,7 +77,7 @@ func newServer(t *testing.T, opts ...components.RendererOption) *httptest.Server
 	if err != nil {
 		t.Fatal(err)
 	}
-	content := fakeContent{"home": homeStory, "config": `{"content": {"component": "configuration"}}`}
+	content := fakeContent{"home": homeStory, "busy": rateLimited, "config": `{"content": {"component": "configuration"}}`}
 	srv := server.New(content, renderer, fstest.MapFS{}, previewToken, slog.New(slog.DiscardHandler))
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
@@ -129,6 +134,12 @@ func TestShowStory(t *testing.T) {
 	t.Run("responds 404 for unknown slugs", func(t *testing.T) {
 		if status, _ := do(t, http.MethodGet, ts.URL+"/missing", ""); status != http.StatusNotFound {
 			t.Errorf("status = %d, want 404", status)
+		}
+	})
+
+	t.Run("responds 503 when the Storyblok client is rate limited", func(t *testing.T) {
+		if status, _ := do(t, http.MethodGet, ts.URL+"/busy", ""); status != http.StatusServiceUnavailable {
+			t.Errorf("status = %d, want 503", status)
 		}
 	})
 }
