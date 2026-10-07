@@ -13,7 +13,7 @@ import (
 func TestFormsCarryGuardAndAttributionFields(t *testing.T) {
 	_, body := do(t, http.MethodGet, newServer(t).URL+"/landing?utm_source=news&utm_campaign=fall", "")
 	for _, want := range []string{
-		`name="website" tabindex="-1" autocomplete="off"`,
+		`name="hp_leave_empty" tabindex="-1" autocomplete="off"`,
 		`name="form_started" value="`,
 		`<input type="hidden" name="utm_source" value="news" data-attribution>`,
 		`<input type="hidden" name="utm_campaign" value="fall" data-attribution>`,
@@ -40,14 +40,19 @@ func TestHoneypotSubmissionsAreNotDelivered(t *testing.T) {
 	}
 }
 
-func TestSubmissionsWithoutValidTokenAreNotDelivered(t *testing.T) {
+// A secret rotation or an instance without the shared secret must not drop
+// real messages silently: people can send again.
+func TestSubmissionsWithoutValidTokenCanBeResent(t *testing.T) {
 	inbox := &recordingInbox{}
 	ts := newServerWithInbox(t, inbox)
 	form := validContact()
 	form.Set(components.StartedField, "1800000000.forged")
 	res := request(t, http.MethodPost, ts.URL+"/landing", form, enhanced)
-	if res.status != http.StatusOK || !strings.Contains(res.body, "Message sent") || len(inbox.submissions) != 0 {
+	if res.status != http.StatusUnprocessableEntity || !strings.Contains(res.body, "Please send it again") || len(inbox.submissions) != 0 {
 		t.Errorf("status %d, delivered %d, body:\n%s", res.status, len(inbox.submissions), res.body)
+	}
+	if !strings.Contains(res.body, `value="`+form.Get("email")+`"`) {
+		t.Error("entered values were lost")
 	}
 }
 

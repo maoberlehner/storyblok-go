@@ -26,9 +26,9 @@ func TestFormGuard(t *testing.T) {
 		{"page cached for a day", url.Values{StartedField: {token}}, 24 * time.Hour, Human},
 		{"too fast", url.Values{StartedField: {token}}, time.Second, TooFast},
 		{"honeypot", url.Values{StartedField: {token}, HoneypotField: {"https://spam.example"}}, time.Minute, Bot},
-		{"no token", url.Values{}, time.Minute, Bot},
-		{"forged time", url.Values{StartedField: {"1799999000" + token[len("1800000000"):]}}, time.Minute, Bot},
-		{"other secret", url.Values{StartedField: {NewFormGuard([]byte("other"), func() time.Time { return rendered }).Token()}}, time.Minute, Bot},
+		{"no token", url.Values{}, time.Minute, Unverified},
+		{"forged time", url.Values{StartedField: {"1799999000" + token[len("1800000000"):]}}, time.Minute, Unverified},
+		{"other secret", url.Values{StartedField: {NewFormGuard([]byte("other"), func() time.Time { return rendered }).Token()}}, time.Minute, Unverified},
 	} {
 		if got := check(tt.values, tt.after); got != tt.want {
 			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)

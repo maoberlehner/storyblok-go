@@ -12,8 +12,10 @@ import (
 )
 
 const (
-	// HoneypotField is a text input hidden from people; bots fill it in.
-	HoneypotField = "website"
+	// HoneypotField is a text input hidden from people; bots fill it in. Its
+	// name matches no autofill heuristic, so browsers and extensions leave it
+	// empty.
+	HoneypotField = "hp_leave_empty"
 	// StartedField holds the signed time the form was rendered.
 	StartedField = "form_started"
 	// MinFillTime is faster than people fill in a form, even with autofill.
@@ -34,6 +36,9 @@ const (
 	Bot
 	// TooFast submissions may come from people; they can send again.
 	TooFast
+	// Unverified submissions lack a valid token, e.g. after a secret change
+	// while pages with old tokens are cached. They may come from people too.
+	Unverified
 )
 
 // FormGuard tells people from bots with a honeypot and a signed render time,
@@ -65,11 +70,11 @@ func (g FormGuard) Check(values url.Values) Verdict {
 	}
 	ts, signature, ok := strings.Cut(values.Get(StartedField), ".")
 	if !ok || !hmac.Equal([]byte(signature), []byte(g.sign(ts))) {
-		return Bot
+		return Unverified
 	}
 	seconds, err := strconv.ParseInt(ts, 10, 64)
 	if err != nil {
-		return Bot
+		return Unverified
 	}
 	if g.now().Sub(time.Unix(seconds, 0)) < MinFillTime {
 		return TooFast

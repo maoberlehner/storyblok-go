@@ -222,6 +222,8 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 		valid = true
 	case components.TooFast:
 		form.Reject(r.PostForm, res.locale.T("form.too_fast"))
+	case components.Unverified:
+		form.Reject(r.PostForm, res.locale.T("form.unverified"))
 	default:
 		var err error
 		if valid, err = form.Submit(r.Context(), s.inbox, r.PostForm); err != nil {

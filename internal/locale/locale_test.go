@@ -35,7 +35,7 @@ func TestMessages(t *testing.T) {
 
 // identical are strings that are the same in English and German.
 var identical = map[string]bool{
-	"form.trap_label": true, "contact.name": true, "contact.topic_support": true,
+	"contact.name": true, "contact.topic_support": true,
 	"form.count_remaining_other": true, "form.count_over_other": true,
 }
 

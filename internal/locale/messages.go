@@ -14,7 +14,8 @@ var english = map[string]string{
 
 	"form.problem":               "There is a problem",
 	"form.too_fast":              "Your message was sent faster than people usually type. Please send it again.",
-	"form.trap_label":            "Website",
+	"form.unverified":            "We couldn't verify this form. Please send it again.",
+	"form.trap_label":            "Leave this field empty",
 	"form.count_remaining_one":   "%s character remaining",
 	"form.count_remaining_other": "%s characters remaining",
 	"form.count_over_one":        "%s character too many",
@@ -63,7 +64,8 @@ var german = map[string]string{
 
 	"form.problem":               "Es gibt ein Problem",
 	"form.too_fast":              "Ihre Nachricht wurde schneller gesendet, als Menschen tippen. Bitte senden Sie sie noch einmal.",
-	"form.trap_label":            "Website",
+	"form.unverified":            "Wir konnten dieses Formular nicht prüfen. Bitte senden Sie es noch einmal.",
+	"form.trap_label":            "Dieses Feld leer lassen",
 	"form.count_remaining_one":   "%s Zeichen übrig",
 	"form.count_remaining_other": "%s Zeichen übrig",
 	"form.count_over_one":        "%s Zeichen zu viel",
