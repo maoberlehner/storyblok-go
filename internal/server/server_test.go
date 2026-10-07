@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	siteURL      = "https://example.com"
 	previewToken = "preview-token"
 	rateLimited  = "rate-limited"
 	landingStory = `{"id": 8, "name": "Landing", "content": {
@@ -55,9 +56,23 @@ type fakeContent struct {
 
 const totalArticles = 14
 
-// Stories returns totalArticles articles, newest ("article-14") first.
+// Stories returns totalArticles articles, newest ("article-14") first, or all
+// stories when listing the whole space, as for the sitemap.
 func (f *fakeContent) Stories(_ context.Context, opts storyblok.StoriesOptions) (storyblok.StoryList, error) {
 	var stories []map[string]any
+	if opts.StartsWith == "" {
+		for slug, raw := range f.stories {
+			var story map[string]any
+			if json.Unmarshal([]byte(raw), &story) != nil {
+				continue
+			}
+			story["full_slug"] = slug
+			story["published_at"] = "2026-10-01T08:30:00.000Z"
+			stories = append(stories, story)
+		}
+		raw, err := json.Marshal(stories)
+		return storyblok.StoryList{Stories: raw, Total: len(stories)}, err
+	}
 	first := (opts.Page-1)*opts.PerPage + 1
 	for n := first; n < first+opts.PerPage && n <= totalArticles; n++ {
 		id := totalArticles + 1 - n
@@ -81,14 +96,14 @@ func (f *fakeContent) Story(_ context.Context, slug string, opts storyblok.Story
 	if story == rateLimited {
 		return nil, fmt.Errorf("storyblok: fetching story %q: %w", slug, storyblok.ErrRateLimited)
 	}
-	if opts.Version == storyblok.Draft {
-		return jsontext.Value(story), nil
-	}
-	var tree any
+	var tree map[string]any
 	if err := json.Unmarshal([]byte(story), &tree); err != nil {
 		return nil, err
 	}
-	removeEditable(tree)
+	tree["full_slug"] = slug
+	if opts.Version != storyblok.Draft {
+		removeEditable(tree)
+	}
 	return json.Marshal(tree)
 }
 
@@ -131,7 +146,11 @@ func newServerWithContent(t *testing.T, inbox components.Inbox, serverOpts []ser
 	if err != nil {
 		t.Fatal(err)
 	}
-	content := &fakeContent{stories: map[string]string{"home": homeStory, "busy": rateLimited, "landing": landingStory}}
+	content := &fakeContent{stories: map[string]string{
+		"home": homeStory, "busy": rateLimited, "landing": landingStory,
+		"legacy": `{"name": "Legacy", "content": {"component": "page", "body": []}}`,
+	}}
+	serverOpts = append([]server.Option{server.WithSiteURL(siteURL)}, serverOpts...)
 	srv := server.New(content, renderer, fstest.MapFS{}, inbox, previewToken, slog.New(slog.DiscardHandler), serverOpts...)
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)

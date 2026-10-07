@@ -5,6 +5,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  {{- if .Preview}}
+  <meta name="robots" content="noindex">
+  {{- else if .Canonical}}
+  <link rel="canonical" href="{{.Canonical}}">
+  {{- end}}
   {{- /* Keeps browsers from requesting /favicon.ico, which would be looked up as a story. */}}
   <link rel="icon" href="data:,">
   {{- with .Description}}

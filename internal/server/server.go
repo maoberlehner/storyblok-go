@@ -50,6 +50,7 @@ type Server struct {
 	logger       *slog.Logger
 	now          func() time.Time
 	buildID      string
+	siteURL      string
 }
 
 type Option func(*Server)
@@ -58,6 +59,12 @@ type Option func(*Server)
 // the same content renders differently, e.g. on every deploy.
 func WithBuildID(id string) Option {
 	return func(s *Server) { s.buildID = id }
+}
+
+// WithSiteURL sets the public origin, such as https://www.example.com, for
+// canonical URLs and the sitemap.
+func WithSiteURL(origin string) Option {
+	return func(s *Server) { s.siteURL = strings.TrimSuffix(origin, "/") }
 }
 
 func New(content ContentSource, renderer *components.Renderer, assets fs.FS, inbox components.Inbox, previewToken string, logger *slog.Logger, opts ...Option) *Server {
@@ -80,6 +87,8 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /assets/app.js", s.serveBundle("text/javascript; charset=utf-8", s.renderer.Script))
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", s.serveAsset(http.FileServerFS(s.assets))))
+	mux.HandleFunc("GET /sitemap.xml", s.serveSitemap)
+	mux.HandleFunc("GET /robots.txt", s.serveRobots)
 	mux.HandleFunc("GET /{slug...}", s.showStory)
 	mux.HandleFunc("POST /{slug...}", s.submitForm)
 	mux.HandleFunc("PUT /{slug...}", s.previewStory)
@@ -134,6 +143,7 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	}
 	page := components.NewPage(story)
 	page.Preview = preview
+	page.Canonical = s.canonicalURL(story.FullSlug)
 	s.writePage(w, r, http.StatusOK, page)
 }
 
@@ -188,6 +198,7 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 	default:
 		page := components.NewPage(story)
 		page.Title = "Error: " + page.Title
+		page.Canonical = s.canonicalURL(story.FullSlug)
 		s.writePage(w, r, status, page)
 	}
 }
@@ -241,6 +252,23 @@ func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok
 		return story, false
 	}
 	return story, true
+}
+
+// canonicalURL is the story's URL without query parameters, which only hold
+// view state such as loaded pages or a form confirmation.
+func (s *Server) canonicalURL(fullSlug string) string {
+	if s.siteURL == "" {
+		return ""
+	}
+	return s.siteURL + storyPath(fullSlug)
+}
+
+func storyPath(fullSlug string) string {
+	slug := strings.Trim(fullSlug, "/")
+	if slug == homeSlug {
+		slug = ""
+	}
+	return "/" + slug
 }
 
 func (s *Server) componentRequest(r *http.Request, version storyblok.Version) components.Request {

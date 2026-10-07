@@ -39,8 +39,11 @@ type Metadata struct {
 type Page struct {
 	Metadata
 	Content Block
-	// Preview loads the Visual Editor bridge and live preview script.
+	// Preview loads the Visual Editor bridge and live preview script, and
+	// keeps the page out of search indexes.
 	Preview bool
+	// Canonical is the absolute URL search engines should index the page as.
+	Canonical string
 
 	body             template.HTML
 	head             template.HTML

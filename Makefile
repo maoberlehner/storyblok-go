@@ -5,7 +5,7 @@ KEY := .certs/localhost-key.pem
 
 # Serves HTTPS because the Visual Editor only loads https preview URLs.
 run: $(CERT)
-	set -a && . ./.env && set +a && DEV_TOOLBAR=1 TLS_CERT_FILE=$(CERT) TLS_KEY_FILE=$(KEY) go run .
+	set -a && . ./.env && set +a && SITE_URL="$${SITE_URL:-https://localhost:8080}" DEV_TOOLBAR=1 TLS_CERT_FILE=$(CERT) TLS_KEY_FILE=$(KEY) go run .
 
 # Production-like stack with the caching proxy on https://localhost:8443.
 up: $(CERT)

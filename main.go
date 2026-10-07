@@ -3,6 +3,8 @@
 // Configuration is read from the environment:
 //
 //	STORYBLOK_PREVIEW_TOKEN  preview access token of the space (required)
+//	SITE_URL                 public origin for canonical URLs and the sitemap,
+//	                         e.g. https://www.example.com (required)
 //	STORYBLOK_API_URL        Content Delivery API base URL (default: EU region)
 //	ADDR                     listen address (default: :8080)
 //	TLS_CERT_FILE            certificate for serving HTTPS, which the Visual
@@ -16,11 +18,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -45,12 +50,19 @@ func run(logger *slog.Logger) error {
 	if previewToken == "" {
 		return errors.New("STORYBLOK_PREVIEW_TOKEN is required")
 	}
+	siteURL, err := parseSiteURL(os.Getenv("SITE_URL"))
+	if err != nil {
+		return err
+	}
 	apiURL := cmp.Or(os.Getenv("STORYBLOK_API_URL"), storyblok.DefaultBaseURL)
 	addr := cmp.Or(os.Getenv("ADDR"), ":8080")
 	certFile, keyFile := os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE")
 
 	client := storyblok.NewClient(apiURL, previewToken)
 	buildID, err := executableHash()
+	// Canonical URLs change page markup without changing the build.
+	siteHash := sha256.Sum256([]byte(siteURL))
+	buildID += "-" + hex.EncodeToString(siteHash[:4])
 	if err != nil {
 		return err
 	}
@@ -70,7 +82,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	srv := server.New(client, renderer, static.FS, server.LogInbox{Logger: logger}, previewToken, logger, server.WithBuildID(buildID))
+	srv := server.New(client, renderer, static.FS, server.LogInbox{Logger: logger}, previewToken, logger, server.WithBuildID(buildID), server.WithSiteURL(siteURL))
 	httpServer := &http.Server{
 		Addr:              addr,
 		Handler:           srv.Handler(),
@@ -99,6 +111,17 @@ func run(logger *slog.Logger) error {
 		defer cancel()
 		return httpServer.Shutdown(shutdownCtx)
 	}
+}
+
+// parseSiteURL validates the public origin: an absolute HTTP(S) URL without
+// path, query, or fragment.
+func parseSiteURL(raw string) (string, error) {
+	u, err := url.Parse(raw)
+	if raw == "" || err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" ||
+		strings.Trim(u.Path, "/") != "" || u.RawQuery != "" || u.Fragment != "" {
+		return "", fmt.Errorf("SITE_URL must be an origin such as https://www.example.com, got %q", raw)
+	}
+	return u.Scheme + "://" + u.Host, nil
 }
 
 // executableHash identifies the build, which embeds all templates and assets.

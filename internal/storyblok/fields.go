@@ -8,14 +8,16 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Story[T any] struct {
-	ID       int64  `json:"id"`
-	UUID     string `json:"uuid"`
-	Name     string `json:"name"`
-	FullSlug string `json:"full_slug"`
-	Content  T      `json:"content"`
+	ID          int64     `json:"id"`
+	UUID        string    `json:"uuid"`
+	Name        string    `json:"name"`
+	FullSlug    string    `json:"full_slug"`
+	PublishedAt time.Time `json:"published_at"`
+	Content     T         `json:"content"`
 }
 
 // Blok holds the fields every nestable or content type component shares.

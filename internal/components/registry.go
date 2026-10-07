@@ -38,6 +38,9 @@ func register[T any, P interface {
 	definitions[name] = definition.Compile
 }
 
+// IsPage reports whether component is a registered page content type.
+func IsPage(component string) bool { return categories[component] == schema.Page }
+
 // Schemas validates every CMS component and resolves its allowed children.
 // Registration requires a schema definition; base templates are not registered.
 func Schemas() ([]schema.Component, error) {
