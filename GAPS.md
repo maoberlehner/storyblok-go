@@ -21,33 +21,36 @@ deliberate exceptions with reasons.
   off-scale spacing, and literal colors. Public component CSS now uses relative
   units and global color properties.
 - **Asset delivery:** All three variants are implemented behind `ASSET_DELIVERY`
-  (default `bundle`) and measured with `make benchmark` (Chrome 155, slow 4G, 4x
-  CPU slowdown, HTTP/2 on localhost, medians of 5 runs, demo landing pages;
-  2026-10-07):
+  (default `bundle`) and measured with `make benchmark` on the compose stack
+  (Chrome 155, slow 4G, 4x CPU slowdown, pages and fragments served from the
+  proxy cache, medians of 5 runs, demo landing pages; 2026-10-07):
 
-  | Metric                        |   inline |     head |   bundle |
-  | ----------------------------- | -------: | -------: | -------: |
-  | Cold: transfer KB / requests  | 19.1 / 2 | 19.1 / 2 | 19.5 / 4 |
-  | Cold: FCP ms                  |      988 |      948 |     1156 |
-  | Repeat visit: transfer KB     |      3.9 |      3.9 |      1.7 |
-  | Navigation: transfer KB       |      3.8 |      3.8 |      1.5 |
-  | Load more: KB per click       |      1.3 |      0.6 |      0.6 |
-  | Form error: KB                |      2.6 |      1.7 |      0.9 |
-  | After 3× load more: `<style>` |       39 |        1 |        0 |
-  | After 3× load more: inline KB |     43.7 |     18.7 |        0 |
+  | Metric                        | inline |   head | bundle |
+  | ----------------------------- | -----: | -----: | -----: |
+  | Cold: transfer KB / requests  | 19.4/2 | 19.3/2 | 19.9/4 |
+  | Cold: FCP ms                  |    908 |    912 |   1088 |
+  | Repeat visit: transfer KB     |    0.1 |    0.1 |    0.1 |
+  | Navigation: transfer KB       |    4.0 |    3.9 |    1.7 |
+  | Load more: KB per click       |    1.4 |    0.8 |    0.8 |
+  | After 3× load more: `<style>` |     39 |      1 |      0 |
+  | After 3× load more: inline KB |   43.8 |   18.8 |      0 |
 
-  Bundles cost a render-blocking round trip on cold visits (about 200 ms later
-  FCP); inlining saves it. Inline repeats CSS per instance, which doubles
-  fragment size and bloats the DOM, with no gain over `head`. `head` re-sends
-  about 2 KB of CSS per page view that a bundle would cache. JS is not
-  render-blocking, but inline delivery runs component scripts once per instance
-  (5 copies for one form).
+  Bundles cost a render-blocking round trip on cold visits (about 180 ms later
+  FCP); inlining saves it. Repeat visits of a page cost nothing in any mode
+  (ETag revalidation, 304). Inlined CSS only costs on navigation to other pages:
+  about 2 KB per page today. Inline repeats CSS per instance, which doubles
+  fragment size and bloats the DOM, with no gain over `head`. Inline delivery
+  runs component scripts once per instance (5 copies for one form).
 
   Recommendation, pending decision: CSS as `head`, JS as one deferred, cacheable
-  bundle; then remove the unused variants. Revisit `head` if component CSS per
-  page grows far beyond today's ~2 KB compressed. Not measured: other browsers,
-  CDN/edge caching, and larger component sets.
+  bundle; then remove the unused variants. Inlining stays cheap while HTML and
+  CSS of a page fit the first round trip (about 14 KB compressed); beyond that,
+  link per-component stylesheets instead. Not measured: other browsers, a real
+  CDN, and larger component sets.
 
+- **Compression of errors:** nginx's brotli and gzip modules skip error
+  statuses, so 422 form responses are sent uncompressed (5 KB fragment, 17 KB
+  page with `head` delivery).
 - **CI:** There is no CI. Tests, offline schema validation, and schema
   plan/apply run locally. A pipeline for pull request checks and reviewed schema
   syncs per space is pending.
