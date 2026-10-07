@@ -91,22 +91,24 @@ interactions; follow them for similar features and add new ones there:
 - [Form](patterns/form.md): server validation, error summary, inline errors,
   inline success, and component JavaScript conventions.
 
-## Asset delivery: undecided
+## Asset delivery
 
-Keep CSS/JS source files colocated regardless of delivery. Compare on a
-real-world project before choosing:
+Keep CSS/JS source files colocated with their component. Pages inline the CSS of
+the components they use in `<head>`, once per component type; global document
+defaults come first. Fragments carry no CSS, so they may only render components
+their page already rendered. Component scripts are bundled into one deferred,
+cacheable `app.js`, each file in its own function scope.
 
-1. Inline CSS/JS in rendered output alongside component HTML.
-2. Inline delivery with used component CSS collected in `<head>`, once per
-   component type; keep JS delivery identical to variant 1 to isolate CSS
-   placement/deduplication.
-3. Bundle and minify `.css` and `.js` into one bundle per asset type; consider
-   splitting per page later.
-
-Measure compressed transfer size, rendering/interaction timings, and cache reuse
-on cold loads, repeat visits, navigation, and fragment updates with repeated
-components. Check style isolation and repeated script execution. Record results
-and the decision in GAPS.md; the current implementation is not a settled choice.
+Benchmarked on the compose stack (slow 4G, realistic landing page with 19
+components, 2.2 KB of compressed CSS) against per-instance inlining,
+per-component `<link>`s, and one linked stylesheet: inlining in `<head>` had the
+fastest first visit (about 100 ms before a linked bundle, 300 ms before
+per-component links) and costs about 2 KB per navigation to another page. Repeat
+visits are free in every variant (ETag revalidation). Minification would save
+about 0.5 KB per page after compression and is not used. Revisit when a page's
+CSS no longer fits the first round trip with its HTML (about 14 KB compressed).
+The benchmark tool is in the history at commit `540a686`
+(`tools/asset-benchmark`).
 
 ## Verification
 

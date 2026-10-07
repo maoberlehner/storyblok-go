@@ -20,38 +20,9 @@ deliberate exceptions with reasons.
 - **Legacy tooling CSS:** `static/dev-toolbar.css` still uses pixel values,
   off-scale spacing, and literal colors. Public component CSS now uses relative
   units and global color properties.
-- **Asset delivery:** Four variants are implemented behind `ASSET_DELIVERY`
-  (default `bundle`) and measured with `make benchmark` on the compose stack
-  (Chrome 155, slow 4G, 4x CPU slowdown, pages and fragments served from the
-  proxy cache, medians of 5 runs; 2026-10-07). The demo landing page has nine
-  sections using 19 components; their CSS is 12 KB raw, 2.2 KB brotli. Only
-  `inline` delivers JS per instance; the others link one script bundle.
-
-  | Metric                        | inline |   head |   links | bundle |
-  | ----------------------------- | -----: | -----: | ------: | -----: |
-  | Cold: transfer KB / requests  | 21.5/2 | 21.6/3 | 27.5/23 | 22.0/4 |
-  | Cold: FCP ms                  |    932 |    964 |    1260 |   1044 |
-  | Repeat visit: transfer KB     |    0.1 |    0.1 |     0.1 |    0.1 |
-  | Navigation: transfer KB       |    5.2 |    4.3 |     2.7 |    2.4 |
-  | Load more: KB per click       |    1.4 |    0.7 |     0.7 |    0.7 |
-  | After 3× load more: inline KB |   57.1 |   12.1 |       0 |      0 |
-
-  Linked CSS costs a render-blocking round trip on cold visits; per-component
-  links (`links`) add per-request overhead on top and are slowest. Repeat visits
-  cost nothing in any mode (ETag revalidation, 304). Inlined CSS only costs on
-  navigation to other pages: about 2 KB per page. `inline` repeats CSS per
-  instance and doubles fragment size with no gain over `head`. Minifying would
-  save about 0.25 KB of CSS and 0.3 KB of JS per page after brotli.
-
-  Recommendation, pending decision: `head` (CSS inlined once per component type,
-  JS as one bundle); remove the other variants. Inlining keeps winning while a
-  page's CSS fits the first round trip with its HTML (about 14 KB compressed,
-  roughly 70 KB raw); scoped component CSS is far from that. Not measured: other
-  browsers and a real CDN.
-
 - **Compression of errors:** nginx's brotli and gzip modules skip error
-  statuses, so 422 form responses are sent uncompressed (5 KB fragment, 17 KB
-  page with `head` delivery).
+  statuses, so 422 form responses are sent uncompressed (about 4 KB fragment, 17
+  KB page).
 - **CI:** There is no CI. Tests, offline schema validation, and schema
   plan/apply run locally. A pipeline for pull request checks and reviewed schema
   syncs per space is pending.

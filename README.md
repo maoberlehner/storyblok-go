@@ -23,11 +23,9 @@ to open it in Storyblok).
 For live preview, set `https://localhost:8080/` as the preview URL in your space
 settings.
 
-`ASSET_DELIVERY` selects how component CSS and JS reach the browser: `bundle`
-(default, one stylesheet and one script), `head` (used component CSS inlined in
-`<head>`), `links` (one stylesheet per used component), or `inline` (CSS and JS
-next to every component instance), also for the compose stack
-(`ASSET_DELIVERY=head make up`). htmx is self-hosted under `/assets/vendor/`.
+Component CSS is inlined in `<head>`, once per used component, and component
+scripts are bundled into one `app.js` (see AGENTS.md). htmx is self-hosted under
+`/assets/vendor/`.
 
 ## Demo content
 
@@ -41,18 +39,6 @@ make seed
 in `STORYBLOK_SPACE`, creating folders as needed. Running it again overwrites
 these stories and leaves all others untouched. The landing pages are
 `/landing/launch` and `/landing/partners`.
-
-## Asset delivery benchmark
-
-```sh
-make benchmark
-```
-
-Runs [tools/asset-benchmark](tools/asset-benchmark/bench.mjs) against the demo
-content on the compose stack, for each `ASSET_DELIVERY` mode, in Chrome on a
-throttled connection, and prints a table of medians. It restarts the stack per
-mode and leaves it running with the defaults. Requires Google Chrome, Node.js,
-and mkcert.
 
 ## Production-like stack
 

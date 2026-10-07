@@ -29,32 +29,6 @@ var (
 // stories, both from the Content Delivery API and the Visual Editor bridge.
 var ResolveRelations []string
 
-// AssetDelivery selects how component CSS and JS reach the browser. All modes
-// are kept until a benchmark settles the choice (see GAPS.md).
-type AssetDelivery string
-
-const (
-	// DeliverInline puts each component's CSS and JS next to every instance.
-	DeliverInline AssetDelivery = "inline"
-	// DeliverHead collects the CSS of used components in <head>, once per
-	// component type.
-	DeliverHead AssetDelivery = "head"
-	// DeliverLinks links one stylesheet per used component in <head>.
-	DeliverLinks AssetDelivery = "links"
-	// DeliverBundle links one stylesheet for all components.
-	DeliverBundle AssetDelivery = "bundle"
-	// All modes but DeliverInline link one script for all components.
-)
-
-func ParseAssetDelivery(s string) (AssetDelivery, error) {
-	switch mode := AssetDelivery(cmp.Or(s, string(DeliverBundle))); mode {
-	case DeliverInline, DeliverHead, DeliverLinks, DeliverBundle:
-		return mode, nil
-	default:
-		return "", fmt.Errorf("unknown asset delivery %q", s)
-	}
-}
-
 type Metadata struct {
 	Title       string
 	Description string
@@ -70,7 +44,6 @@ type Page struct {
 
 	body             template.HTML
 	head             template.HTML
-	stylesheetURL    string
 	scriptURL        string
 	resolveRelations []string
 	storyID          int64
@@ -98,7 +71,6 @@ func NewPage(story storyblok.Story[AnyBlock]) Page {
 
 func (p Page) Body() template.HTML        { return p.body }
 func (p Page) Head() template.HTML        { return p.head }
-func (p Page) StylesheetURL() string      { return p.stylesheetURL }
 func (p Page) ScriptURL() string          { return p.scriptURL }
 func (p Page) ResolveRelations() []string { return p.resolveRelations }
 func (p Page) DevToolbar() *DevToolbar    { return p.devToolbar }
@@ -111,18 +83,14 @@ func (p Page) HTMXURL() string { return HTMXURL }
 
 type componentAssets struct {
 	css, js string
-	// cssURL versions the component's stylesheet by its content.
-	cssURL string
 }
 
 type Renderer struct {
 	templates  *template.Template
-	delivery   AssetDelivery
 	assets     map[string]componentAssets
 	globalCSS  string
-	stylesheet []byte
 	script     []byte
-	assetHash  string
+	scriptHash string
 	devSpaceID int64
 	renders    sync.Pool
 }
@@ -135,15 +103,11 @@ func WithDevToolbar(spaceID int64) RendererOption {
 	return func(r *Renderer) { r.devSpaceID = spaceID }
 }
 
-func WithAssetDelivery(mode AssetDelivery) RendererOption {
-	return func(r *Renderer) { r.delivery = mode }
-}
-
 func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 	if _, err := Schemas(); err != nil {
 		return nil, err
 	}
-	r := &Renderer{delivery: DeliverBundle}
+	r := &Renderer{}
 	for _, opt := range opts {
 		opt(r)
 	}
@@ -173,6 +137,10 @@ func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 
 const globalStylesheet = "base.css"
 
+// loadAssets reads the component styles, which pages inline in <head> once
+// per used component type, and bundles the component scripts. Inlining saves
+// the render-blocking request a stylesheet costs on first visits, while a
+// page's CSS fits the first round trip; see GAPS.md for measurements.
 func (r *Renderer) loadAssets() error {
 	names, err := fs.Glob(assetFS, "*")
 	if err != nil {
@@ -180,52 +148,33 @@ func (r *Renderer) loadAssets() error {
 	}
 	slices.Sort(names)
 	r.assets = map[string]componentAssets{}
-	var css, js bytes.Buffer
+	var js bytes.Buffer
 	for _, name := range names {
 		data, err := assetFS.ReadFile(name)
 		if err != nil {
 			return err
+		}
+		if name == globalStylesheet {
+			r.globalCSS = string(data)
+			continue
 		}
 		component := strings.TrimSuffix(name, path.Ext(name))
 		a := r.assets[component]
 		switch path.Ext(name) {
 		case ".css":
 			a.css = string(data)
-			sum := sha256.Sum256(data)
-			a.cssURL = ComponentStylesheetPrefix + name + "?v=" + hex.EncodeToString(sum[:8])
-			if name == globalStylesheet {
-				r.globalCSS = a.css
-			} else {
-				fmt.Fprintf(&css, "/* %s */\n%s\n", name, data)
-			}
 		case ".js":
 			a.js = string(data)
-			fmt.Fprintf(&js, "// %s\n%s\n", name, data)
+			// Each script gets its own scope, so top-level names can't clash.
+			fmt.Fprintf(&js, "// %s\n(() => {\n%s})();\n", name, data)
 		}
 		r.assets[component] = a
 	}
-	r.stylesheet = append([]byte("/* "+globalStylesheet+" */\n"+r.globalCSS+"\n"), css.Bytes()...)
 	r.script = js.Bytes()
-	sum := sha256.Sum256(append(slices.Clone(r.stylesheet), r.script...))
-	r.assetHash = hex.EncodeToString(sum[:8])
+	sum := sha256.Sum256(r.script)
+	r.scriptHash = hex.EncodeToString(sum[:8])
 	return nil
 }
-
-// ComponentStylesheetPrefix is the URL path of per-component stylesheets.
-const ComponentStylesheetPrefix = "/assets/components/"
-
-// ComponentStylesheet returns the stylesheet of a component, or of the
-// document defaults for "base", by its file name.
-func (r *Renderer) ComponentStylesheet(file string) ([]byte, bool) {
-	a, ok := r.assets[strings.TrimSuffix(file, ".css")]
-	if !ok || a.css == "" || path.Ext(file) != ".css" {
-		return nil, false
-	}
-	return []byte(a.css), true
-}
-
-// Stylesheet returns base.css followed by all component stylesheets.
-func (r *Renderer) Stylesheet() []byte { return r.stylesheet }
 
 // Script returns all component scripts.
 func (r *Renderer) Script() []byte { return r.script }
@@ -240,30 +189,15 @@ func (r *Renderer) Page(w io.Writer, page Page) error {
 	}
 	page.body = body
 	page.resolveRelations = ResolveRelations
-	if r.delivery != DeliverInline && len(r.script) > 0 {
-		page.scriptURL = "/assets/app.js?v=" + r.assetHash
+	if len(r.script) > 0 {
+		page.scriptURL = "/assets/app.js?v=" + r.scriptHash
 	}
-	switch r.delivery {
-	case DeliverBundle:
-		page.stylesheetURL = "/assets/app.css?v=" + r.assetHash
-	case DeliverLinks:
-		var links strings.Builder
-		for _, name := range append([]string{"base"}, rn.used...) {
-			if url := r.assets[name].cssURL; url != "" {
-				links.WriteString(`<link rel="stylesheet" href="` + url + `">`)
-			}
-		}
-		page.head = template.HTML(links.String())
-	case DeliverHead:
-		var css strings.Builder
-		css.WriteString(r.globalCSS)
-		for _, name := range rn.used {
-			css.WriteString(r.assets[name].css)
-		}
-		page.head = styleElement(css.String())
-	case DeliverInline:
-		page.head = styleElement(r.globalCSS)
+	var css strings.Builder
+	css.WriteString(r.globalCSS)
+	for _, name := range rn.used {
+		css.WriteString(r.assets[name].css)
 	}
+	page.head = styleElement(css.String())
 	// Inside the Visual Editor the bridge already makes blocks clickable.
 	if r.devSpaceID != 0 && !page.Preview {
 		page.devToolbar = &DevToolbar{SpaceID: r.devSpaceID, StoryID: page.storyID}
@@ -286,7 +220,7 @@ func (r *Renderer) Block(w io.Writer, block Block) error {
 // Fragment renders the part of a block that an enhanced request replaces:
 // the "<component>-fragment" template if the component defines one, else the
 // whole block. Fragments update components their page already rendered, so
-// unless CSS is inlined per instance, it is in place and not repeated.
+// their CSS is in place.
 func (r *Renderer) Fragment(w io.Writer, block Block) error {
 	name := block.Meta().Component + "-fragment"
 	if r.templates.Lookup(name) == nil {
@@ -359,22 +293,15 @@ func (rn *render) base(name string, data any) (template.HTML, error) {
 	return rn.component(name, name, data)
 }
 
-// component executes a template and adds the CSS and JS of the component it
-// belongs to as the delivery mode requires.
+// component executes a template and records the component whose styles the
+// page needs.
 func (rn *render) component(templateName, component string, data any) (template.HTML, error) {
-	var buf strings.Builder
 	if !slices.Contains(rn.used, component) {
 		rn.used = append(rn.used, component)
 	}
-	assets := rn.assets[component]
-	if rn.delivery == DeliverInline {
-		buf.WriteString(string(styleElement(assets.css)))
-	}
+	var buf strings.Builder
 	if err := rn.templates.ExecuteTemplate(&buf, templateName, data); err != nil {
 		return "", err
-	}
-	if rn.delivery == DeliverInline && assets.js != "" {
-		buf.WriteString("<script>" + assets.js + "</script>")
 	}
 	return template.HTML(buf.String()), nil
 }

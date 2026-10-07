@@ -10,9 +10,6 @@
   {{- with .Description}}
   <meta name="description" content="{{.}}">
   {{- end}}
-  {{- with .StylesheetURL}}
-  <link rel="stylesheet" href="{{.}}">
-  {{- end}}
   {{.Head}}
   <meta name="htmx-config" content='{"includeIndicatorCSS": false}'>
   <script src="{{.HTMXURL}}" defer></script>

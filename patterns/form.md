@@ -53,10 +53,9 @@ URL fragment, because browsers skip autofocus on URLs with one.
 ## Component JavaScript
 
 `base-form-field.js` (character count) shows the conventions for scripts that
-must survive repeated instances, htmx swaps, and every asset delivery mode:
+must survive repeated instances and htmx swaps. Scripts run once, from the
+bundle, in their own scope.
 
-- Guard registration with a global flag; inline delivery runs the script once
-  per instance.
 - Delegate events to `document`, so swapped-in fields work without setup.
 - Render state that is needed before the first interaction on load and on
   `htmx:after:swap`.
