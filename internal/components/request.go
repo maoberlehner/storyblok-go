@@ -3,6 +3,7 @@ package components
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"storyblok-go-website/internal/storyblok"
 )
@@ -23,13 +24,24 @@ type Request struct {
 	Enhanced bool
 }
 
-// TargetParam names the request parameter that holds the UID of the block an
-// enhanced request or a form submission is addressed to.
+// TargetParam names the request parameter that holds the short ID of the
+// block an enhanced request or a form submission is addressed to.
 const TargetParam = "_block"
+
+// shortIDLength keeps URLs readable. Block UIDs are random UUIDs, so their
+// first 8 hex digits collide on one page with negligible probability.
+const shortIDLength = 8
+
+// ShortID identifies a block within its page in URLs and element IDs.
+func ShortID(block Block) string {
+	id, _, _ := strings.Cut(block.Meta().UID, "-")
+	return id[:min(len(id), shortIDLength)]
+}
 
 // Targets reports whether the request is addressed to block.
 func (r Request) Targets(block Block) bool {
-	return block.Meta().UID != "" && r.Query.Get(TargetParam) == block.Meta().UID
+	id := ShortID(block)
+	return id != "" && r.Query.Get(TargetParam) == id
 }
 
 // StateQuery returns the query parameters that describe the page's state,
@@ -103,14 +115,14 @@ func LoadSections(ctx context.Context, content Content, page Block, req Request)
 	return nil
 }
 
-// FindSection returns the section of page with the given UID.
-func FindSection(page Block, uid string) (Block, bool) {
+// FindSection returns the section of page with the given short ID.
+func FindSection(page Block, id string) (Block, bool) {
 	p, ok := page.(sectioned)
-	if !ok || uid == "" {
+	if !ok || id == "" {
 		return nil, false
 	}
 	for _, section := range p.SectionBlocks() {
-		if section.Meta().UID == uid {
+		if ShortID(section) == id {
 			return section, true
 		}
 	}

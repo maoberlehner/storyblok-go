@@ -8,28 +8,28 @@ Appends the next page of a listing. Reference:
 A native GET form with one submit button and the state as hidden fields:
 
 ```html
-<div id="b-<uid>-more">
+<div id="b-<short id>-more">
   <p>Showing 6 of 22 articles</p>
   <form
     method="get"
     action="/landing/launch"
     hx-get="/landing/launch"
-    hx-vals='{"_block": "<uid>"}'
-    hx-target="#b-<uid>-list"
+    hx-vals='{"_block": "<short id>"}'
+    hx-target="#b-<short id>-list"
     hx-swap="beforeend"
     hx-disable="find button"
   >
     <!-- The state of the page's other blocks, e.g. another listing: -->
-    <input type="hidden" name="page-<other uid>" value="3" />
-    <input type="hidden" name="page-<uid>" value="2" />
+    <input type="hidden" name="page-<other short id>" value="3" />
+    <input type="hidden" name="page-<short id>" value="2" />
     <button type="submit">Load more articles</button>
   </form>
 </div>
 ```
 
-`page-<uid>` is the number of pages the listing shows, not an offset, so the URL
-describes the whole state. The UID makes it unique per listing; the block
-declares it with `StateParams()`.
+`page-<short id>` is the number of pages the listing shows, not an offset, so
+the URL describes the whole state. The short ID (first 8 hex digits of the block
+UID) makes it unique per listing; the block declares it with `StateParams()`.
 
 ## Without JavaScript
 

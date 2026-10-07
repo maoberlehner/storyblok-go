@@ -294,6 +294,7 @@ func (rn *render) funcs() template.FuncMap {
 		"base":      rn.base,
 		"editable":  rn.editableAttrs,
 		"id":        ElementID,
+		"shortID":   ShortID,
 		"join":      strings.Join,
 		"contains":  slices.Contains[[]string],
 	}
@@ -357,9 +358,9 @@ func styleElement(css string) template.HTML {
 	return template.HTML("<style>" + css + "</style>")
 }
 
-// ElementID derives a document-unique ID from a block's UID. UIDs can start
-// with a digit, which CSS ID selectors don't allow.
-func ElementID(block Block) string { return "b-" + block.Meta().UID }
+// ElementID derives a document-unique ID from a block's short ID, which can
+// start with a digit, which CSS ID selectors don't allow.
+func ElementID(block Block) string { return "b-" + ShortID(block) }
 
 // editableAttrs returns the attributes the Visual Editor uses to make a blok
 // clickable. Published content has no editable marker, so this is empty
