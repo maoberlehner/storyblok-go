@@ -23,6 +23,12 @@ to open it in Storyblok).
 For live preview, set `https://localhost:8080/` as the preview URL in your space
 settings.
 
+`SITE_URL` is the public origin (e.g. `https://www.example.com`). Pages link it
+as their canonical URL without query parameters, which only hold view state such
+as loaded "load more" pages. `/sitemap.xml` lists every published story with a
+page component, and `/robots.txt` points to it. Previews are marked `noindex`.
+`make run` and `make up` default `SITE_URL` to their local origins.
+
 Component CSS is inlined in `<head>`, once per used component, and component
 scripts are bundled into one `app.js` (see AGENTS.md). htmx is self-hosted under
 `/assets/vendor/`.

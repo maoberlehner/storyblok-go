@@ -59,6 +59,13 @@ forms on the page, such as the contact form, also carry the query over
 - Responses vary by `HX-Request`; the proxy includes it in its cache key, so
   fragments are cached like pages.
 
+## Search engines
+
+Crawlers don't submit forms, so they only find items beyond the first page
+through `/sitemap.xml`. Pages with state parameters link the clean URL as
+canonical: they repeat the first page with more items and are not separate
+content.
+
 ## Adapting
 
 1. Declare the state parameters with `StateParams()` and read them in `Load`;
