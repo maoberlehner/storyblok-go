@@ -10,8 +10,8 @@
   {{- end}}
   {{- /* People never see or reach the trap; bots that fill in every field do. */}}
   <div class="base-form__trap" aria-hidden="true">
-    <label for="{{.ID}}-website">{{t "form.trap_label"}}</label>
-    <input id="{{.ID}}-website" type="text" name="website" tabindex="-1" autocomplete="off">
+    <label for="{{.ID}}-trap">{{t "form.trap_label"}}</label>
+    <input id="{{.ID}}-trap" type="text" name="hp_leave_empty" tabindex="-1" autocomplete="off">
   </div>
   <input type="hidden" name="form_started" value="{{.Guard.Token}}">
   {{- range .Guard.Attribution}}

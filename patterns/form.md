@@ -63,13 +63,16 @@ bundle, in their own scope.
 
 ## Spam protection and attribution
 
-Every `BaseForm` renders a honeypot input (`website`, hidden from people and
-assistive technology), a signed `form_started` token, and hidden attribution
-fields (UTM parameters, external referrer, landing page). The server checks
-submissions before calling `Submit`:
+Every `BaseForm` renders a honeypot input (`hp_leave_empty`, a name autofill
+ignores, hidden from people and assistive technology), a signed `form_started`
+token, and hidden attribution fields (UTM parameters, external referrer, landing
+page). The server checks submissions before calling `Submit`:
 
-- A filled honeypot or an invalid token drops the submission but answers like a
-  success (`Confirm`), so bots learn nothing.
+- A filled honeypot drops the submission but answers like a success (`Confirm`),
+  so bots learn nothing.
+- A missing or invalid token (e.g. after changing `FORM_SECRET` while pages with
+  old tokens are cached) shows the form again with a form-level error and a
+  fresh token (`Reject`), so people never lose a message silently.
 - A submission sent within 3 seconds of rendering shows the form again with a
   form-level error and the entered values (`Reject`); people with autofill can
   simply send again.
