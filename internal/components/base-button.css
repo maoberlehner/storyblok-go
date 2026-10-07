@@ -17,3 +17,13 @@
 .base-button:hover {
   background: var(--color-accent-hover);
 }
+
+.base-button--secondary {
+  border-color: var(--color-accent);
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.base-button--secondary:hover {
+  background: color-mix(in srgb, var(--color-accent), transparent 90%);
+}

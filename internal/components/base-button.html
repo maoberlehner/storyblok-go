@@ -1,3 +1,3 @@
 {{define "base-button" -}}
-<a class="base-button" href="{{.Href}}">{{.Label}}</a>
+<a class="base-button{{if eq .Variant "secondary"}} base-button--secondary{{end}}" href="{{.Href}}">{{.Label}}</a>
 {{- end}}

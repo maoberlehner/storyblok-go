@@ -270,6 +270,7 @@ func (rn *render) funcs() template.FuncMap {
 	return template.FuncMap{
 		"render":    rn.block,
 		"renderAll": rn.blocks,
+		"markdown":  renderMarkdown,
 		"section": func(block Block) string {
 			rn.markUsed("base-section")
 			return sectionClass(block)

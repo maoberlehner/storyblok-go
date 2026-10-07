@@ -1,0 +1,30 @@
+.block-content-text {
+  max-inline-size: 65ch;
+}
+
+.block-content-text > :first-child {
+  margin-block-start: 0;
+}
+
+.block-content-text > :last-child {
+  margin-block-end: 0;
+}
+
+.block-content-text :is(h2, h3, h4) {
+  margin-block: 1.5em 0.5em;
+  line-height: 1.2;
+}
+
+.block-content-text :is(p, ul, ol, table) {
+  margin-block: 0 1em;
+}
+
+.block-content-text table {
+  border-collapse: collapse;
+}
+
+.block-content-text :is(th, td) {
+  padding: 0.25rem 0.75rem;
+  border: 0.0625rem solid var(--color-border);
+  text-align: start;
+}

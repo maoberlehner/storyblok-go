@@ -4,4 +4,7 @@ package components
 type BaseButton struct {
 	Href  string
 	Label string
+	// Variant is "secondary" for a less prominent button; anything else is
+	// primary.
+	Variant string
 }

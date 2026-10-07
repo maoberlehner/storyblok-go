@@ -1,0 +1,17 @@
+.block-content-headline {
+  margin: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+h2.block-content-headline {
+  font-size: 1.75rem;
+}
+
+h3.block-content-headline {
+  font-size: 1.375rem;
+}
+
+h4.block-content-headline {
+  font-size: 1.125rem;
+}

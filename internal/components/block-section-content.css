@@ -1,0 +1,28 @@
+.block-section-content {
+  container-type: inline-size;
+  padding-block: 2rem;
+}
+
+.block-section-content__layout {
+  display: grid;
+  gap: 2rem;
+}
+
+.block-section-content__content {
+  display: grid;
+  gap: 1rem;
+  align-content: center;
+  justify-items: start;
+}
+
+@container (inline-size >= 48rem) {
+  .block-section-content__layout--media {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+
+  /* Visual order only: content stays first for screen readers and keyboards. */
+  .block-section-content__layout--media-start .block-section-content__media {
+    order: -1;
+  }
+}

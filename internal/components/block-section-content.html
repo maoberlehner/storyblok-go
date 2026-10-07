@@ -1,0 +1,10 @@
+{{define "block-section-content" -}}
+<section {{editable .}} class="{{section .}}">
+  <div class="block-section-content__layout{{if .Media}} block-section-content__layout--media{{if .MediaFirst}} block-section-content__layout--media-start{{end}}{{end}}">
+    <div class="block-section-content__content">{{renderAll .Content}}</div>
+    {{- with .Media}}
+    <div class="block-section-content__media">{{renderAll .}}</div>
+    {{- end}}
+  </div>
+</section>
+{{- end}}

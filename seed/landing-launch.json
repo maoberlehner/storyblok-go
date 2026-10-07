@@ -64,6 +64,49 @@
         ]
       },
       {
+        "component": "block-section-content",
+        "_uid": "8e2a5c3d-1f6b-4b8c-9d4e-9e3f4a5b6c73",
+        "background": "muted",
+        "media_position": "start",
+        "media": [
+          {
+            "component": "block-media-image",
+            "_uid": "9f3b6d4e-2a7c-4c9d-8e5f-af4a5b6c7d84",
+            "image": {
+              "seed_image": "team",
+              "alt": "Abstract red gradient"
+            },
+            "aspect_ratio": "1:1",
+            "caption": "Placeholder image"
+          }
+        ],
+        "content": [
+          {
+            "component": "block-content-headline",
+            "_uid": "a04c7e5f-3b8d-4dae-9f60-b05b6c7d8e95",
+            "text": "Built for teams that publish every day",
+            "level": "h2"
+          },
+          {
+            "component": "block-content-text",
+            "_uid": "b15d8f60-4c9e-4ebf-8071-c16c7d8e9fa6",
+            "text": "Editors work in **sections** they understand. Developers keep control of:\n\n- markup and accessibility\n- performance budgets\n- the design system"
+          },
+          {
+            "component": "block-content-cta",
+            "_uid": "c26e9071-5daf-4fc0-9182-d27d8e9fa0b7",
+            "label": "Talk to us",
+            "variant": "secondary",
+            "link": {
+              "linktype": "story",
+              "cached_url": "landing/partners",
+              "url": "",
+              "fieldtype": "multilink"
+            }
+          }
+        ]
+      },
+      {
         "component": "block-section-features",
         "_uid": "7d714cd5-6db7-448d-a357-34975a8a0331",
         "heading": "Everything a content team needs",

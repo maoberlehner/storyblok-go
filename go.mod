@@ -5,6 +5,7 @@ go 1.27
 require (
 	github.com/failsafe-go/failsafe-go v0.9.8
 	github.com/prometheus/client_golang v1.24.1
+	github.com/yuin/goldmark v1.8.6
 	golang.org/x/time v0.16.0
 )
 
