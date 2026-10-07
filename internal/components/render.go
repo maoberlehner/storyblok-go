@@ -361,6 +361,7 @@ func (rn *render) funcs() template.FuncMap {
 		"renderAll": rn.blocks,
 		"markdown":  renderMarkdown,
 		"t":         func(key string, args ...any) string { return rn.locale.T(key, args...) },
+		"number":    func(n int) string { return rn.locale.FormatNumber(n) },
 		"section": func(block Block) string {
 			rn.markUsed("base-section")
 			return sectionClass(block)

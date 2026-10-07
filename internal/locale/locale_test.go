@@ -22,7 +22,7 @@ func TestMessages(t *testing.T) {
 	if got := locale.German.T("contact.submit"); got != "Nachricht senden" {
 		t.Errorf("German submit = %q", got)
 	}
-	if got := locale.English.T("articles.count", 6, 14); got != "Showing 6 of 14 articles" {
+	if got := locale.English.T("articles.count", "6", "14"); got != "Showing 6 of 14 articles" {
 		t.Errorf("English count = %q", got)
 	}
 	if got := locale.German.T("no.such.key"); got != "no.such.key" {

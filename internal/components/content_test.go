@@ -1,8 +1,14 @@
 package components
 
 import (
+	"bytes"
+	"context"
+	"encoding/json/v2"
 	"strings"
 	"testing"
+
+	"storyblok-go-website/internal/locale"
+	"storyblok-go-website/internal/storyblok"
 )
 
 func contentSection(blocks string) string {
@@ -75,5 +81,35 @@ func TestContentSectionLayout(t *testing.T) {
 	}
 	if strings.Contains(out, `fetchpriority="high"`) {
 		t.Error("image outside the first section is prioritized")
+	}
+}
+
+type manyArticles struct{}
+
+func (manyArticles) Stories(context.Context, storyblok.StoriesOptions) (storyblok.StoryList, error) {
+	return storyblok.StoryList{Stories: []byte(`[{"full_slug":"articles/a","content":{"title":"A"}}]`), Total: 1500}, nil
+}
+
+func TestArticleCountUsesTheLocalesNumberFormat(t *testing.T) {
+	var story storyblok.Story[AnyBlock]
+	if err := json.Unmarshal([]byte(`{"name":"P","content":{"component":"page-landing-page","title":"T","description":"D",
+		"sections":[{"component":"block-section-articles","_uid":"a1","heading":"H","folder":"articles"}]}}`), &story); err != nil {
+		t.Fatal(err)
+	}
+	if err := LoadSections(t.Context(), manyArticles{}, story.Content.Block, Request{Locale: locale.German}); err != nil {
+		t.Fatal(err)
+	}
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := NewPage(story)
+	page.Locale = locale.German
+	var out bytes.Buffer
+	if err := r.Page(&out, page); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "6 von 1.500 Artikeln") {
+		t.Error("count not formatted for German")
 	}
 }

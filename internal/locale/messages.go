@@ -46,7 +46,7 @@ var english = map[string]string{
 	"contact.error.consent":         "Agree to the privacy policy to send your message",
 
 	"articles.load_more": "Load more articles",
-	"articles.count":     "Showing %d of %d articles",
+	"articles.count":     "Showing %s of %s articles",
 	"articles.empty":     "No articles yet.",
 }
 
@@ -96,6 +96,6 @@ var german = map[string]string{
 	"contact.error.consent":         "Stimmen Sie der Datenschutzerklärung zu, um Ihre Nachricht zu senden",
 
 	"articles.load_more": "Weitere Artikel laden",
-	"articles.count":     "%d von %d Artikeln",
+	"articles.count":     "%s von %s Artikeln",
 	"articles.empty":     "Noch keine Artikel.",
 }

@@ -23,7 +23,7 @@ articles. The first new one takes focus, which also scrolls it into view. A
 URL fragment would keep browsers from applying autofocus. */}}
 {{define "block-section-articles-more" -}}
 <div class="block-section-articles__more" id="{{id .}}-more">
-  <p class="block-section-articles__count">{{t "articles.count" .Listing.Shown .Listing.Total}}</p>
+  <p class="block-section-articles__count">{{t "articles.count" (number .Listing.Shown) (number .Listing.Total)}}</p>
   {{- if .Listing.HasMore}}
   <form method="get" action="{{.Listing.Path}}"
     hx-get="{{.Listing.Path}}" hx-vals='{"_block": "{{shortID .}}"}' hx-target="#{{id .}}-list" hx-swap="beforeend" hx-disable="find button">
