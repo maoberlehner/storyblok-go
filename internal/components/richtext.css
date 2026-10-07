@@ -7,10 +7,22 @@
   word-break: normal;
 }
 
-:where(h1) { font-size: var(--h1-font-size); line-height: var(--h1-line-height); }
-:where(h2) { font-size: var(--h2-font-size); line-height: var(--h2-line-height); }
-:where(h3) { font-size: var(--h3-font-size); line-height: var(--h3-line-height); }
-:where(h4) { font-size: var(--h4-font-size); line-height: var(--h4-line-height); }
+:where(h1) {
+  font-size: var(--h1-font-size);
+  line-height: var(--h1-line-height);
+}
+:where(h2) {
+  font-size: var(--h2-font-size);
+  line-height: var(--h2-line-height);
+}
+:where(h3) {
+  font-size: var(--h3-font-size);
+  line-height: var(--h3-line-height);
+}
+:where(h4) {
+  font-size: var(--h4-font-size);
+  line-height: var(--h4-line-height);
+}
 
 /* Wrapper for rendered richtext fields. */
 .richtext > :first-child {
@@ -50,7 +62,7 @@
 }
 
 .richtext sup {
-  font-size: clamp(var(--font-size-xs), .3em, .3em);
+  font-size: clamp(var(--font-size-xs), 0.3em, 0.3em);
   vertical-align: super;
 }
 
@@ -63,23 +75,53 @@
 }
 
 /* Emphasis styles editors apply to parts of headlines. */
-.heading-emphasis-solid-blue { color: var(--blue-800); }
-.heading-emphasis-solid-green { color: var(--green-800); }
-.heading-emphasis-solid-orange { color: var(--orange-800); }
-.heading-emphasis-solid-purple { color: var(--purple-800); }
-.heading-emphasis-solid-red { color: var(--red-800); }
-.heading-emphasis-solid-yellow { color: var(--yellow-800); }
+.heading-emphasis-solid-blue {
+  color: var(--blue-800);
+}
+.heading-emphasis-solid-green {
+  color: var(--green-800);
+}
+.heading-emphasis-solid-orange {
+  color: var(--orange-800);
+}
+.heading-emphasis-solid-purple {
+  color: var(--purple-800);
+}
+.heading-emphasis-solid-red {
+  color: var(--red-800);
+}
+.heading-emphasis-solid-yellow {
+  color: var(--yellow-800);
+}
 
-:is(.heading-emphasis-gradient-blue, .heading-emphasis-gradient-green, .heading-emphasis-gradient-orange,
-  .heading-emphasis-gradient-purple, .heading-emphasis-gradient-red, .heading-emphasis-gradient-yellow) {
+:is(
+  .heading-emphasis-gradient-blue,
+  .heading-emphasis-gradient-green,
+  .heading-emphasis-gradient-orange,
+  .heading-emphasis-gradient-purple,
+  .heading-emphasis-gradient-red,
+  .heading-emphasis-gradient-yellow
+) {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.heading-emphasis-gradient-blue { background-image: var(--blue-text-gradient); }
-.heading-emphasis-gradient-green { background-image: var(--green-text-gradient); }
-.heading-emphasis-gradient-orange { background-image: var(--orange-text-gradient); }
-.heading-emphasis-gradient-purple { background-image: var(--purple-text-gradient); }
-.heading-emphasis-gradient-red { background-image: var(--red-text-gradient); }
-.heading-emphasis-gradient-yellow { background-image: var(--yellow-text-gradient); }
+.heading-emphasis-gradient-blue {
+  background-image: var(--blue-text-gradient);
+}
+.heading-emphasis-gradient-green {
+  background-image: var(--green-text-gradient);
+}
+.heading-emphasis-gradient-orange {
+  background-image: var(--orange-text-gradient);
+}
+.heading-emphasis-gradient-purple {
+  background-image: var(--purple-text-gradient);
+}
+.heading-emphasis-gradient-red {
+  background-image: var(--red-text-gradient);
+}
+.heading-emphasis-gradient-yellow {
+  background-image: var(--yellow-text-gradient);
+}

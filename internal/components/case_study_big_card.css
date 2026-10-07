@@ -111,8 +111,13 @@
   --decoration-top-offset: 20px;
   --decoration-right-offset: 15px;
   --decoration-width: 44px;
-  --decoration-container-min-width: calc(var(--decoration-right-offset) + var(--card-container-padding));
-  --decoration-container-width: calc(var(--decoration-container-min-width) + (100% - var(--default-container-max-width)) / 2);
+  --decoration-container-min-width: calc(
+    var(--decoration-right-offset) + var(--card-container-padding)
+  );
+  --decoration-container-width: calc(
+    var(--decoration-container-min-width) +
+      (100% - var(--default-container-max-width)) / 2
+  );
   position: absolute;
   top: calc(var(--decoration-top-offset) * -1);
   right: 0;

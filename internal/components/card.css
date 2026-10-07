@@ -95,7 +95,8 @@
 }
 
 .card--text-only.card--linked {
-  padding: calc(var(--spacing-2xl) + var(--button-height-lg)) var(--spacing-2xl) var(--spacing-2xl);
+  padding: calc(var(--spacing-2xl) + var(--button-height-lg)) var(--spacing-2xl)
+    var(--spacing-2xl);
 }
 
 .card--text-only .card__title {

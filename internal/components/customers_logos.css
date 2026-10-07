@@ -17,7 +17,13 @@
 
 .customers-logos__marquee {
   margin-block: calc(var(--outline-width) * -2);
-  mask-image: linear-gradient(to right, rgb(from var(--black) r g b / 0) 0, var(--black) 30%, var(--black) 70%, rgb(from var(--black) r g b / 0) 100%);
+  mask-image: linear-gradient(
+    to right,
+    rgb(from var(--black) r g b / 0) 0,
+    var(--black) 30%,
+    var(--black) 70%,
+    rgb(from var(--black) r g b / 0) 100%
+  );
   overflow: hidden;
   padding-block: calc(var(--outline-width) * 2);
   position: relative;
@@ -32,7 +38,8 @@
   width: max-content;
 }
 
-:is(.customers-logos__marquee:hover, .customers-logos__marquee:focus-within) .customers-logos__track {
+:is(.customers-logos__marquee:hover, .customers-logos__marquee:focus-within)
+  .customers-logos__track {
   animation-play-state: paused;
 }
 
@@ -65,11 +72,12 @@
   margin: var(--spacing-xl) var(--spacing-2xl);
   max-height: 35px;
   max-width: 190px;
-  transition: translate .2s;
+  transition: translate 0.2s;
   width: auto;
 }
 
-:is(.customers-logos__item a:hover, .customers-logos__item a:focus-visible) img {
+:is(.customers-logos__item a:hover, .customers-logos__item a:focus-visible)
+  img {
   translate: 0 -5px;
 }
 

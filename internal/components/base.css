@@ -1,11 +1,21 @@
-*,:after,:before {
+*,
+:after,
+:before {
   box-sizing: border-box;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
   tab-size: 4;
-  font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
+  font-family:
+    system-ui,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif,
+    Apple Color Emoji,
+    Segoe UI Emoji;
   line-height: 1.15;
 }
 
@@ -13,7 +23,11 @@ body {
   margin: 0;
 }
 
-button,input,optgroup,select,textarea {
+button,
+input,
+optgroup,
+select,
+textarea {
   margin: 0;
   font-family: inherit;
   font-size: 100%;
@@ -115,14 +129,47 @@ summary {
   --green-800: #396c08;
   --green-900: #325b0c;
   --green-950: #163300;
-  --blue-text-gradient: linear-gradient(90deg,var(--blue-800) 0%,var(--blue-400) 33%);
-  --green-text-gradient: linear-gradient(90deg,var(--green-800) 0%,var(--green-500) 33%);
-  --yellow-text-gradient: linear-gradient(90deg,var(--yellow-800) 0%,var(--yellow-600) 33%);
-  --orange-text-gradient: linear-gradient(90deg,var(--orange-800) 0%,var(--orange-500) 33%);
-  --red-text-gradient: linear-gradient(90deg,var(--red-800) 0%,var(--red-500) 33%);
-  --purple-text-gradient: linear-gradient(90deg,var(--purple-800) 0%,var(--purple-400) 33%);
-  --pastel-blue-yellow-gradient: linear-gradient(-180deg,var(--blue-100) 0%,var(--yellow-50) 100%);
-  --joyconf-gradient: linear-gradient(135deg,var(--blue-100) 10%,var(--purple-200) 25%,var(--orange-300) 60%);
+  --blue-text-gradient: linear-gradient(
+    90deg,
+    var(--blue-800) 0%,
+    var(--blue-400) 33%
+  );
+  --green-text-gradient: linear-gradient(
+    90deg,
+    var(--green-800) 0%,
+    var(--green-500) 33%
+  );
+  --yellow-text-gradient: linear-gradient(
+    90deg,
+    var(--yellow-800) 0%,
+    var(--yellow-600) 33%
+  );
+  --orange-text-gradient: linear-gradient(
+    90deg,
+    var(--orange-800) 0%,
+    var(--orange-500) 33%
+  );
+  --red-text-gradient: linear-gradient(
+    90deg,
+    var(--red-800) 0%,
+    var(--red-500) 33%
+  );
+  --purple-text-gradient: linear-gradient(
+    90deg,
+    var(--purple-800) 0%,
+    var(--purple-400) 33%
+  );
+  --pastel-blue-yellow-gradient: linear-gradient(
+    -180deg,
+    var(--blue-100) 0%,
+    var(--yellow-50) 100%
+  );
+  --joyconf-gradient: linear-gradient(
+    135deg,
+    var(--blue-100) 10%,
+    var(--purple-200) 25%,
+    var(--orange-300) 60%
+  );
   --ink-200: #d1d3d9;
   --ink-400: #a4a7b2;
   --ink-600: #767c8c;
@@ -167,12 +214,12 @@ summary {
   --quote-text-color: var(--grayscale-700);
   --quote-background-color: var(--grayscale-50);
   --default-font-size: 16px;
-  --font-family-primary: "Marfa","ABC Marfa Fallback",sans-serif;
+  --font-family-primary: "Marfa", "ABC Marfa Fallback", sans-serif;
   --font-family-monospace: monospace;
-  --font-family-decorative-handwriting: "Caveat",serif;
-  --font-size-xs: .75rem;
+  --font-family-decorative-handwriting: "Caveat", serif;
+  --font-size-xs: 0.75rem;
   --line-height-xs: 1rem;
-  --font-size-sm: .875rem;
+  --font-size-sm: 0.875rem;
   --line-height-sm: 1.25rem;
   --font-size-base: 1rem;
   --line-height-base: 1.5rem;
@@ -223,16 +270,20 @@ summary {
   --sticky-preview-warning-height: 52px;
   --sticky-base-offset: var(--sticky-nav-height);
   --default-container-padding-inline: var(--spacing-2xl);
-  --default-container-max-width: calc(var(--breakpoint-xl) + var(--default-container-padding-inline)*2);
+  --default-container-max-width: calc(
+    var(--breakpoint-xl) + var(--default-container-padding-inline)*2
+  );
   --small-container-max-width: 731px;
   --default-icon-size: var(--spacing-2xl);
-  --boxes-slider-interface-padding-inline: var(--default-container-padding-inline);
+  --boxes-slider-interface-padding-inline: var(
+    --default-container-padding-inline
+  );
   --boxes-slider-box-image-height: 320px;
   --boxes-slider-box-image-height-small: 180px;
   --boxes-slider-box-image-height-portrait: 500px;
   --heading-margin-block-start-em: 1.25;
-  --heading-margin-block-end-em: .4;
-  --paragraph-margin-block-em: .75;
+  --heading-margin-block-end-em: 0.4;
+  --paragraph-margin-block-em: 0.75;
   --button-height-tag: 26px;
   --button-height-sm: 34px;
   --button-height-base: 42px;
@@ -276,7 +327,7 @@ summary {
   --z-index-cookie-notice: 10000000;
 }
 
-@media (width>=768px) {
+@media (width >= 768px) {
   :root {
     --h1-font-size: var(--font-size-5xl);
     --h1-line-height: var(--line-height-5xl);
@@ -287,7 +338,7 @@ summary {
   }
 }
 
-@media (width>=1280px) {
+@media (width >= 1280px) {
   :root {
     --h1-font-size: var(--font-size-6xl);
     --h1-line-height: var(--line-height-6xl);
@@ -300,7 +351,7 @@ summary {
   font-family: ABC Marfa Fallback;
   line-gap-override: 0%;
   size-adjust: 107.223%;
-  src: local(Arial),local(ArialMT);
+  src: local(Arial), local(ArialMT);
 }
 
 @font-face {
@@ -310,7 +361,7 @@ summary {
   font-weight: 500;
   line-gap-override: 0%;
   size-adjust: 108.793%;
-  src: local(Arial),local(ArialMT);
+  src: local(Arial), local(ArialMT);
 }
 
 @font-face {
@@ -320,7 +371,7 @@ summary {
   font-weight: 700;
   line-gap-override: 0%;
   size-adjust: 103.963%;
-  src: local(Arial Bold),local(Arial-BoldMT);
+  src: local(Arial Bold), local(Arial-BoldMT);
 }
 
 @font-face {
@@ -330,7 +381,7 @@ summary {
   font-weight: 900;
   line-gap-override: 0%;
   size-adjust: 104.171%;
-  src: local(Arial Bold),local(Arial-BoldMT);
+  src: local(Arial Bold), local(Arial-BoldMT);
 }
 
 @font-face {
@@ -338,7 +389,7 @@ summary {
   font-family: Marfa;
   font-style: normal;
   font-weight: 900;
-  src: url(/assets/fonts/ABCMarfa-Black.woff2)format("woff2");
+  src: url(/assets/fonts/ABCMarfa-Black.woff2) format("woff2");
 }
 
 @font-face {
@@ -346,7 +397,7 @@ summary {
   font-family: Marfa;
   font-style: normal;
   font-weight: 700;
-  src: url(/assets/fonts/ABCMarfa-Bold.woff2)format("woff2");
+  src: url(/assets/fonts/ABCMarfa-Bold.woff2) format("woff2");
 }
 
 @font-face {
@@ -354,7 +405,7 @@ summary {
   font-family: Marfa;
   font-style: normal;
   font-weight: 500;
-  src: url(/assets/fonts/ABCMarfa-Medium.woff2)format("woff2");
+  src: url(/assets/fonts/ABCMarfa-Medium.woff2) format("woff2");
 }
 
 @font-face {
@@ -362,7 +413,7 @@ summary {
   font-family: Marfa;
   font-style: normal;
   font-weight: 400;
-  src: url(/assets/fonts/ABCMarfa-Regular.woff2)format("woff2");
+  src: url(/assets/fonts/ABCMarfa-Regular.woff2) format("woff2");
 }
 
 html {
@@ -372,7 +423,8 @@ html {
   scroll-padding-block-start: var(--sticky-base-offset);
 }
 
-html:has([data-modal-open=true]),html:has(dialog.modal[open]) {
+html:has([data-modal-open="true"]),
+html:has(dialog.modal[open]) {
   overflow: hidden;
 }
 
@@ -411,14 +463,19 @@ button {
   outline: var(--outline-width) solid var(--outline-color);
 }
 
-h1,h2,h3,h4,h5,h6 {
-  margin-block: calc(var(--heading-margin-block-start-em)*1em) calc(var(--heading-margin-block-end-em)*1em);
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-block: calc(var(--heading-margin-block-start-em)*1em)
+    calc(var(--heading-margin-block-end-em)*1em);
 }
 
 p {
   margin-block: calc(var(--paragraph-margin-block-em)*1em);
 }
-
 
 /* Hidden visually but readable by screen readers; focusable elements reappear on focus. */
 .visually-hidden:not(:focus, :active) {

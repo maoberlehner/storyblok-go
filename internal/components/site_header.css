@@ -17,7 +17,13 @@
 }
 
 .global-announcement {
-  background: linear-gradient(90deg, var(--blue-100) 0, var(--purple-100) 50%, var(--green-100) 75%, var(--orange-100) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--blue-100) 0,
+    var(--purple-100) 50%,
+    var(--green-100) 75%,
+    var(--orange-100) 100%
+  );
   background-color: var(--orange-200);
 }
 
@@ -106,7 +112,7 @@
   font-size: var(--font-size-lg);
   justify-content: center;
   min-height: var(--button-height-lg);
-  transition: color .2s;
+  transition: color 0.2s;
 }
 
 .site-header__icon-button:hover {
@@ -119,7 +125,7 @@
 }
 
 .site-header__open {
-  margin-inline-end: calc(var(--button-height-lg) * -.5 + .5em);
+  margin-inline-end: calc(var(--button-height-lg) * -0.5 + 0.5em);
 }
 
 .site-header__search {
@@ -146,14 +152,14 @@
 .site-nav__link {
   align-items: center;
   color: var(--text-color);
-  column-gap: .25em;
+  column-gap: 0.25em;
   display: flex;
   font-size: var(--font-size-sm);
   font-weight: 500;
   line-height: var(--line-height-xs);
   padding: 30px 0;
   text-decoration: none;
-  transition: color .2s;
+  transition: color 0.2s;
 }
 
 .site-nav__link:hover,
@@ -199,10 +205,12 @@
   justify-content: center;
   line-height: var(--button-line-height);
   min-height: var(--button-height);
-  padding-block: calc(var(--button-height) / 2 - var(--button-line-height) / 2 - 2px);
+  padding-block: calc(
+    var(--button-height) / 2 - var(--button-line-height) / 2 - 2px
+  );
   padding-inline: 10px;
   text-decoration: none;
-  transition: all .2s;
+  transition: all 0.2s;
 }
 
 .site-header__button:hover {
@@ -264,7 +272,7 @@
   gap: var(--spacing-md);
   padding: var(--spacing-lg) var(--spacing-md);
   text-decoration: none;
-  transition: all .2s linear;
+  transition: all 0.2s linear;
 }
 
 .site-subnav__category-link {
@@ -412,7 +420,7 @@
     overflow: hidden;
     padding: 15px;
     position: absolute;
-    transition: all .2s linear;
+    transition: all 0.2s linear;
     visibility: hidden;
     z-index: var(--z-index-header-dropdown);
   }

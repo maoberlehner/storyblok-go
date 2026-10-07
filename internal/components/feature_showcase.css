@@ -91,7 +91,9 @@
   --decoration-top-offset: 20px;
   --decoration-right-offset: 15px;
   --decoration-width: 44px;
-  --decoration-container-min-width: calc(var(--decoration-right-offset) + var(--card-container-padding));
+  --decoration-container-min-width: calc(
+    var(--decoration-right-offset) + var(--card-container-padding)
+  );
   align-items: center;
   display: flex;
   min-height: var(--decoration-width);
@@ -100,7 +102,10 @@
   position: absolute;
   right: 0;
   top: calc(var(--decoration-top-offset) * -1);
-  width: calc(var(--decoration-container-min-width) + (100% - var(--default-container-max-width)) / 2);
+  width: calc(
+    var(--decoration-container-min-width) +
+      (100% - var(--default-container-max-width)) / 2
+  );
   z-index: -1;
 }
 

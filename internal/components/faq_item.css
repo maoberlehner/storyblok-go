@@ -16,7 +16,10 @@
   grid-column-gap: var(--spacing-lg);
   color: var(--text-color);
   font-size: var(--font-size-lg);
-  grid-template-columns: var(--enterprise-faqs-number-width, var(--spacing-2xl)) 1fr auto;
+  grid-template-columns: var(
+      --enterprise-faqs-number-width,
+      var(--spacing-2xl)
+    ) 1fr auto;
   line-height: var(--line-height-lg);
   padding: var(--enterprise-faqs-summary-padding, var(--spacing-2xl));
   align-items: baseline;
@@ -29,7 +32,9 @@
 }
 
 [open] > .faq-item__summary {
-  padding-block-end: calc(var(--enterprise-faqs-summary-padding, var(--spacing-2xl))/2);
+  padding-block-end: calc(
+    var(--enterprise-faqs-summary-padding, var(--spacing-2xl))/2
+  );
 }
 
 .faq-item__number {
@@ -38,13 +43,13 @@
   font-weight: 700;
   line-height: var(--line-height-sm);
   display: block;
-  transform: translateY(-.05em);
+  transform: translateY(-0.05em);
 }
 
 /* A plus sign that turns into a minus when the answer is open. */
 .faq-item__indicator {
-  width: .75em;
-  height: .75em;
+  width: 0.75em;
+  height: 0.75em;
   display: block;
   position: relative;
 }
@@ -74,7 +79,12 @@
 .faq-item__answer {
   color: var(--text-color-alt);
   padding-block-end: var(--enterprise-faqs-summary-padding, var(--spacing-2xl));
-  padding-inline: calc(var(--enterprise-faqs-summary-padding, var(--spacing-2xl)) + var(--enterprise-faqs-number-width, var(--spacing-2xl)) + var(--enterprise-faqs-summary-grid-gap, var(--spacing-lg))) var(--enterprise-faqs-summary-padding, var(--spacing-2xl));
+  padding-inline: calc(
+      var(--enterprise-faqs-summary-padding, var(--spacing-2xl)) +
+        var(--enterprise-faqs-number-width, var(--spacing-2xl)) +
+        var(--enterprise-faqs-summary-grid-gap, var(--spacing-lg))
+    )
+    var(--enterprise-faqs-summary-padding, var(--spacing-2xl));
   display: block;
 }
 

@@ -27,7 +27,7 @@
   position: relative;
 }
 
-.enterprise-video__body :is(iframe,video) {
+.enterprise-video__body :is(iframe, video) {
   border: 0;
   display: block;
   height: 100%;
