@@ -22,6 +22,9 @@ type fakeSpace struct {
 	assets    map[string]map[string]any
 	uploads   int
 	languages []any
+	// publishedLanguages records stories published per language, as
+	// "<full slug>:<lang>".
+	publishedLanguages map[string]bool
 }
 
 func (f *fakeSpace) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +41,17 @@ func (f *fakeSpace) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.languages = body.Space.Languages
 			f.writes = append(f.writes, "PUT space")
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"space": map[string]any{"languages": f.languages}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"space": map[string]any{"languages": f.languages, "use_translated_stories": true}})
+		return
+	}
+	if strings.HasSuffix(r.URL.Path, "/publish") {
+		id, _ := strconv.ParseFloat(path.Base(path.Dir(r.URL.Path)), 64)
+		for slug, story := range f.stories {
+			if story["id"] == id {
+				f.publishedLanguages[slug+":"+r.URL.Query().Get("lang")] = true
+			}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"story": map[string]any{"id": id}})
 		return
 	}
 	if strings.Contains(r.URL.Path, "/assets") || r.URL.Path == "/upload" {
@@ -127,7 +140,7 @@ func seedImagesUsed(t *testing.T) map[string]bool {
 
 func TestSeedingTwiceUpdatesTheSameStories(t *testing.T) {
 	space := &fakeSpace{stories: map[string]map[string]any{}, assets: map[string]map[string]any{},
-		languages: []any{map[string]any{"code": "fr", "name": "French"}}}
+		languages: []any{map[string]any{"code": "fr", "name": "French"}}, publishedLanguages: map[string]bool{}}
 	api := httptest.NewServer(space)
 	defer api.Close()
 	env := func(key string) string {
@@ -160,6 +173,14 @@ func TestSeedingTwiceUpdatesTheSameStories(t *testing.T) {
 	}
 	if partner, original := space.stories["de/landing/partner"], space.stories["landing/partners"]; partner == nil || partner["group_id"] != original["group_id"] {
 		t.Errorf("folder-level translation is not an alternate: %v", partner)
+	}
+	for _, want := range []string{"landing/launch:de", "landing/launch:fr", "settings:de"} {
+		if !space.publishedLanguages[want] {
+			t.Errorf("%s was not published", want)
+		}
+	}
+	if space.publishedLanguages["de/aktion:de"] {
+		t.Error("folder-level story published as a field-level translation")
 	}
 	if len(space.stories) != created {
 		t.Errorf("second run changed the number of stories from %d to %d", created, len(space.stories))

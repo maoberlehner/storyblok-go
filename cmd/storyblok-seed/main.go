@@ -63,7 +63,8 @@ func run(ctx context.Context, args []string, env func(string) string, stdout io.
 	if err != nil {
 		return err
 	}
-	if err := ensureLanguage(ctx, client, "de", "German", stdout); err != nil {
+	settings, err := ensureLanguage(ctx, client, "de", "German", stdout)
+	if err != nil {
 		return err
 	}
 	// Articles go first, so the landing pages list them right away.
@@ -94,14 +95,18 @@ func run(ctx context.Context, args []string, env func(string) string, stdout io.
 			}
 			groupID = original.GroupID
 		}
-		if err := saveStory(ctx, client, mapi.Story{
+		saved, err := saveStory(ctx, client, mapi.Story{
 			Name:     story.Name,
 			Slug:     path.Base(story.FullSlug),
 			FullSlug: story.FullSlug,
 			ParentID: parentID,
 			Content:  content.(map[string]any),
 			GroupID:  groupID,
-		}, stdout); err != nil {
+		}, stdout)
+		if err != nil {
+			return err
+		}
+		if err := publishLanguages(ctx, client, settings, saved); err != nil {
 			return err
 		}
 	}
@@ -167,40 +172,63 @@ func ensureFolder(ctx context.Context, client *mapi.Client, known map[string]int
 	return folder.ID, nil
 }
 
-func saveStory(ctx context.Context, client *mapi.Client, story mapi.Story, stdout io.Writer) error {
+func saveStory(ctx context.Context, client *mapi.Client, story mapi.Story, stdout io.Writer) (mapi.Story, error) {
 	existing, err := client.FindStory(ctx, story.FullSlug)
 	if err != nil {
-		return err
+		return mapi.Story{}, err
 	}
 	action := "created"
 	if existing != nil {
 		if existing.IsFolder {
-			return errors.New(story.FullSlug + " is a folder, not a story")
+			return mapi.Story{}, errors.New(story.FullSlug + " is a folder, not a story")
 		}
 		story.ID, action = existing.ID, "updated"
 	}
-	if _, err := client.SaveStory(ctx, story); err != nil {
-		return fmt.Errorf("saving %s: %w", story.FullSlug, err)
+	saved, err := client.SaveStory(ctx, story)
+	if err != nil {
+		return mapi.Story{}, fmt.Errorf("saving %s: %w", story.FullSlug, err)
 	}
 	fmt.Fprintf(stdout, "%s %s\n", action, story.FullSlug)
+	saved.FullSlug = story.FullSlug
+	return saved, nil
+}
+
+// publishLanguages publishes the field-level translations of a story in
+// spaces that publish each language separately. Stories in a language's
+// folder are folder-level translations and have none.
+func publishLanguages(ctx context.Context, client *mapi.Client, space mapi.SpaceSettings, story mapi.Story) error {
+	if !space.PublishesLanguages {
+		return nil
+	}
+	for _, l := range space.Languages {
+		if strings.HasPrefix(story.FullSlug, l.Code+"/") {
+			return nil
+		}
+	}
+	for _, l := range space.Languages {
+		if err := client.PublishLanguage(ctx, story.ID, l.Code); err != nil {
+			return fmt.Errorf("publishing %s in %s: %w", story.FullSlug, l.Code, err)
+		}
+	}
 	return nil
 }
 
 // ensureLanguage adds the language to the space unless it has it, keeping
-// the others.
-func ensureLanguage(ctx context.Context, client *mapi.Client, code, name string, stdout io.Writer) error {
-	languages, err := client.Languages(ctx)
+// the others, and returns the space's settings.
+func ensureLanguage(ctx context.Context, client *mapi.Client, code, name string, stdout io.Writer) (mapi.SpaceSettings, error) {
+	settings, err := client.Settings(ctx)
 	if err != nil {
-		return err
+		return settings, err
 	}
-	if slices.ContainsFunc(languages, func(l mapi.Language) bool { return l.Code == code }) {
-		return nil
+	if slices.ContainsFunc(settings.Languages, func(l mapi.Language) bool { return l.Code == code }) {
+		return settings, nil
 	}
-	if err := client.SetLanguages(ctx, append(languages, mapi.Language{Code: code, Name: name})); err != nil {
-		return err
+	settings.Languages = append(settings.Languages, mapi.Language{Code: code, Name: name})
+	if err := client.SetLanguages(ctx, settings.Languages); err != nil {
+		return settings, err
 	}
 	fmt.Fprintf(stdout, "added language %s\n", code)
-	return nil
+	return settings, nil
 }
 
 func boolInt(b bool) int {
