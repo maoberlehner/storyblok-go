@@ -25,9 +25,9 @@ settings.
 
 `ASSET_DELIVERY` selects how component CSS and JS reach the browser: `bundle`
 (default, one stylesheet and one script), `head` (used component CSS inlined in
-`<head>`), or `inline` (CSS and JS next to every component instance), also for
-the compose stack (`ASSET_DELIVERY=head make up`). htmx is self-hosted under
-`/assets/vendor/`.
+`<head>`), `links` (one stylesheet per used component), or `inline` (CSS and JS
+next to every component instance), also for the compose stack
+(`ASSET_DELIVERY=head make up`). htmx is self-hosted under `/assets/vendor/`.
 
 ## Demo content
 
@@ -152,6 +152,11 @@ CMS components:
 - `block-section-articles`: articles in a folder with "load more"
   ([pattern](patterns/load-more.md)).
 - `block-section-contact`: contact form ([pattern](patterns/form.md)).
+- `block-section-features`, `block-section-testimonials`, `block-section-faq`,
+  `block-section-stats`: a heading and content items.
+- `block-section-cta`: call-to-action banner.
+- `block-content-feature`, `block-content-quote`, `block-content-question`
+  (native disclosure), `block-content-stat`: items for content areas.
 
 Every CMS component has matching `.go`, `.schema.go`, `.html`, and `.css` files
 in `internal/components/`. Register the typed definition from `.schema.go`;
