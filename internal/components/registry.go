@@ -50,7 +50,7 @@ func Schemas() ([]schema.Component, error) {
 	}
 	for _, file := range files {
 		name := strings.TrimSuffix(file.Name(), ".html")
-		if strings.HasPrefix(name, "page-") || strings.HasPrefix(name, "block-") {
+		if strings.HasPrefix(name, "page-") || strings.HasPrefix(name, "block-") || strings.HasPrefix(name, "site-") {
 			if _, ok := definitions[name]; !ok {
 				return nil, fmt.Errorf("%s: CMS template has no registered schema", name)
 			}

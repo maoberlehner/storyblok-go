@@ -37,6 +37,18 @@ const (
 			{"component": "block-section-articles", "_uid": "more", "heading": "More", "folder": "articles"}
 		]
 	}}`
+	settingsStory = `{"id": 3, "name": "Settings", "content": {
+		"component": "site-settings", "_uid": "s1", "site_name": "Acme",
+		"navigation": [
+			{"component": "site-link", "_uid": "n1", "label": "Landing", "link": {"linktype": "story", "cached_url": "landing"}},
+			{"component": "site-link", "_uid": "n2", "label": "Docs", "link": {"linktype": "url", "url": "https://docs.example.com"}}
+		],
+		"cta_label": "Contact", "cta_link": {"linktype": "story", "cached_url": "landing", "anchor": "contact"},
+		"footer_columns": [{"component": "site-link-group", "_uid": "g1", "heading": "Company",
+			"links": [{"component": "site-link", "_uid": "n3", "label": "About", "link": {"linktype": "story", "cached_url": "about"}}]}],
+		"legal_links": [{"component": "site-link", "_uid": "n4", "label": "Privacy", "link": {"linktype": "url", "url": "https://example.com/privacy"}}],
+		"copyright": "© 2026 Acme"
+	}}`
 	homeStory = `{"id": 7, "name": "Home", "content": {
 		"component": "page-landing-page", "_uid": "u1",
 		"title": "Welcome",
@@ -147,7 +159,7 @@ func newServerWithContent(t *testing.T, inbox components.Inbox, serverOpts []ser
 		t.Fatal(err)
 	}
 	content := &fakeContent{stories: map[string]string{
-		"home": homeStory, "busy": rateLimited, "landing": landingStory,
+		"home": homeStory, "settings": settingsStory, "busy": rateLimited, "landing": landingStory,
 		"legacy": `{"name": "Legacy", "content": {"component": "page", "body": []}}`,
 	}}
 	serverOpts = append([]server.Option{server.WithSiteURL(siteURL)}, serverOpts...)

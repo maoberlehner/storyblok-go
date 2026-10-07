@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json/v2"
 	"net/http"
+
+	"storyblok-go-website/internal/storyblok"
 )
 
 // iconCacheControl allows a day of caching for icons, whose URLs browsers and
@@ -47,5 +49,8 @@ func (s *Server) serveManifest(w http.ResponseWriter, r *http.Request) {
 
 // siteName names the site in the web app manifest.
 func (s *Server) siteName(ctx context.Context) string {
+	if settings := s.settings(ctx, storyblok.Published); settings != nil && settings.SiteName != "" {
+		return settings.SiteName
+	}
 	return "Website"
 }

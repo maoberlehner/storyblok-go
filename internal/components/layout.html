@@ -40,7 +40,9 @@
   {{- end}}
 </head>
 <body>
-  <main id="main" data-preview-root>{{.Body}}</main>
+  {{.SiteHeader}}
+  <main id="main" data-preview-root tabindex="-1">{{.Body}}</main>
+  {{.SiteFooter}}
 </body>
 </html>
 {{- end}}

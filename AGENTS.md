@@ -41,7 +41,9 @@ measurements or research.
     `block-content-list`, `block-content-cta`. CMS content areas allow all
     blocks in this category to be mixed, but do not accept media blocks.
   - `site-*`: site-wide data that is never routed, e.g. `site-settings` (the
-    content type of the `settings` story), `site-link`, `site-link-group`.
+    content type of the `settings` story), `site-link`, `site-link-group`. Pages
+    render inside the site chrome (header, footer) from the `settings` story;
+    pages render without it if the story is missing.
 - Scope component styles to their component. Keep base components independent of
   page/block implementations. Preserve existing Storyblok identifiers until an
   explicit mapping or content migration is in place.

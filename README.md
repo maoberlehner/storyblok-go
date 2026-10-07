@@ -51,6 +51,10 @@ in `STORYBLOK_SPACE`, creating folders as needed. Running it again overwrites
 these stories and leaves all others untouched. The landing pages are
 `/landing/launch` and `/landing/partners`.
 
+The `settings` story (content type `site-settings`) holds the header navigation,
+footer, site name, and default share image. It is not a page: `/settings`
+answers 404 except in the Visual Editor, which previews it as header and footer.
+
 `make seed` also uploads generated placeholder images once, with their pixel
 size so asset URLs carry dimensions; later runs reuse them by file name.
 

@@ -44,8 +44,13 @@ type Page struct {
 	Preview bool
 	// Canonical is the absolute URL search engines should index the page as.
 	Canonical string
+	// Chrome renders the site header and footer; nil renders the page
+	// without them.
+	Chrome *Chrome
 
 	body             template.HTML
+	siteHeader       template.HTML
+	siteFooter       template.HTML
 	head             template.HTML
 	scriptURL        string
 	resolveRelations []string
@@ -74,6 +79,8 @@ func NewPage(story storyblok.Story[AnyBlock]) Page {
 
 func (p Page) Body() template.HTML        { return p.body }
 func (p Page) Head() template.HTML        { return p.head }
+func (p Page) SiteHeader() template.HTML  { return p.siteHeader }
+func (p Page) SiteFooter() template.HTML  { return p.siteFooter }
 func (p Page) ScriptURL() string          { return p.scriptURL }
 func (p Page) ResolveRelations() []string { return p.resolveRelations }
 func (p Page) DevToolbar() *DevToolbar    { return p.devToolbar }
@@ -201,6 +208,15 @@ func (r *Renderer) Page(w io.Writer, page Page) error {
 		return err
 	}
 	page.body = body
+	if page.Chrome != nil && page.Chrome.Settings != nil {
+		rn.chrome = true
+		if page.siteHeader, err = rn.component("site-header", "site-settings", *page.Chrome); err != nil {
+			return err
+		}
+		if page.siteFooter, err = rn.component("site-footer", "site-settings", *page.Chrome); err != nil {
+			return err
+		}
+	}
 	page.resolveRelations = ResolveRelations
 	if len(r.script) > 0 {
 		page.scriptURL = "/assets/app.js?v=" + r.scriptHash
@@ -257,12 +273,17 @@ type render struct {
 	// firstSection is set while rendering a page's first section, whose
 	// images are likely the Largest Contentful Paint.
 	firstSection bool
+	// chrome is set while rendering the site header and footer. Their blocks
+	// belong to the settings story, so the Visual Editor and dev toolbar must
+	// not treat them as the page's blocks.
+	chrome bool
 }
 
 func (r *Renderer) newRender() *render {
 	rn := r.renders.Get().(*render)
 	rn.used = rn.used[:0]
 	rn.firstSection = false
+	rn.chrome = false
 	return rn
 }
 
@@ -365,7 +386,7 @@ func ElementID(block Block) string { return "b-" + ShortID(block) }
 // clickable. Published content has no editable marker, so this is empty
 // unless the dev toolbar needs the blok's UID.
 func (rn *render) editableAttrs(block Block) template.HTMLAttr {
-	if block == nil {
+	if block == nil || rn.chrome {
 		return ""
 	}
 	meta := block.Meta()

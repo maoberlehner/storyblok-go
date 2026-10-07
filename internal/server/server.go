@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"storyblok-go-website/internal/components"
@@ -52,6 +53,7 @@ type Server struct {
 	buildID      string
 	siteURL      string
 	recordVital  func(name string, value float64)
+	lastSettings atomic.Pointer[components.SiteSettings]
 }
 
 type Option func(*Server)
@@ -150,6 +152,7 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	page := components.NewPage(story)
 	page.Preview = preview
 	page.Canonical = s.canonicalURL(story.FullSlug)
+	page.Chrome = s.chrome(r.Context(), version, r.URL.Path)
 	s.writePage(w, r, http.StatusOK, page)
 }
 
@@ -205,6 +208,7 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 		page := components.NewPage(story)
 		page.Title = "Error: " + page.Title
 		page.Canonical = s.canonicalURL(story.FullSlug)
+		page.Chrome = s.chrome(r.Context(), storyblok.Published, r.URL.Path)
 		s.writePage(w, r, status, page)
 	}
 }
@@ -242,6 +246,10 @@ func (s *Server) previewStory(w http.ResponseWriter, r *http.Request) {
 func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok.Version) (storyblok.Story[components.AnyBlock], bool) {
 	slug := cmp.Or(strings.Trim(r.PathValue("slug"), "/"), homeSlug)
 	var story storyblok.Story[components.AnyBlock]
+	if isReservedSlug(slug) && version != storyblok.Draft {
+		http.NotFound(w, r)
+		return story, false
+	}
 	raw, err := s.content.Story(r.Context(), slug, storyblok.StoryOptions{
 		Version:          version,
 		ResolveRelations: components.ResolveRelations,

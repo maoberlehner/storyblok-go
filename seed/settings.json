@@ -1,0 +1,101 @@
+{
+  "full_slug": "settings",
+  "name": "Settings",
+  "content": {
+    "component": "site-settings",
+    "_uid": "d37fa182-6eb0-4ad1-a293-e38e9fa0b1c8",
+    "site_name": "Acme Content",
+    "navigation": [
+      {
+        "component": "site-link",
+        "_uid": "e480b293-7fc1-4be2-b3a4-f49fa0b1c2d9",
+        "label": "Launch",
+        "link": {
+          "linktype": "story",
+          "cached_url": "landing/launch",
+          "url": "",
+          "fieldtype": "multilink"
+        }
+      },
+      {
+        "component": "site-link",
+        "_uid": "f591c3a4-80d2-4cf3-84b5-05a0b1c2d3ea",
+        "label": "Partners",
+        "link": {
+          "linktype": "story",
+          "cached_url": "landing/partners",
+          "url": "",
+          "fieldtype": "multilink"
+        }
+      }
+    ],
+    "cta_label": "Contact us",
+    "cta_link": {
+      "linktype": "story",
+      "cached_url": "landing/launch",
+      "anchor": "b-99cc7976",
+      "url": "",
+      "fieldtype": "multilink"
+    },
+    "footer_columns": [
+      {
+        "component": "site-link-group",
+        "_uid": "06a2d4b5-91e3-4d04-95c6-16b1c2d3e4fb",
+        "heading": "Product",
+        "links": [
+          {
+            "component": "site-link",
+            "_uid": "17b3e5c6-a2f4-4e15-a6d7-27c2d3e4f50c",
+            "label": "Launch",
+            "link": {
+              "linktype": "story",
+              "cached_url": "landing/launch",
+              "url": "",
+              "fieldtype": "multilink"
+            }
+          },
+          {
+            "component": "site-link",
+            "_uid": "28c4f6d7-b305-4f26-b7e8-38d3e4f5061d",
+            "label": "Partners",
+            "link": {
+              "linktype": "story",
+              "cached_url": "landing/partners",
+              "url": "",
+              "fieldtype": "multilink"
+            }
+          }
+        ]
+      }
+    ],
+    "legal_links": [
+      {
+        "component": "site-link",
+        "_uid": "39d507e8-c416-4037-88f9-49e4f506172e",
+        "label": "Privacy",
+        "link": {
+          "linktype": "url",
+          "url": "https://example.com/privacy",
+          "cached_url": "https://example.com/privacy",
+          "fieldtype": "multilink"
+        }
+      },
+      {
+        "component": "site-link",
+        "_uid": "4ae618f9-d527-4148-99fa-5af50617283f",
+        "label": "Imprint",
+        "link": {
+          "linktype": "url",
+          "url": "https://example.com/imprint",
+          "cached_url": "https://example.com/imprint",
+          "fieldtype": "multilink"
+        }
+      }
+    ],
+    "copyright": "© 2026 Acme Content. Demo content.",
+    "default_og_image": {
+      "seed_image": "launch-hero",
+      "alt": "Abstract blue gradient"
+    }
+  }
+}
