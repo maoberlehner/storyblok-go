@@ -28,7 +28,6 @@ func TestListPagination(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.interval = 0
 	items, err := c.List(t.Context())
 	if err != nil {
 		t.Fatal(err)
@@ -52,7 +51,6 @@ func TestRateLimitRetryAndCancellation(t *testing.T) {
 		}))
 		defer ts.Close()
 		c, _ := NewClient(ts.URL, "123", "token")
-		c.interval = 0
 		if _, err := c.List(t.Context()); err != nil {
 			t.Fatal(err)
 		}
@@ -64,7 +62,6 @@ func TestRateLimitRetryAndCancellation(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Header().Set("Retry-After", "60"); w.WriteHeader(429) }))
 		defer ts.Close()
 		c, _ := NewClient(ts.URL, "123", "token")
-		c.interval = 0
 		ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 		defer cancel()
 		start := time.Now()
@@ -86,7 +83,6 @@ func TestNoRetryOfAmbiguousCreateAndNoCredentialLeak(t *testing.T) {
 	}))
 	defer ts.Close()
 	c, _ := NewClient(ts.URL, "123", "secret-token")
-	c.interval = 0
 	_, err := c.Write(t.Context(), 0, desiredComponents()[0])
 	if err == nil || calls != 1 || strings.Contains(err.Error(), "secret-token") {
 		t.Fatalf("calls=%d err=%v", calls, err)
@@ -100,7 +96,6 @@ func TestRedirectDoesNotForwardToken(t *testing.T) {
 	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, target.URL, 302) }))
 	defer source.Close()
 	c, _ := NewClient(source.URL, "123", "token")
-	c.interval = 0
 	if _, err := c.List(t.Context()); err == nil {
 		t.Fatal("redirect accepted")
 	}

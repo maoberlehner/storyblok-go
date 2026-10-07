@@ -12,9 +12,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"storyblok-go-website/internal/apihttp"
 )
 
 const DefaultURL = "https://mapi.storyblok.com/v1"
+
+// Paid plans allow 6 Management API requests per second. On plans with a
+// lower limit, the first 429 halves the rate.
+const (
+	requestRate      = 6
+	attemptTimeout   = 30 * time.Second
+	maxResponseBytes = 16 << 20
+)
 
 type Remote struct {
 	ID          int64                     `json:"id"`
@@ -26,12 +36,10 @@ type Remote struct {
 }
 
 type Client struct {
-	BaseURL     string
-	Space       string
-	token       string
-	http        *http.Client
-	interval    time.Duration
-	lastRequest time.Time
+	BaseURL string
+	Space   string
+	token   string
+	api     *apihttp.Client
 }
 
 func NewClient(baseURL, space, token string) (*Client, error) {
@@ -46,9 +54,11 @@ func NewClient(baseURL, space, token string) (*Client, error) {
 	if token == "" {
 		return nil, fmt.Errorf("STORYBLOK_MANAGEMENT_TOKEN is required")
 	}
+	// A burst of one keeps the client below the limit in any one-second window.
+	pacer := apihttp.NewTier(apihttp.TierConfig{Base: requestRate, MaxBurst: 1})
 	return &Client{BaseURL: strings.TrimRight(baseURL, "/"), Space: strconv.FormatInt(id, 10), token: token,
-		interval: time.Second / 3,
-		http:     &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }},
+		// Redirects are not followed, so the token never reaches another host.
+		api: apihttp.NewClient(apihttp.Config{Pacer: pacer, AttemptTimeout: attemptTimeout}),
 	}, nil
 }
 
@@ -108,72 +118,39 @@ func (c *Client) Write(ctx context.Context, id int64, component any) (Remote, er
 }
 
 func (c *Client) request(ctx context.Context, method, suffix string, body, out any) (http.Header, error) {
-	var payload []byte
+	var payload io.Reader
 	if body != nil {
-		var err error
-		payload, err = json.Marshal(body)
+		data, err := json.Marshal(body)
 		if err != nil {
 			return nil, err
 		}
+		payload = bytes.NewReader(data)
 	}
-	for attempt := 0; attempt < 5; attempt++ {
-		if err := wait(ctx, time.Until(c.lastRequest.Add(c.interval))); err != nil {
-			return nil, err
-		}
-		endpoint := c.BaseURL + "/spaces/" + c.Space + "/components" + suffix
-		req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(payload))
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Authorization", c.token)
-		req.Header.Set("Accept", "application/json")
-		if body != nil {
-			req.Header.Set("Content-Type", "application/json")
-		}
-		c.lastRequest = time.Now()
-		response, err := c.http.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("%s components failed: %w; re-plan before retrying a write", method, err)
-		}
-		data, readErr := io.ReadAll(io.LimitReader(response.Body, 16<<20))
-		response.Body.Close()
-		if readErr != nil {
-			return nil, readErr
-		}
-		if response.StatusCode == http.StatusTooManyRequests && attempt < 4 {
-			delay := time.Second * time.Duration(1<<attempt)
-			if seconds, err := strconv.Atoi(response.Header.Get("Retry-After")); err == nil {
-				delay = max(delay, time.Duration(seconds)*time.Second)
-			} else if date, err := http.ParseTime(response.Header.Get("Retry-After")); err == nil {
-				delay = max(delay, time.Until(date))
-			}
-			if err := wait(ctx, delay); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		if response.StatusCode < 200 || response.StatusCode >= 300 {
-			// Don't print response bodies: they can contain reflected credentials.
-			return nil, fmt.Errorf("%s components returned HTTP %d; re-plan after a failed write", method, response.StatusCode)
-		}
-		if err := json.Unmarshal(data, out); err != nil {
-			return nil, fmt.Errorf("invalid Management API response: %w", err)
-		}
-		return response.Header, nil
+	endpoint := c.BaseURL + "/spaces/" + c.Space + "/components" + suffix
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, payload)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("rate-limit retries exhausted")
-}
-
-func wait(ctx context.Context, delay time.Duration) error {
-	if delay <= 0 {
-		return ctx.Err()
+	req.Header.Set("Authorization", c.token)
+	req.Header.Set("Accept", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
 	}
-	timer := time.NewTimer(delay)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-timer.C:
-		return nil
+	response, err := c.api.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%s components failed: %w; re-plan before retrying a write", method, err)
 	}
+	defer response.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes))
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		// Don't print response bodies: they can contain reflected credentials.
+		return nil, fmt.Errorf("%s components returned HTTP %d; re-plan after a failed write", method, response.StatusCode)
+	}
+	if err := json.Unmarshal(data, out); err != nil {
+		return nil, fmt.Errorf("invalid Management API response: %w", err)
+	}
+	return response.Header, nil
 }

@@ -23,7 +23,7 @@ func TestClientLearnsAndUpdatesCacheVersion(t *testing.T) {
 		responses := []int64{100, 200, 150, 0}
 		queries := []string{"", "100", "200", "200"}
 		calls := 0
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			if got := r.URL.Query().Get("cv"); got != queries[calls] {
 				t.Errorf("request %d cv = %q, want %q", calls, got, queries[calls])
 			}
@@ -43,7 +43,7 @@ func TestClientRefreshesCacheVersion(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
 		queries := []string{"", "100", "", "200"}
 		calls := 0
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			if got := r.URL.Query().Get("cv"); got != queries[calls] {
 				t.Errorf("request %d cv = %q, want %q", calls, got, queries[calls])
 			}
@@ -71,7 +71,7 @@ func TestClientDiscoversCacheVersionOnceForConcurrentRequests(t *testing.T) {
 		var withoutCV, withStaleCV atomic.Int32
 		cv := atomic.Int64{}
 		cv.Store(100)
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			switch r.URL.Query().Get("cv") {
 			case "":
 				withoutCV.Add(1)
@@ -117,7 +117,7 @@ func TestClientRediscoversCacheVersionAfterFailedDiscovery(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
 		var queries []string
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			queries = append(queries, r.URL.Query().Get("cv"))
 			if strings.HasSuffix(r.URL.Path, "/missing") {
 				return apiResponse(404, nil, io.NopCloser(strings.NewReader(`{}`))), nil
@@ -143,7 +143,7 @@ func TestClientKeepsRefreshScheduleWhenDiscoveryReportsOlderCacheVersion(t *test
 		client := NewClient(DefaultBaseURL, "secret")
 		responses := []int64{100, 50, 100}
 		var queries []string
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			queries = append(queries, r.URL.Query().Get("cv"))
 			return storyResponse(responses[len(queries)-1], nil), nil
 		})
@@ -165,7 +165,7 @@ func TestClientFollowsCacheVersionRedirect(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
 		var queries []string
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			queries = append(queries, r.URL.Query().Get("cv"))
 			if !r.URL.Query().Has("cv") {
 				location := *r.URL
@@ -191,7 +191,7 @@ func TestClientLearnsCacheVersionFromRedirectToMissingStory(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
 		var queries []string
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			queries = append(queries, r.URL.Query().Get("cv"))
 			if !r.URL.Query().Has("cv") {
 				location := *r.URL
@@ -221,7 +221,7 @@ func TestDraftAndSpaceRequestsDoNotChangeCacheVersion(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
 		calls := 0
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			want := ""
 			if calls == 3 {
 				want = "100"
@@ -254,7 +254,7 @@ func TestClientFetchesPublishedVersionByDefault(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
 		var queries []string
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			queries = append(queries, r.URL.Query().Get("version")+":"+r.URL.Query().Get("cv"))
 			return storyResponse(100, nil), nil
 		})
@@ -274,7 +274,7 @@ func TestConcurrentResponsesCannotRegressCacheVersion(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
 		started := make(chan struct{})
 		release := make(chan struct{})
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			cv := int64(100)
 			switch {
 			case strings.HasSuffix(r.URL.Path, "/slow"):
