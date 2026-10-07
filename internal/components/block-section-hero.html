@@ -1,7 +1,14 @@
 {{define "block-section-hero" -}}
 <section {{editable .}} class="block-section-hero">
-  <h2 class="block-section-hero__heading">{{.Heading}}</h2>
-  {{with .Text}}<p class="block-section-hero__text">{{.}}</p>{{end}}
-  {{with .Button}}{{base "base-button" .}}{{end}}
+  <div class="block-section-hero__layout{{if .Media}} block-section-hero__layout--media{{end}}">
+    <div class="block-section-hero__content">
+      <h2 class="block-section-hero__heading">{{.Heading}}</h2>
+      {{with .Text}}<p class="block-section-hero__text">{{.}}</p>{{end}}
+      {{with .Button}}{{base "base-button" .}}{{end}}
+    </div>
+    {{- with .Media}}
+    <div class="block-section-hero__media">{{renderAll .}}</div>
+    {{- end}}
+  </div>
 </section>
 {{- end}}

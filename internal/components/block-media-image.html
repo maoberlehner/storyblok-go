@@ -1,0 +1,10 @@
+{{define "block-media-image" -}}
+{{if not .Image.IsZero -}}
+<figure {{editable .}} class="block-media-image">
+  {{base "base-image" (.BaseImage firstSection)}}
+  {{- with .Caption}}
+  <figcaption class="block-media-image__caption">{{.}}</figcaption>
+  {{- end}}
+</figure>
+{{- end}}
+{{- end}}

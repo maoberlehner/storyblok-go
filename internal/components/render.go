@@ -254,24 +254,30 @@ type render struct {
 	*Renderer
 	templates *template.Template
 	used      []string
+	// firstSection is set while rendering a page's first section, whose
+	// images are likely the Largest Contentful Paint.
+	firstSection bool
 }
 
 func (r *Renderer) newRender() *render {
 	rn := r.renders.Get().(*render)
 	rn.used = rn.used[:0]
+	rn.firstSection = false
 	return rn
 }
 
 func (rn *render) funcs() template.FuncMap {
 	return template.FuncMap{
-		"render":    rn.block,
-		"renderAll": rn.blocks,
-		"base":      rn.base,
-		"editable":  rn.editableAttrs,
-		"id":        ElementID,
-		"shortID":   ShortID,
-		"join":      strings.Join,
-		"contains":  slices.Contains[[]string],
+		"render":         rn.block,
+		"renderAll":      rn.blocks,
+		"renderSections": rn.sections,
+		"firstSection":   func() bool { return rn.firstSection },
+		"base":           rn.base,
+		"editable":       rn.editableAttrs,
+		"id":             ElementID,
+		"shortID":        ShortID,
+		"join":           strings.Join,
+		"contains":       slices.Contains[[]string],
 	}
 }
 
@@ -289,6 +295,22 @@ func (rn *render) block(block Block) (template.HTML, error) {
 func (rn *render) blocks(blocks Blocks) (template.HTML, error) {
 	var buf strings.Builder
 	for _, block := range blocks {
+		html, err := rn.block(block)
+		if err != nil {
+			return "", err
+		}
+		buf.WriteString(string(html))
+	}
+	return template.HTML(buf.String()), nil
+}
+
+// sections renders a page's sections and marks the first one, so its images
+// load with priority.
+func (rn *render) sections(blocks Blocks) (template.HTML, error) {
+	defer func() { rn.firstSection = false }()
+	var buf strings.Builder
+	for i, block := range blocks {
+		rn.firstSection = i == 0
 		html, err := rn.block(block)
 		if err != nil {
 			return "", err

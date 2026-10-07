@@ -8,6 +8,7 @@ type BlockSectionHero struct {
 	Text      string         `json:"text"`
 	Link      storyblok.Link `json:"link"`
 	LinkLabel string         `json:"link_label"`
+	Media     Blocks         `json:"media"`
 }
 
 // Button returns the call to action, or nil without a link and label.

@@ -18,7 +18,19 @@
           "url": "",
           "fieldtype": "multilink"
         },
-        "link_label": "See the product"
+        "link_label": "See the product",
+        "media": [
+          {
+            "component": "block-media-image",
+            "_uid": "6c1f4d2b-9e5a-4a7f-8b3c-8d2e3f4a5b62",
+            "image": {
+              "seed_image": "partners-hero",
+              "alt": "Abstract green and gold gradient"
+            },
+            "aspect_ratio": "4:3",
+            "caption": ""
+          }
+        ]
       },
       {
         "component": "block-section-features",

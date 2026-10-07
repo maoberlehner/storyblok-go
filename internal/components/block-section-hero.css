@@ -1,9 +1,18 @@
 .block-section-hero {
   container-type: inline-size;
+  padding-block: 2rem;
+}
+
+.block-section-hero__layout {
+  display: grid;
+  gap: 2rem;
+}
+
+.block-section-hero__content {
   display: grid;
   gap: 1.5rem;
   justify-items: start;
-  padding-block: 2rem;
+  align-content: center;
 }
 
 .block-section-hero__heading {
@@ -24,5 +33,12 @@
 @container (inline-size >= 40rem) {
   .block-section-hero__heading {
     font-size: 2.5rem;
+  }
+}
+
+@container (inline-size >= 48rem) {
+  .block-section-hero__layout--media {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
   }
 }

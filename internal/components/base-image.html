@@ -1,0 +1,12 @@
+{{define "base-image" -}}
+{{if .IsSVG -}}
+<img class="base-image" src="{{.Asset.Filename}}" alt="{{.Asset.Alt}}"{{with .Width}} width="{{.}}"{{end}}{{with .Height}} height="{{.}}"{{end}}{{template "base-image-loading" .}}>
+{{- else -}}
+<picture class="base-image">
+  <source type="image/avif" srcset="{{.AVIFSrcSet}}"{{with .Sizes}} sizes="{{.}}"{{end}}>
+  <img class="base-image__img" src="{{.Src}}" srcset="{{.SrcSet}}"{{with .Sizes}} sizes="{{.}}"{{end}} alt="{{.Asset.Alt}}"{{with .Width}} width="{{.}}"{{end}}{{with .Height}} height="{{.}}"{{end}}{{template "base-image-loading" .}}>
+</picture>
+{{- end}}
+{{- end}}
+
+{{define "base-image-loading"}}{{if .Priority}} loading="eager" fetchpriority="high"{{else}} loading="lazy" decoding="async"{{end}}{{end}}

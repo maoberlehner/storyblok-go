@@ -28,18 +28,24 @@ func TestLinkHref(t *testing.T) {
 	}
 }
 
-func TestAssetResize(t *testing.T) {
-	photo := storyblok.Asset{Filename: "https://a.storyblok.com/f/1/1200x800/abc/photo.jpg"}
-	if got, want := photo.Resize(600, 0), photo.Filename+"/m/600x0"; got != want {
-		t.Errorf("Resize() = %q, want %q", got, want)
+func TestAssetImage(t *testing.T) {
+	photo := storyblok.Asset{Filename: "https://a.storyblok.com/f/1/1200x800/abc/photo.jpg", Focus: "10x20:30x40"}
+	for _, tt := range []struct {
+		opts storyblok.ImageOptions
+		want string
+	}{
+		{storyblok.ImageOptions{Width: 600}, photo.Filename + "/m/600x0"},
+		{storyblok.ImageOptions{Width: 600, Format: "avif"}, photo.Filename + "/m/600x0/filters:format(avif)"},
+		{storyblok.ImageOptions{Width: 600, Height: 300}, photo.Filename + "/m/600x300/filters:focal(10x20:30x40)"},
+		{storyblok.ImageOptions{Width: 600, Height: 300, Format: "avif"}, photo.Filename + "/m/600x300/filters:focal(10x20:30x40):format(avif)"},
+	} {
+		if got := photo.Image(tt.opts); got != tt.want {
+			t.Errorf("Image(%+v) = %q, want %q", tt.opts, got, tt.want)
+		}
 	}
-	if got, want := photo.SrcSet(600, 1200, 2400), photo.Filename+"/m/600x0 600w, "+photo.Filename+"/m/1200x0 1200w"; got != want {
-		t.Errorf("SrcSet() = %q, want %q", got, want)
-	}
-
 	logo := storyblok.Asset{Filename: "https://a.storyblok.com/f/1/41x41/abc/logo.svg"}
-	if got := logo.Resize(100, 0); got != logo.Filename {
-		t.Errorf("Resize() of SVG = %q, want original", got)
+	if got := logo.Image(storyblok.ImageOptions{Width: 100}); got != logo.Filename {
+		t.Errorf("Image() of SVG = %q, want original", got)
 	}
 }
 

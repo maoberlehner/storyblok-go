@@ -18,7 +18,19 @@
           "url": "",
           "fieldtype": "multilink"
         },
-        "link_label": "Become a partner"
+        "link_label": "Become a partner",
+        "media": [
+          {
+            "component": "block-media-image",
+            "_uid": "5b0e3c1a-8d4f-4f6e-9a2b-7c1d2e3f4a51",
+            "image": {
+              "seed_image": "launch-hero",
+              "alt": "Abstract blue gradient"
+            },
+            "aspect_ratio": "4:3",
+            "caption": ""
+          }
+        ]
       },
       {
         "component": "block-section-stats",

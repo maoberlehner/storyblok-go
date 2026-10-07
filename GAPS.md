@@ -11,6 +11,9 @@ deliberate exceptions with reasons.
   asset, multilink, bloks, and groups. Other field types, semantic palette
   fields, and content/media components should be added when needed. Seeded story
   links set only `cached_url`, so the editor shows them without a linked story.
+  Media blocks: only `block-media-image`. Images are served as AVIF through
+  `<picture>` with WebP/original fallback; Storyblok's image service negotiates
+  only WebP by itself.
 - **Enhancement / forms:** htmx 4 is self-hosted. Load more and the contact form
   follow [patterns/](patterns/README.md). Forms always post against the
   published story, so a form on an unpublished page fails in the Visual Editor.

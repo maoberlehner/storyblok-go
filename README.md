@@ -51,6 +51,9 @@ in `STORYBLOK_SPACE`, creating folders as needed. Running it again overwrites
 these stories and leaves all others untouched. The landing pages are
 `/landing/launch` and `/landing/partners`.
 
+`make seed` also uploads generated placeholder images once, with their pixel
+size so asset URLs carry dimensions; later runs reuse them by file name.
+
 ## Production-like stack
 
 ```sh

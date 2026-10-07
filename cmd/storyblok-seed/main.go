@@ -64,8 +64,13 @@ func run(ctx context.Context, args []string, env func(string) string, stdout io.
 	// Articles go first, so the landing pages list them right away.
 	stories := append(articles(), files...)
 	folders := map[string]int64{"": 0}
+	uploaded := map[string]mapi.Asset{}
 	for _, story := range stories {
 		parentID, err := ensureFolder(ctx, client, folders, path.Dir(story.FullSlug))
+		if err != nil {
+			return err
+		}
+		content, err := resolveSeedImages(ctx, client, uploaded, story.Content)
 		if err != nil {
 			return err
 		}
@@ -74,7 +79,7 @@ func run(ctx context.Context, args []string, env func(string) string, stdout io.
 			Slug:     path.Base(story.FullSlug),
 			FullSlug: story.FullSlug,
 			ParentID: parentID,
-			Content:  story.Content,
+			Content:  content.(map[string]any),
 		}, stdout); err != nil {
 			return err
 		}

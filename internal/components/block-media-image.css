@@ -1,0 +1,13 @@
+.block-media-image {
+  margin: 0;
+}
+
+.block-media-image .base-image__img {
+  border-radius: 0.5rem;
+}
+
+.block-media-image__caption {
+  margin-block-start: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}

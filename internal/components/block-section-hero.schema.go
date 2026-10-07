@@ -10,6 +10,7 @@ func init() {
 			{Name: "text", Type: "textarea", Label: "Text"},
 			{Name: "link", Type: "multilink", Label: "Call to action link"},
 			{Name: "link_label", Type: "text", Label: "Call to action label"},
+			{Name: "media", Type: "bloks", Label: "Media", Allow: schema.Media, Max: 1},
 		},
 	})
 }

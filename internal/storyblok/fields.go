@@ -85,34 +85,32 @@ func (a Asset) Size() (width, height int) {
 func (a Asset) Width() int  { w, _ := a.Size(); return w }
 func (a Asset) Height() int { _, h := a.Size(); return h }
 
-// Resize returns an image service URL. A zero width or height keeps the
-// aspect ratio. Vector images are returned unchanged.
-func (a Asset) Resize(width, height int) string {
+// ImageOptions selects a rendition from the image service. A zero width or
+// height keeps the aspect ratio. Without a format, the service negotiates
+// WebP from the request's Accept header; it never picks AVIF on its own.
+type ImageOptions struct {
+	Width, Height int
+	Format        string
+}
+
+// Image returns an image service URL. Crops (width and height) respect the
+// focus point. Vector images are returned unchanged.
+func (a Asset) Image(o ImageOptions) string {
 	if a.IsZero() || a.IsSVG() {
 		return a.Filename
 	}
-	u := fmt.Sprintf("%s/m/%dx%d", a.Filename, width, height)
-	if a.Focus != "" && width > 0 && height > 0 {
-		u += "/filters:focal(" + a.Focus + ")"
+	u := fmt.Sprintf("%s/m/%dx%d", a.Filename, o.Width, o.Height)
+	var filters []string
+	if a.Focus != "" && o.Width > 0 && o.Height > 0 {
+		filters = append(filters, "focal("+a.Focus+")")
+	}
+	if o.Format != "" {
+		filters = append(filters, "format("+o.Format+")")
+	}
+	if len(filters) > 0 {
+		u += "/filters:" + strings.Join(filters, ":")
 	}
 	return u
-}
-
-// SrcSet returns a srcset for the given widths, skipping widths larger than
-// the original image.
-func (a Asset) SrcSet(widths ...int) string {
-	if a.IsZero() || a.IsSVG() {
-		return ""
-	}
-	original := a.Width()
-	var candidates []string
-	for _, w := range widths {
-		if original > 0 && w > original {
-			continue
-		}
-		candidates = append(candidates, fmt.Sprintf("%s %dw", a.Resize(w, 0), w))
-	}
-	return strings.Join(candidates, ", ")
 }
 
 // Link is a multilink field value.
