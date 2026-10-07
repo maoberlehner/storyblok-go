@@ -47,7 +47,9 @@
   display: grid;
   gap: 1.5rem;
   align-content: start;
+  justify-items: start;
   inset: 4.5rem 1rem auto;
+  inline-size: auto;
   margin: 0;
   padding: 1.5rem;
   border: 0.0625rem solid var(--color-border);

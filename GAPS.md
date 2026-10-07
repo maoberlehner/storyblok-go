@@ -35,8 +35,16 @@ deliberate exceptions with reasons.
 - **Verification:** The browser support matrix and WCAG 2.2 AA target have not
   had a full audit. The patterns were checked in Chrome with and without
   JavaScript (keyboard, focus after swaps and reloads, reduced motion, 375 and
-  1280 px widths); Firefox, Safari, zoom, and screen readers are unchecked. Live
-  MAPI behavior still needs a smoke test against a development space; HTTP
-  fixture tests cover the sync contract locally.
+  1280 px widths); Firefox, Safari, zoom, and screen readers are unchecked. The
+  site chrome, images, content section, palette, forms (time trap with htmx,
+  attribution), and English/German pages were checked in Chrome at 500 and 1280
+  px; keyboard (popover Esc and focus return); the production-like stack's
+  headers. Schema plan/apply and seeding were smoke-tested against the QA space.
 - **Languages:** German URLs exist for every page outside `de/`, translated or
-  not (ADR 0005). Slugs are not translated for field-level pages.
+  not (ADR 0005). Slugs are not translated for field-level pages. In spaces that
+  publish languages separately (QA space), a German version that was never
+  published answers 404 although `hreflang`, the sitemap, and the language
+  switcher list it; `make seed` publishes German for seeded stories. Navigation
+  links point to field-level URLs, so links to pages with a folder-level
+  translation go through a redirect. The QA space's legacy `home` story has no
+  German version, so `/de` is a 404 there.
