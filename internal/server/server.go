@@ -302,6 +302,9 @@ func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok
 		s.fail(w, r, err)
 		return res, false
 	case res.redirect != "" && r.Method == http.MethodGet:
+		// Browsers cache permanent redirects forever unless told otherwise;
+		// editors may still remove the alternate.
+		setPageCaching(w.Header(), "")
 		http.Redirect(w, r, res.redirect, http.StatusMovedPermanently)
 		return res, false
 	case res.redirect != "":

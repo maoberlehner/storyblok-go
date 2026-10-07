@@ -73,6 +73,10 @@ func TestFolderLevelAlternateRedirects(t *testing.T) {
 	if res.status != http.StatusMovedPermanently || res.header.Get("Location") != "/de/partner" {
 		t.Errorf("status %d, Location %q", res.status, res.header.Get("Location"))
 	}
+	// The alternate may be removed later; browsers must not keep the redirect.
+	if res.header.Get("Cache-Control") != "no-cache" {
+		t.Errorf("Cache-Control = %q", res.header.Get("Cache-Control"))
+	}
 }
 
 func TestLanguageAlternates(t *testing.T) {
