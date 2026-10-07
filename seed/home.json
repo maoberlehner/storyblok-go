@@ -1,0 +1,142 @@
+{
+  "full_slug": "home",
+  "name": "Home",
+  "content": {
+    "component": "page-landing-page",
+    "_uid": "410e7af2-c1d0-5671-be9a-bd358f110f2a",
+    "title": "Acme Content",
+    "title__i18n__de": "Acme Content",
+    "description": "Compose, preview, and publish marketing pages in English and German from tested sections.",
+    "description__i18n__de": "Marketingseiten auf Englisch und Deutsch aus getesteten Abschnitten zusammenstellen, prüfen und veröffentlichen.",
+    "seo_title": "Acme Content – marketing pages without waiting",
+    "seo_title__i18n__de": "Acme Content – Marketingseiten ohne Warten",
+    "sections": [
+      {
+        "component": "block-section-hero",
+        "_uid": "54e647af-99a6-5f01-a456-bfd9fa3c4197",
+        "heading": "Marketing pages your team can ship today",
+        "heading__i18n__de": "Marketingseiten, die Ihr Team heute veröffentlicht",
+        "text": "Editors compose pages from tested sections, preview every change, and publish in every language.",
+        "text__i18n__de": "Redaktionen stellen Seiten aus getesteten Abschnitten zusammen, prüfen jede Änderung in der Vorschau und veröffentlichen in jeder Sprache.",
+        "link": {
+          "linktype": "story",
+          "cached_url": "landing/launch",
+          "url": "",
+          "fieldtype": "multilink"
+        },
+        "link_label": "See how it works",
+        "link_label__i18n__de": "So funktioniert es",
+        "media": [
+          {
+            "component": "block-media-image",
+            "_uid": "ab76e234-7a99-54eb-a22b-235de88cb77b",
+            "image": {
+              "seed_image": "launch-hero",
+              "alt": "Abstract blue gradient"
+            },
+            "aspect_ratio": "4:3",
+            "caption": ""
+          }
+        ]
+      },
+      {
+        "component": "block-section-stats",
+        "_uid": "90b232b7-33de-53c0-a718-f22840f39a4f",
+        "heading": "Built for busy content teams",
+        "heading__i18n__de": "Für vielbeschäftigte Content-Teams",
+        "items": [
+          {
+            "component": "block-content-stat",
+            "_uid": "0b36ea61-303b-5e92-96a4-0d60a14571cc",
+            "value": "2",
+            "label": "languages per page",
+            "label__i18n__de": "Sprachen pro Seite"
+          },
+          {
+            "component": "block-content-stat",
+            "_uid": "5941dfcd-9cad-5727-933e-35544a726cdc",
+            "value": "10+",
+            "label": "sections to compose from",
+            "label__i18n__de": "Abschnitte zum Kombinieren"
+          },
+          {
+            "component": "block-content-stat",
+            "_uid": "b3acd065-132c-5ec7-ac31-ff3118af7b94",
+            "value": "0",
+            "label": "deploys to publish",
+            "label__i18n__de": "Deployments zum Veröffentlichen"
+          }
+        ]
+      },
+      {
+        "component": "block-section-content",
+        "_uid": "0a098de9-ca16-5c46-905e-87eb823eff2c",
+        "background": "muted",
+        "media_position": "end",
+        "media": [
+          {
+            "component": "block-media-image",
+            "_uid": "bc0bd08f-aa19-564d-a8d9-a6eca8559942",
+            "image": {
+              "seed_image": "team",
+              "alt": "Abstract red gradient"
+            },
+            "aspect_ratio": "1:1",
+            "caption": ""
+          }
+        ],
+        "content": [
+          {
+            "component": "block-content-headline",
+            "_uid": "20319bf6-7e30-5c05-9ee9-faa46d213ba1",
+            "text": "One stack, every market",
+            "text__i18n__de": "Ein Stack für jeden Markt",
+            "level": "h2"
+          },
+          {
+            "component": "block-content-text",
+            "_uid": "9fd0ac31-0e80-5309-81e2-3f5b778f107a",
+            "text": "Translate pages field by field, or give a market its own pages:\n\n- **Field-level** translations reuse the page structure\n- **Folder-level** pages can differ completely\n- Search engines get `hreflang` links for every version",
+            "text__i18n__de": "Übersetzen Sie Seiten Feld für Feld oder geben Sie einem Markt eigene Seiten:\n\n- **Feldübersetzungen** nutzen die Seitenstruktur weiter\n- **Ordnerseiten** können völlig anders sein\n- Suchmaschinen erhalten `hreflang`-Links für jede Version"
+          },
+          {
+            "component": "block-content-cta",
+            "_uid": "a89329ee-4093-59e8-bb6c-28f49ee0105e",
+            "label": "Become a partner",
+            "label__i18n__de": "Partner werden",
+            "variant": "secondary",
+            "link": {
+              "linktype": "story",
+              "cached_url": "landing/partners",
+              "url": "",
+              "fieldtype": "multilink"
+            }
+          }
+        ]
+      },
+      {
+        "component": "block-section-articles",
+        "_uid": "93176496-2e0a-58dc-ba66-2b20a65fef54",
+        "heading": "Latest articles",
+        "heading__i18n__de": "Neueste Artikel",
+        "folder": "articles"
+      },
+      {
+        "component": "block-section-cta",
+        "_uid": "e357b2e7-4c42-5475-9022-75d94d50fd88",
+        "heading": "Ready for your next launch?",
+        "heading__i18n__de": "Bereit für den nächsten Launch?",
+        "text": "Talk to us about your content and your markets.",
+        "text__i18n__de": "Sprechen Sie mit uns über Ihre Inhalte und Märkte.",
+        "link": {
+          "linktype": "story",
+          "cached_url": "landing/launch",
+          "url": "",
+          "fieldtype": "multilink"
+        },
+        "link_label": "Contact us",
+        "link_label__i18n__de": "Kontakt aufnehmen"
+      }
+    ]
+  }
+}

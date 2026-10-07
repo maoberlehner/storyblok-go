@@ -58,8 +58,9 @@ make seed
 
 `make seed` creates or updates the stories in `seed/` and 22 generated articles
 in `STORYBLOK_SPACE`, creating folders as needed. Running it again overwrites
-these stories and leaves all others untouched. The landing pages are
-`/landing/launch` and `/landing/partners`.
+these stories and leaves all others untouched. The home page (`/`, fully
+translated at `/de`) and the landing pages `/landing/launch` and
+`/landing/partners` are seeded, replacing existing stories at those slugs.
 
 The `settings` story (content type `site-settings`) holds the header navigation,
 footer, site name, and default share image. It is not a page: `/settings`

@@ -4,9 +4,9 @@ Known differences from [AGENTS.md](AGENTS.md). Remove resolved entries; record
 deliberate exceptions with reasons.
 
 - **CMS rollout:** The QA space has the current schemas and the seeded demo
-  content (`make seed`). Its older stories (`home`, `about`, `blog-index/…`)
-  still use removed components and render empty; they need one-off migrations or
-  deletion. The CLI reports remote-only components but never deletes them.
+  content (`make seed`). Its older stories (`about`, `blog-index/…`) still use
+  removed components and render empty; they need one-off migrations or deletion.
+  The CLI reports remote-only components but never deletes them.
 - **Schema coverage:** The compiler supports text, textarea, markdown, option,
   asset, multilink, bloks, and groups. Other field types, semantic palette
   fields, and content/media components should be added when needed. Seeded story
@@ -46,5 +46,4 @@ deliberate exceptions with reasons.
   published answers 404 although `hreflang`, the sitemap, and the language
   switcher list it; `make seed` publishes German for seeded stories. Navigation
   links point to field-level URLs, so links to pages with a folder-level
-  translation go through a redirect. The QA space's legacy `home` story has no
-  German version, so `/de` is a 404 there.
+  translation go through a redirect.
