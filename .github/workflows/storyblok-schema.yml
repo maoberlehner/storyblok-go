@@ -1,0 +1,64 @@
+name: Storyblok schemas
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      space:
+        description: Target Storyblok space ID
+        required: true
+        type: string
+      api_url:
+        description: Regional Management API URL
+        default: https://mapi.storyblok.com/v1
+        type: string
+      apply:
+        description: Apply the generated plan (otherwise only preview it)
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: make test
+      - run: go run ./cmd/storyblok-schema validate --out schemas.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schemas
+          path: schemas.json
+
+  sync:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: storyblok
+    concurrency:
+      group: storyblok-schema-${{ inputs.space }}
+      cancel-in-progress: false
+    env:
+      STORYBLOK_SPACE_ID: ${{ inputs.space }}
+      STORYBLOK_MAPI_URL: ${{ inputs.api_url }}
+      STORYBLOK_MANAGEMENT_TOKEN: ${{ secrets.STORYBLOK_MANAGEMENT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: go run ./cmd/storyblok-schema plan --out schema-plan.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schema-plan
+          path: schema-plan.json
+      - if: inputs.apply
+        run: go run ./cmd/storyblok-schema apply --plan schema-plan.json

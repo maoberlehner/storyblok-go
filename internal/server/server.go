@@ -13,7 +13,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"storyblok-go-website/internal/components"
@@ -21,8 +20,7 @@ import (
 )
 
 const (
-	homeSlug   = "home"
-	configSlug = "config"
+	homeSlug = "home"
 	// maxPreviewBodyBytes bounds the story JSON the Visual Editor sends.
 	maxPreviewBodyBytes = 10 << 20
 )
@@ -62,10 +60,6 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	slug := cmp.Or(strings.Trim(r.PathValue("slug"), "/"), homeSlug)
-	if slug == configSlug {
-		http.NotFound(w, r)
-		return
-	}
 	preview := storyblok.IsValidPreview(r.URL.Query(), s.previewToken, s.now())
 	opts := storyblok.StoryOptions{
 		Version:          storyblok.Published,
@@ -75,15 +69,8 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 		opts.Version = storyblok.Draft
 	}
 
-	var (
-		story               storyblok.Story[components.AnyBlock]
-		config              storyblok.Story[components.Configuration]
-		storyErr, configErr error
-	)
-	var wg sync.WaitGroup
-	wg.Go(func() { storyErr = s.fetch(r.Context(), slug, opts, &story) })
-	wg.Go(func() { configErr = s.fetch(r.Context(), configSlug, opts, &config) })
-	wg.Wait()
+	var story storyblok.Story[components.AnyBlock]
+	storyErr := s.fetch(r.Context(), slug, opts, &story)
 
 	switch {
 	case errors.Is(storyErr, storyblok.ErrNotFound):
@@ -96,11 +83,6 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 
 	page := components.NewPage(story)
 	page.Preview = preview
-	if configErr == nil {
-		page.Config = &config.Content
-	} else {
-		s.logger.WarnContext(r.Context(), "rendering without site configuration", "err", configErr)
-	}
 
 	var buf bytes.Buffer
 	if err := s.renderer.Page(&buf, page); err != nil {
