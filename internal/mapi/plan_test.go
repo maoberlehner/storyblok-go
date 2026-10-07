@@ -167,7 +167,6 @@ func newAPI(t *testing.T) (*Client, *apiFixture) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.interval = 0
 	return c, f
 }
 

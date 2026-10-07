@@ -14,16 +14,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/failsafe-go/failsafe-go"
+	"storyblok-go-website/internal/apihttp"
 )
 
 const DefaultBaseURL = "https://api.storyblok.com/v2/cdn"
 
 var ErrNotFound = errors.New("storyblok: story not found")
-
-// ErrRateLimited reports that a request could not get a permit from the
-// client's rate limiter in time.
-var ErrRateLimited = errors.New("rate-limit wait exceeded")
 
 type Version string
 
@@ -33,22 +29,21 @@ const (
 )
 
 type Client struct {
-	baseURL    string
-	token      string
-	httpClient *http.Client
-	executor   failsafe.Executor[*http.Response]
-	pacing     *adaptiveRateLimiter
-	versions   cacheVersionTracker
+	baseURL  string
+	token    string
+	api      *apihttp.Client
+	pacer    *cdnPacer
+	versions cacheVersionTracker
 }
 
 func NewClient(baseURL, token string) *Client {
-	pacing := newAdaptiveRateLimiter()
+	pacer := newCDNPacer()
 	return &Client{
-		baseURL:    strings.TrimSuffix(baseURL, "/"),
-		token:      token,
-		httpClient: newHTTPClient(pacing),
-		executor:   newHTTPExecutor(),
-		pacing:     pacing,
+		baseURL: strings.TrimSuffix(baseURL, "/"),
+		token:   token,
+		// Storyblok redirects published requests without a current cv.
+		api:   apihttp.NewClient(apihttp.Config{Pacer: pacer, AttemptTimeout: attemptTimeout, FollowRedirects: true}),
+		pacer: pacer,
 	}
 }
 
@@ -118,23 +113,20 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 
 func (c *Client) get(ctx context.Context, endpoint string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err == nil {
-		var res *http.Response
-		if res, err = c.do(req); err == nil {
-			return res, nil
+	if err != nil {
+		// The request URL carries the access token, so it must not end up in logs.
+		if urlErr, ok := errors.AsType[*url.Error](err); ok {
+			err = urlErr.Err
 		}
+		return nil, err
 	}
-	// The request URL carries the access token, so it must not end up in logs.
-	if urlErr, ok := errors.AsType[*url.Error](err); ok {
-		err = urlErr.Err
-	}
-	return nil, err
+	return c.api.Do(req)
 }
 
 func (c *Client) recordCacheVersion(cv int64, discovered bool) {
 	if c.versions.record(cv, discovered) {
 		// Nothing is cached for a new cv yet.
-		c.pacing.capCachedRate()
+		c.pacer.cached.CapAtBase()
 	}
 }
 

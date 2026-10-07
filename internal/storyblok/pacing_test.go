@@ -14,7 +14,7 @@ import (
 
 var (
 	baseInterval = time.Duration(float64(time.Second) / float64(baseRequestRate))
-	baseBurst    = burstFor(baseRequestRate)
+	baseBurst    = baseRequestRate
 )
 
 // fakeCDN answers published story requests with the X-Cache header in
@@ -47,7 +47,7 @@ func (f *fakeCDN) roundTrip(r *http.Request) (*http.Response, error) {
 func newFakeCDNClient(cacheHeader string) (*Client, *fakeCDN) {
 	cdn := &fakeCDN{cacheHeader: cacheHeader, status: map[string]int{}}
 	client := NewClient(DefaultBaseURL, "secret")
-	client.httpClient.Transport = roundTripFunc(cdn.roundTrip)
+	client.api.HTTPClient.Transport = roundTripFunc(cdn.roundTrip)
 	return client, cdn
 }
 
@@ -123,76 +123,6 @@ func TestClientIgnoresNotFoundResponsesForPacing(t *testing.T) {
 		})
 		if got := requestsWithin(t, time.Second, published(t, client, "home")); got < int(maxCachedRate)/2 {
 			t.Errorf("%d requests per second with occasional 404s, want about %v", got, maxCachedRate)
-		}
-	})
-}
-
-func TestClientRecoversFromThrottlingWithoutCacheHits(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		client, cdn := newFakeCDNClient("")
-		cdn.status["home"] = http.StatusTooManyRequests
-		requestsWithin(t, 6*time.Second, published(t, client, "home"))
-		delete(cdn.status, "home")
-		if got := requestsWithin(t, time.Second, published(t, client, "home")); got > 2 {
-			t.Errorf("%d requests per second after sustained 429s, want the floor of %v", got, minRequestRate)
-		}
-		time.Sleep(throttleCooldown + 5*growthInterval)
-		if got := requestsWithin(t, time.Second, published(t, client, "home")); got < int(baseRequestRate)-1 {
-			t.Errorf("%d requests per second after recovering, want about %v", got, baseRequestRate)
-		}
-	})
-}
-
-func TestClientHalvesRateOncePerBurstOfThrottledResponses(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		var throttled atomic.Int32
-		client := NewClient(DefaultBaseURL, "secret")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			if throttled.Add(1) <= 20 {
-				return apiResponse(429, http.Header{"Retry-After": {"0"}}, io.NopCloser(strings.NewReader("error"))), nil
-			}
-			return apiResponse(200, nil, io.NopCloser(strings.NewReader(apiPayload))), nil
-		})
-		var wg sync.WaitGroup
-		for range 20 {
-			wg.Go(func() {
-				if _, err := client.SpaceID(t.Context()); err != nil {
-					t.Error(err)
-				}
-			})
-		}
-		wg.Wait()
-		space := func() error { _, err := client.SpaceID(t.Context()); return err }
-		if got := requestsWithin(t, time.Second, space); got < int(baseRequestRate)/2-1 {
-			t.Errorf("%d requests per second after one burst of 429s, want about %v", got, baseRequestRate/2)
-		}
-	})
-}
-
-func TestClientSlowsQueuedRequestsAfterThrottling(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		var mu sync.Mutex
-		var sent []time.Time
-		throttleAt := baseBurst + 5
-		client := NewClient(DefaultBaseURL, "secret")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			mu.Lock()
-			defer mu.Unlock()
-			sent = append(sent, time.Now())
-			if len(sent) == throttleAt {
-				return apiResponse(429, http.Header{"Retry-After": {"0"}}, io.NopCloser(strings.NewReader("error"))), nil
-			}
-			return apiResponse(200, nil, io.NopCloser(strings.NewReader(apiPayload))), nil
-		})
-		var wg sync.WaitGroup
-		for range throttleAt + 10 {
-			wg.Go(func() { _, _ = client.SpaceID(t.Context()) })
-		}
-		wg.Wait()
-		for i := throttleAt; i < len(sent); i++ {
-			if gap := sent[i].Sub(sent[i-1]); gap < 2*baseInterval {
-				t.Errorf("request %d sent %v after the previous one, want at least %v", i, gap, 2*baseInterval)
-			}
 		}
 	})
 }

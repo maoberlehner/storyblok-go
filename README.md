@@ -25,11 +25,13 @@ settings.
 
 ## Storyblok requests
 
-The Storyblok client retries with [Failsafe-go](https://failsafe-go.dev/) and
-paces requests with
+The Content Delivery and Management API clients share an HTTP layer that retries
+with [Failsafe-go](https://failsafe-go.dev/) and paces requests with
 [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate). The limits
 below are fixed and apply per client instance; multiple application instances do
 not share a quota.
+
+Content Delivery API:
 
 - Published story requests with a `cv` start at 25 requests/second. After ten
   consecutive cache hits (`X-Cache: Hit from cloudfront` or `HIT`), the rate
@@ -41,11 +43,6 @@ not share a quota.
   seconds. Successful responses then restore the rate to 25/s.
 - A request that cannot get a permit within two seconds fails with
   `ErrRateLimited`. The server answers those page requests with 503.
-- Transport errors, 429, and 5xx responses other than 501 are retried up to
-  three times, with exponential backoff from 200 ms to 2 s plus up to 25%
-  jitter. A `Retry-After` on 429/503 (seconds or HTTP date) is used as-is. If it
-  exceeds the remaining deadline, the request fails with that status
-  immediately.
 - Each attempt times out after four seconds, and each request after ten seconds,
   including permit waits and retries.
 
@@ -56,6 +53,20 @@ The client learns it from story responses and never moves it backwards. An old
 omits `cv` to discover the current one while concurrent requests keep using the
 known value. `space.version` is not used because it differs from `cv` for tokens
 with a minimum cache TTL. Drafts never send or change `cv`.
+
+Management API:
+
+- Requests are paced at 6/s, the limit of paid plans, with a burst of one. 429s
+  halve the rate the same way, which covers plans with a lower limit. There is
+  no cache, so the rate never grows past 6/s.
+- Each attempt times out after 30 seconds.
+
+Both clients retry reads on transport errors, 429, and 5xx responses other than
+501, up to three times, with exponential backoff from 200 ms to 2 s plus up to
+25% jitter. Writes are only retried on 429, because other failures leave their
+outcome unknown. A `Retry-After` on 429/503 (seconds or HTTP date) is used
+as-is. If it exceeds the remaining deadline, the request fails with that status
+immediately.
 
 ## Test
 
@@ -101,7 +112,7 @@ go run ./cmd/storyblok-schema validate --out schemas.json
 ## Schema sync
 
 Set `STORYBLOK_MANAGEMENT_TOKEN` to a personal Management API token in your
-shell or CI secrets. It is separate from the Content Delivery preview token. Set
+shell. It is separate from the Content Delivery preview token. Set
 `STORYBLOK_SPACE_ID` or pass `--space`. For non-EU spaces set
 `STORYBLOK_MAPI_URL` or `--api-url` to the
 [regional Management API base URL](https://www.storyblok.com/docs/api/management).
@@ -124,8 +135,7 @@ New components are created as empty shells before their fields are configured,
 so references can resolve. Writes are sequential, rate-limited, and verified
 afterward. A successful second plan has no changes. Apply is not transactional:
 after a partial failure, generate a new plan and apply it. Ambiguous failed
-writes are not blindly retried. Avoid concurrent manual schema edits during
-apply; CI serializes syncs per space.
+writes are not retried. Avoid concurrent schema edits or syncs during apply.
 
 The CLI prints `MIGRATION CHECK` for removed fields, changed types/content
 constraints, new required fields, changed component roles, and remote-only
@@ -139,17 +149,6 @@ navigation/configuration have been removed from this repository. Existing
 stories still using those names need a one-off migration before they render with
 the new components. Schema sync does not rename them. Unknown blocks are visible
 as diagnostics in editor preview and omitted from published output.
-
-## CI
-
-The `Storyblok schemas` GitHub Actions workflow runs tests and offline
-validation on pull requests. To sync, configure the `storyblok` environment with
-the `STORYBLOK_MANAGEMENT_TOKEN` secret and dispatch the workflow for the
-desired code revision and space. It uploads a plan artifact; the optional
-`apply` input applies that run's plan. For a preview first, leave `apply`
-disabled, inspect the artifact, then run again with `apply` enabled (the new run
-generates a fresh plan). No Management API credentials are used in pull request
-validation.
 
 MAPI references:
 [components](https://www.storyblok.com/docs/api/management/components),

@@ -35,7 +35,7 @@ func TestClientRetriesTransientResponses(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				attempts := 0
 				client := NewClient(DefaultBaseURL, "secret")
-				client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 					attempts++
 					code := http.StatusOK
 					if attempts == 1 {
@@ -59,7 +59,7 @@ func TestClientDoesNotRetryPermanentResponses(t *testing.T) {
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			attempts := 0
 			client := NewClient(DefaultBaseURL, "secret")
-			client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 				attempts++
 				return apiResponse(status, nil, io.NopCloser(strings.NewReader("error"))), nil
 			})
@@ -85,7 +85,7 @@ func TestClientLimitsRetriesAndClosesBodies(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		var bodies []*trackedBody
 		client := NewClient(DefaultBaseURL, "secret")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			if len(bodies) > 0 && !bodies[len(bodies)-1].closed {
 				t.Fatal("previous response body was not closed before retrying")
 			}
@@ -119,7 +119,7 @@ func TestClientRespectsRetryAfter(t *testing.T) {
 				start := time.Now()
 				attempts := 0
 				client := NewClient(DefaultBaseURL, "secret")
-				client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 					attempts++
 					if attempts == 1 {
 						after := "2"
@@ -148,7 +148,7 @@ func TestClientRetriesWaitForRateLimitPermit(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		var sent []time.Time
 		client := NewClient(DefaultBaseURL, "secret")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			sent = append(sent, time.Now())
 			if len(sent) == baseBurst+1 {
 				return apiResponse(429, http.Header{"Retry-After": {"0"}}, io.NopCloser(strings.NewReader("error"))), nil
@@ -174,7 +174,7 @@ func TestClientReturnsThrottlingStatusWhenRetryAfterExceedsDeadline(t *testing.T
 		attempts := 0
 		body := &trackedBody{Reader: strings.NewReader("error")}
 		client := NewClient(DefaultBaseURL, "secret")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			attempts++
 			return apiResponse(429, http.Header{"Retry-After": {"60"}}, body), nil
 		})
@@ -196,7 +196,7 @@ func TestClientRetriesStalledAttempt(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		attempts := 0
 		client := NewClient(DefaultBaseURL, "secret")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			attempts++
 			if attempts == 1 {
 				<-r.Context().Done()
@@ -216,7 +216,7 @@ func TestClientRetriesStalledAttempt(t *testing.T) {
 func TestClientDeadlineIncludesRetries(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			<-r.Context().Done()
 			return nil, r.Context().Err()
 		})
@@ -235,7 +235,7 @@ func TestClientRetriesTransportFailures(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		attempts := 0
 		client := NewClient(DefaultBaseURL, "secret-token")
-		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			attempts++
 			if attempts < 4 {
 				return nil, io.ErrUnexpectedEOF
@@ -261,7 +261,7 @@ func TestClientCancellationStopsWaiting(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				attempts := 0
 				client := NewClient(DefaultBaseURL, "secret-token")
-				client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 					if strings.Contains(r.URL.Path, "/stories/") {
 						attempts++
 					}
@@ -312,7 +312,7 @@ func TestClientDoesNotRetryCertificateErrors(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				attempts := 0
 				client := NewClient(DefaultBaseURL, "secret-token")
-				client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
 					attempts++
 					return nil, certErr
 				})
