@@ -5,3 +5,4 @@
 .certs/
 /schema-plan.json
 /schemas.json
+/.agents/skills/storyblok-content-ops

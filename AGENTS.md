@@ -40,6 +40,14 @@ these change. Avoid unrelated migrations.
   changes that may require content migrations. Perform migrations on demand with
   separate one-off scripts, not an automatic migration engine.
 
+## Storyblok content operations
+
+Use the `sba` CLI (`@markus/storyblok-agent`) and the `storyblok-content-ops`
+skill to find, read, and change story content and assets, including one-off
+content migrations. Component schemas still come from the Go definitions via
+schema sync. `make skills` links the skill from the global install; credentials
+go in `.env` (see `.env.template`).
+
 ## CSS
 
 - Use plain modern CSS and global custom properties for colors.
