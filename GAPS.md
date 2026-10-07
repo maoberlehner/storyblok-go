@@ -7,10 +7,10 @@ deliberate exceptions with reasons.
   content (`make seed`). Its older stories (`home`, `about`, `blog-index/…`)
   still use removed components and render empty; they need one-off migrations or
   deletion. The CLI reports remote-only components but never deletes them.
-- **Schema coverage:** The compiler supports text, textarea, multilink, and
-  blocks. Other field types, semantic palette fields, and content/media
-  components should be added when needed. Seeded story links set only
-  `cached_url`, so the editor shows them without a linked story.
+- **Schema coverage:** The compiler supports text, textarea, markdown, option,
+  asset, multilink, bloks, and groups. Other field types, semantic palette
+  fields, and content/media components should be added when needed. Seeded story
+  links set only `cached_url`, so the editor shows them without a linked story.
 - **Enhancement / forms:** htmx 4 is self-hosted. Load more and the contact form
   follow [patterns/](patterns/README.md). Forms always post against the
   published story, so a form on an unpublished page fails in the Visual Editor.

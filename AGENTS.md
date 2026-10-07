@@ -40,6 +40,8 @@ measurements or research.
   - `block-content-*`: composable content, e.g. `block-content-headline`,
     `block-content-list`, `block-content-cta`. CMS content areas allow all
     blocks in this category to be mixed, but do not accept media blocks.
+  - `site-*`: site-wide data that is never routed, e.g. `site-settings` (the
+    content type of the `settings` story), `site-link`, `site-link-group`.
 - Scope component styles to their component. Keep base components independent of
   page/block implementations. Preserve existing Storyblok identifiers until an
   explicit mapping or content migration is in place.

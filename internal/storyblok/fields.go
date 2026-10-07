@@ -170,6 +170,9 @@ func (c *Color) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
 
 func (c Color) String() string { return c.Value }
 
+// Markdown is the source of a markdown field.
+type Markdown string
+
 type RichtextNode struct {
 	Type    string         `json:"type"`
 	Text    string         `json:"text"`
