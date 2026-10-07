@@ -174,7 +174,7 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	page := components.NewPage(res.story)
 	page.Preview = preview
 	page.Locale = res.locale
-	page.Canonical = s.canonicalURL(res.story.FullSlug)
+	page.Canonical = s.canonicalURL(res)
 	versions := res.versions(version)
 	if !preview {
 		page.Alternates = s.alternates(versions)
@@ -245,7 +245,7 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 		page := components.NewPage(res.story)
 		page.Title = res.locale.T("error.title_prefix", page.Title)
 		page.Locale = res.locale
-		page.Canonical = s.canonicalURL(res.story.FullSlug)
+		page.Canonical = s.canonicalURL(res)
 		versions := res.versions(storyblok.Published)
 		page.Alternates = s.alternates(versions)
 		page.Chrome = s.chrome(r.Context(), storyblok.Published, res.locale, r.URL.Path, versions)
@@ -313,11 +313,11 @@ func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok
 
 // canonicalURL is the story's URL without query parameters, which only hold
 // view state such as loaded pages or a form confirmation.
-func (s *Server) canonicalURL(fullSlug string) string {
+func (s *Server) canonicalURL(res resolution) string {
 	if s.siteURL == "" {
 		return ""
 	}
-	return s.siteURL + storyPath(fullSlug)
+	return s.siteURL + res.path()
 }
 
 func storyPath(fullSlug string) string {

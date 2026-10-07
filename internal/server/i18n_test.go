@@ -144,3 +144,16 @@ func TestSitemapListsEveryLanguageVersion(t *testing.T) {
 		t.Error("sitemap lists the field-level URL of a page with a folder-level translation")
 	}
 }
+
+func TestFieldLevelGermanLinksItsEnglishVersion(t *testing.T) {
+	_, body := do(t, http.MethodGet, newI18nServer(t)+"/de/landing", "")
+	for _, want := range []string{
+		`<link rel="alternate" hreflang="en" href="https://example.com/landing">`,
+		`<link rel="alternate" hreflang="de" href="https://example.com/de/landing">`,
+		`href="/landing" hreflang="en" lang="en">English</a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+}

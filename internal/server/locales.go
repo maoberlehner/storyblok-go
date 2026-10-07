@@ -33,6 +33,21 @@ type resolution struct {
 	// redirect is the URL of the story's folder-level translation, which
 	// replaces its field-level one.
 	redirect string
+	// defaultSlug is the default-language slug of a field-level translation.
+	// The API's full_slug carries the language prefix (unless the space turns
+	// it off) and default_full_slug is only set with translatable slugs.
+	defaultSlug string
+}
+
+// path is the URL of the resolved story.
+func (res resolution) path() string {
+	if res.defaultSlug == "" {
+		return storyPath(res.story.FullSlug)
+	}
+	if res.locale.IsDefault() {
+		return storyPath(res.defaultSlug)
+	}
+	return storyPath(res.locale.Code + "/" + res.defaultSlug)
 }
 
 // resolve finds the story for rest in loc: a folder-level translation under
@@ -58,7 +73,7 @@ func (s *Server) resolve(ctx context.Context, loc locale.Locale, rest string, ve
 	if err != nil {
 		return resolution{}, err
 	}
-	res := resolution{story: story, locale: loc}
+	res := resolution{story: story, locale: loc, defaultSlug: slug}
 	if !loc.IsDefault() {
 		for _, alt := range publishedAlternates(story.Alternates, version) {
 			if l, ok := folderLocale(alt.FullSlug); ok && l.Code == loc.Code {
@@ -197,10 +212,7 @@ func versionsOf(fullSlug string, alternates []storyblok.Alternate) []langVersion
 
 // versions lists the language versions of a resolved story.
 func (res resolution) versions(version storyblok.Version) []langVersion {
-	slug := res.story.FullSlug
-	if res.story.DefaultFullSlug != "" {
-		slug = res.story.DefaultFullSlug
-	}
+	slug := cmp.Or(res.defaultSlug, res.story.FullSlug)
 	return versionsOf(slug, publishedAlternates(res.story.Alternates, version))
 }
 

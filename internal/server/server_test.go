@@ -118,7 +118,7 @@ func (f *fakeContent) Story(_ context.Context, slug string, opts storyblok.Story
 	}
 	if opts.Language != "" {
 		translate(tree, opts.Language)
-		tree["default_full_slug"] = slug
+		// default_full_slug is null unless the space translates slugs.
 		slug = opts.Language + "/" + slug
 		prefixStoryLinks(tree, opts.Language)
 	}
