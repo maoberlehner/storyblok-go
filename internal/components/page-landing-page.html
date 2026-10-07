@@ -1,0 +1,6 @@
+{{define "page-landing-page" -}}
+<div {{editable .}} class="page-landing-page">
+  {{with .Title}}<h1 class="page-landing-page__title">{{.}}</h1>{{end}}
+  {{renderAll .Sections}}
+</div>
+{{- end}}

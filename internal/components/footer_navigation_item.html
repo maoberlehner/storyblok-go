@@ -1,6 +1,0 @@
-{{define "footer_navigation_item" -}}
-<li class="site-footer__item" {{editable .}}>
-  <a class="site-footer__link" href="{{.Link.Href}}"{{if .Link.IsExternal}} target="_blank" rel="noopener"{{end}}>{{.Display}}</a>
-  {{- with .Badge}} <span class="nav-badge">{{.}}</span>{{end}}
-</li>
-{{- end}}

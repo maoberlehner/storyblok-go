@@ -1,10 +1,10 @@
-.PHONY: run test fmt fonts certs
+.PHONY: run test fmt schema-validate certs
 
 CERT := .certs/localhost.pem
 KEY := .certs/localhost-key.pem
 
 # Serves HTTPS because the Visual Editor only loads https preview URLs.
-run: static/fonts/ABCMarfa-Regular.woff2 $(CERT)
+run: $(CERT)
 	set -a && . ./.env && set +a && DEV_TOOLBAR=1 TLS_CERT_FILE=$(CERT) TLS_KEY_FILE=$(KEY) go run .
 
 test:
@@ -14,8 +14,8 @@ fmt:
 	gofmt -w .
 	npx -y oxfmt@0
 
-fonts static/fonts/ABCMarfa-Regular.woff2:
-	./scripts/fetch-fonts.sh
+schema-validate:
+	go run ./cmd/storyblok-schema validate
 
 certs $(CERT):
 	mkdir -p .certs

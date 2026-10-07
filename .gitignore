@@ -3,3 +3,5 @@
 /storyblok-go-website
 .worktrees/
 .certs/
+/schema-plan.json
+/schemas.json

@@ -1,9 +1,6 @@
 .unknown-block {
-  background: var(--red-50);
-  border: 2px dashed var(--red-500);
-  border-radius: var(--border-radius-base);
-  color: var(--red-800);
-  margin: var(--spacing-xl) auto;
-  max-width: var(--default-container-max-width);
-  padding: var(--spacing-xl);
+  background: var(--color-error-background);
+  color: var(--color-error);
+  border: 0.125rem dashed currentColor;
+  padding: 1rem;
 }

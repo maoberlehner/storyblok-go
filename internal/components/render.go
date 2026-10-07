@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"embed"
 	"encoding/hex"
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -24,11 +25,7 @@ var (
 
 // ResolveRelations lists the relation fields components expect as resolved
 // stories, both from the Content Delivery API and the Visual Editor bridge.
-var ResolveRelations = []string{
-	"quotes_item.quote",
-	"section_with_quote_card.quote",
-	"hero_with_image_ctas.quote",
-}
+var ResolveRelations []string
 
 type Metadata struct {
 	Title       string
@@ -40,7 +37,6 @@ type Metadata struct {
 type Page struct {
 	Metadata
 	Content Block
-	Config  *Configuration
 	// Preview loads the Visual Editor bridge and live preview script.
 	Preview bool
 
@@ -89,23 +85,29 @@ func WithDevToolbar(spaceID int64) RendererOption {
 }
 
 func NewRenderer(opts ...RendererOption) (*Renderer, error) {
+	if _, err := Schemas(); err != nil {
+		return nil, err
+	}
 	r := &Renderer{}
 	for _, opt := range opts {
 		opt(r)
 	}
 	templates, err := template.New("").Funcs(template.FuncMap{
-		"render":         r.renderBlock,
-		"renderAll":      r.renderBlocks,
-		"editable":       r.editableAttrs,
-		"richtext":       r.richtext,
-		"richtextInline": r.richtextInline,
-		"join":           strings.Join,
-		"contains":       slices.Contains[[]string],
+		"render":    r.renderBlock,
+		"renderAll": r.renderBlocks,
+		"editable":  r.editableAttrs,
+		"join":      strings.Join,
+		"contains":  slices.Contains[[]string],
 	}).ParseFS(templateFS, "*.html")
 	if err != nil {
 		return nil, err
 	}
 	r.templates = templates
+	for name := range registry {
+		if templates.Lookup(name) == nil {
+			return nil, fmt.Errorf("%s: missing named HTML template", name)
+		}
+	}
 
 	if r.stylesheet, err = bundleStylesheets(); err != nil {
 		return nil, err
