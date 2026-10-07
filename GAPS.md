@@ -21,6 +21,9 @@ deliberate exceptions with reasons.
   stylesheet; preview/dev scripts remain separate. Benchmark pending: inline
   beside component HTML, inline with used CSS deduplicated in `<head>`, and
   external bundles. Delivery decision remains open.
+- **CI:** There is no CI. Tests, offline schema validation, and schema
+  plan/apply run locally. A pipeline for pull request checks and reviewed schema
+  syncs per space is pending.
 - **Verification:** The browser support matrix and WCAG 2.2 AA target have not
   had a full audit. Live MAPI behavior still needs a smoke test against a
   development space; HTTP fixture tests cover the sync contract locally.
