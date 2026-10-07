@@ -1,0 +1,23 @@
+.block-section-faq {
+  container-type: inline-size;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.block-section-faq__heading {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.block-section-faq__items {
+  border-block-start: 0.0625rem solid var(--color-border);
+  max-inline-size: 48rem;
+}
+
+@container (inline-size >= 60rem) {
+  .block-section-faq {
+    grid-template-columns: 1fr 2fr;
+    align-items: start;
+  }
+}

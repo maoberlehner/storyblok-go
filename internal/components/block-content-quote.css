@@ -1,0 +1,40 @@
+.block-content-quote {
+  display: grid;
+  gap: 1rem;
+  align-content: space-between;
+  margin: 0;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+
+.block-content-quote__quote {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.block-content-quote__quote p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.block-content-quote__quote p::before {
+  content: open-quote;
+}
+
+.block-content-quote__quote p::after {
+  content: close-quote;
+}
+
+.block-content-quote__author {
+  display: grid;
+}
+
+.block-content-quote__name {
+  font-weight: 600;
+}
+
+.block-content-quote__role {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}

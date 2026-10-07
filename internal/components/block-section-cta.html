@@ -1,0 +1,9 @@
+{{define "block-section-cta" -}}
+<section {{editable .}} class="block-section-cta" aria-labelledby="{{id .}}-heading">
+  <div class="block-section-cta__content">
+    <h2 class="block-section-cta__heading" id="{{id .}}-heading">{{.Heading}}</h2>
+    {{with .Text}}<p class="block-section-cta__text">{{.}}</p>{{end}}
+  </div>
+  {{with .Button}}{{base "base-button" .}}{{end}}
+</section>
+{{- end}}

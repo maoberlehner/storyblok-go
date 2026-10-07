@@ -281,6 +281,7 @@ func TestAssetDelivery(t *testing.T) {
 	}{
 		{components.DeliverBundle, 0, true},
 		{components.DeliverHead, 1, false},
+		{components.DeliverLinks, 0, false},
 		{components.DeliverInline, 12, false},
 	} {
 		t.Run(string(tt.mode), func(t *testing.T) {
@@ -291,6 +292,26 @@ func TestAssetDelivery(t *testing.T) {
 			}
 			if got := strings.Contains(body, "/assets/app.css?v="); got != tt.bundled {
 				t.Errorf("links bundle = %t, want %t", got, tt.bundled)
+			}
+			if tt.mode == components.DeliverLinks {
+				head, _, _ := strings.Cut(body, "</head>")
+				for _, want := range []string{"/assets/components/base.css?v=", "/assets/components/base-card.css?v="} {
+					if !strings.Contains(head, want) {
+						t.Errorf("head does not link %s", want)
+					}
+				}
+				if strings.Contains(head, "block-section-hero.css") {
+					t.Error("head links an unused component")
+				}
+				_, href, _ := strings.Cut(head, `href="/assets/components/base-card.css`)
+				href, _, _ = strings.Cut(href, `"`)
+				css := request(t, http.MethodGet, ts.URL+"/assets/components/base-card.css"+href, nil, nil)
+				if !strings.Contains(css.body, cardRule) || !strings.Contains(css.header.Get("Cache-Control"), "immutable") {
+					t.Errorf("component stylesheet: %d %v", css.status, css.header)
+				}
+			}
+			if got := strings.Contains(body, "/assets/app.js?v="); got == (tt.mode == components.DeliverInline) {
+				t.Errorf("links script bundle = %t", got)
 			}
 			if tt.mode == components.DeliverHead {
 				head, _, _ := strings.Cut(body, "</head>")

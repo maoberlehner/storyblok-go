@@ -1,0 +1,19 @@
+.block-content-stat {
+  display: grid;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.block-content-stat__value {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.block-content-stat__label {
+  margin: 0;
+  color: var(--color-muted);
+}
