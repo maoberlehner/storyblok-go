@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -15,7 +14,14 @@ import (
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+// RoundTrip sets Response.Request like http.Transport does.
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	response, err := f(r)
+	if response != nil && response.Request == nil {
+		response.Request = r
+	}
+	return response, err
+}
 
 const apiPayload = `{"story":{"name":"Home"},"space":{"id":123}}`
 
@@ -138,46 +144,32 @@ func TestClientRespectsRetryAfter(t *testing.T) {
 	}
 }
 
-func TestClientSharesRateLimitAcrossRequestsAndRetries(t *testing.T) {
+func TestClientRetriesWaitForRateLimitPermit(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		var mu sync.Mutex
-		var times []time.Time
+		var sent []time.Time
 		client := NewClient(DefaultBaseURL, "secret")
 		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			mu.Lock()
-			defer mu.Unlock()
-			times = append(times, time.Now())
-			if len(times) == 1 {
+			sent = append(sent, time.Now())
+			if len(sent) == baseBurst+1 {
 				return apiResponse(429, http.Header{"Retry-After": {"0"}}, io.NopCloser(strings.NewReader("error"))), nil
 			}
 			return apiResponse(200, nil, io.NopCloser(strings.NewReader(apiPayload))), nil
 		})
-		var wg sync.WaitGroup
-		for range 3 {
-			wg.Go(func() {
-				if _, err := client.Story(t.Context(), "home", StoryOptions{Version: Published}); err != nil {
-					t.Error(err)
-				}
-			})
-			wg.Go(func() {
-				if _, err := client.SpaceID(t.Context()); err != nil {
-					t.Error(err)
-				}
-			})
-		}
-		wg.Wait()
-		if len(times) != 7 {
-			t.Fatalf("attempts = %d, want 7", len(times))
-		}
-		for i := 1; i < len(times); i++ {
-			if gap := times[i].Sub(times[i-1]); gap < 40*time.Millisecond {
-				t.Errorf("attempts %d and %d spaced %v apart, want at least 40ms", i-1, i, gap)
+		for range baseBurst + 1 {
+			if _, err := client.SpaceID(t.Context()); err != nil {
+				t.Fatal(err)
 			}
+		}
+		if len(sent) != baseBurst+2 {
+			t.Fatalf("attempts = %d, want %d", len(sent), baseBurst+2)
+		}
+		if gap := sent[len(sent)-1].Sub(sent[len(sent)-2]); gap < baseInterval {
+			t.Errorf("retry sent %v after the 429, want at least %v", gap, baseInterval)
 		}
 	})
 }
 
-func TestClientDeadlineIncludesRetryWait(t *testing.T) {
+func TestClientReturnsThrottlingStatusWhenRetryAfterExceedsDeadline(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		attempts := 0
 		body := &trackedBody{Reader: strings.NewReader("error")}
@@ -187,15 +179,54 @@ func TestClientDeadlineIncludesRetryWait(t *testing.T) {
 			return apiResponse(429, http.Header{"Retry-After": {"60"}}, body), nil
 		})
 		start := time.Now()
-		_, err := client.Story(t.Context(), "home", StoryOptions{Version: Published})
-		if !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatalf("err = %v, want deadline exceeded", err)
+		_, err := client.Story(t.Context(), "home", StoryOptions{Version: Draft})
+		if err == nil || !strings.Contains(err.Error(), "Too Many Requests") {
+			t.Fatalf("err = %v, want the 429 status", err)
 		}
-		if elapsed := time.Since(start); elapsed != 10*time.Second {
-			t.Errorf("elapsed = %v, want 10s", elapsed)
+		if elapsed := time.Since(start); elapsed != 0 {
+			t.Errorf("elapsed = %v, want an immediate error", elapsed)
 		}
 		if attempts != 1 || !body.closed {
 			t.Errorf("attempts = %d, body.closed = %v, want 1 and true", attempts, body.closed)
+		}
+	})
+}
+
+func TestClientRetriesStalledAttempt(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		attempts := 0
+		client := NewClient(DefaultBaseURL, "secret")
+		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			attempts++
+			if attempts == 1 {
+				<-r.Context().Done()
+				return nil, r.Context().Err()
+			}
+			return apiResponse(200, nil, io.NopCloser(strings.NewReader(apiPayload))), nil
+		})
+		if _, err := client.Story(t.Context(), "home", StoryOptions{Version: Draft}); err != nil {
+			t.Fatal(err)
+		}
+		if attempts != 2 {
+			t.Errorf("attempts = %d, want 2", attempts)
+		}
+	})
+}
+
+func TestClientDeadlineIncludesRetries(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		client := NewClient(DefaultBaseURL, "secret")
+		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			<-r.Context().Done()
+			return nil, r.Context().Err()
+		})
+		start := time.Now()
+		_, err := client.Story(t.Context(), "home", StoryOptions{Version: Draft})
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want deadline exceeded", err)
+		}
+		if elapsed := time.Since(start); elapsed != operationTimeout {
+			t.Errorf("elapsed = %v, want %v", elapsed, operationTimeout)
 		}
 	})
 }
@@ -231,16 +262,20 @@ func TestClientCancellationStopsWaiting(t *testing.T) {
 				attempts := 0
 				client := NewClient(DefaultBaseURL, "secret-token")
 				client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
-					attempts++
+					if strings.Contains(r.URL.Path, "/stories/") {
+						attempts++
+					}
 					if retry {
-						return apiResponse(429, http.Header{"Retry-After": {"60"}}, io.NopCloser(strings.NewReader("error"))), nil
+						return apiResponse(429, http.Header{"Retry-After": {"5"}}, io.NopCloser(strings.NewReader("error"))), nil
 					}
 					return apiResponse(200, nil, io.NopCloser(strings.NewReader(apiPayload))), nil
 				})
 				if !retry {
-					// Consume the immediate permit so the next call has to wait.
-					if _, err := client.SpaceID(t.Context()); err != nil {
-						t.Fatal(err)
+					// Consume the burst so the next call has to wait.
+					for range baseBurst {
+						if _, err := client.SpaceID(t.Context()); err != nil {
+							t.Fatal(err)
+						}
 					}
 				}
 				ctx, cancel := context.WithCancel(t.Context())
@@ -255,8 +290,12 @@ func TestClientCancellationStopsWaiting(t *testing.T) {
 				if err := <-result; !errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "secret-token") {
 					t.Fatalf("err = %v, want cancellation without token", err)
 				}
-				if attempts != 1 {
-					t.Errorf("attempts = %d, want 1", attempts)
+				want := 0
+				if retry {
+					want = 1
+				}
+				if attempts != want {
+					t.Errorf("story attempts = %d, want %d", attempts, want)
 				}
 			})
 		})

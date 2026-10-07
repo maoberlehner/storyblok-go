@@ -155,5 +155,9 @@ func (s *Server) fetch(ctx context.Context, slug string, opts storyblok.StoryOpt
 
 func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 	s.logger.ErrorContext(r.Context(), "request failed", "method", r.Method, "path", r.URL.Path, "err", err)
-	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	status := http.StatusInternalServerError
+	if errors.Is(err, storyblok.ErrRateLimited) {
+		status = http.StatusServiceUnavailable
+	}
+	http.Error(w, http.StatusText(status), status)
 }
