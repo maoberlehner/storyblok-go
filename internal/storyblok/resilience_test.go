@@ -324,3 +324,14 @@ func TestClientDoesNotRetryCertificateErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestClientErrorsOmitTokenForMalformedBaseURL(t *testing.T) {
+	client := NewClient("://bad", "secret-token")
+	_, storyErr := client.Story(t.Context(), "home", StoryOptions{Version: Published})
+	_, spaceErr := client.SpaceID(t.Context())
+	for _, err := range []error{storyErr, spaceErr} {
+		if err == nil || strings.Contains(err.Error(), "secret-token") {
+			t.Errorf("err = %v, want an error without the token", err)
+		}
+	}
+}

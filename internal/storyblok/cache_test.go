@@ -187,6 +187,36 @@ func TestClientFollowsCacheVersionRedirect(t *testing.T) {
 	})
 }
 
+func TestClientLearnsCacheVersionFromRedirectToMissingStory(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		client := NewClient(DefaultBaseURL, "secret")
+		var queries []string
+		client.httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			queries = append(queries, r.URL.Query().Get("cv"))
+			if !r.URL.Query().Has("cv") {
+				location := *r.URL
+				query := location.Query()
+				query.Set("cv", "100")
+				location.RawQuery = query.Encode()
+				return apiResponse(301, http.Header{"Location": {location.String()}}, http.NoBody), nil
+			}
+			if strings.HasSuffix(r.URL.Path, "/missing") {
+				return apiResponse(404, nil, io.NopCloser(strings.NewReader(`{}`))), nil
+			}
+			return storyResponse(100, nil), nil
+		})
+		if _, err := client.Story(t.Context(), "missing", StoryOptions{Version: Published}); !errors.Is(err, ErrNotFound) {
+			t.Fatalf("err = %v, want ErrNotFound", err)
+		}
+		if _, err := client.Story(t.Context(), "home", StoryOptions{Version: Published}); err != nil {
+			t.Fatal(err)
+		}
+		if want := []string{"", "100", "100"}; fmt.Sprint(queries) != fmt.Sprint(want) {
+			t.Errorf("cv per request = %q, want %q", queries, want)
+		}
+	})
+}
+
 func TestDraftAndSpaceRequestsDoNotChangeCacheVersion(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
