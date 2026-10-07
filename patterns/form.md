@@ -7,14 +7,15 @@ components `base-form`, `base-form-field`, `base-form-error-summary`, and
 
 ## Request flow
 
-The form posts to its own page with `_block=<section uid>`. The server finds the
-section, which must implement `components.FormHandler`, and calls `Submit`.
-Submissions from other origins are rejected (`http.CrossOriginProtection`).
+The form posts to its own page with `_block=<section short id>`. The server
+finds the section, which must implement `components.FormHandler`, and calls
+`Submit`. Submissions from other origins are rejected
+(`http.CrossOriginProtection`).
 
-| Request    | Invalid                          | Valid                                          |
-| ---------- | -------------------------------- | ---------------------------------------------- |
-| without JS | 422, full page, title "Error: …" | 303 to `?<state>&sent=<uid>`, page confirms it |
-| htmx       | 422, form fragment               | 200, success fragment                          |
+| Request    | Invalid                          | Valid                                               |
+| ---------- | -------------------------------- | --------------------------------------------------- |
+| without JS | 422, full page, title "Error: …" | 303 to `?<state>&sent=<short id>`, page confirms it |
+| htmx       | 422, form fragment               | 200, success fragment                               |
 
 The form has `hx-post`, `hx-target="this"`, and `hx-swap="outerHTML"`; htmx 4
 swaps 422 responses by default. The success message carries the form's ID, so

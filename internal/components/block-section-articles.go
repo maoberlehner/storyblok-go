@@ -53,7 +53,7 @@ type articleSummary struct {
 
 // StateParams names the parameter for the number of pages, which is unique
 // per listing, so several listings on a page keep their state.
-func (b *BlockSectionArticles) StateParams() []string { return []string{"page-" + b.UID} }
+func (b *BlockSectionArticles) StateParams() []string { return []string{"page-" + ShortID(b)} }
 
 func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Request) error {
 	param := b.StateParams()[0]

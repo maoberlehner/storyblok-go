@@ -153,8 +153,7 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	uid := r.PostForm.Get(components.TargetParam)
-	section, _ := components.FindSection(story.Content.Block, uid)
+	section, _ := components.FindSection(story.Content.Block, r.PostForm.Get(components.TargetParam))
 	form, ok := section.(components.FormHandler)
 	if !ok {
 		http.Error(w, "unknown form", http.StatusBadRequest)
@@ -185,7 +184,7 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 		s.writeFragment(w, r, status, form)
 	case valid:
 		query := req.StateQuery()
-		query.Set(components.SentParam, uid)
+		query.Set(components.SentParam, components.ShortID(form))
 		http.Redirect(w, r, req.Path+"?"+query.Encode(), http.StatusSeeOther)
 	default:
 		page := components.NewPage(story)

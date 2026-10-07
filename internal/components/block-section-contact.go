@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	// SentParam holds the UID of the form that was sent successfully, so the
+	// SentParam holds the short ID of the form that was sent successfully, so the
 	// page shown after the redirect can confirm it.
 	SentParam           = "sent"
 	contactNameLimit    = 200
@@ -59,7 +59,7 @@ type ContactValues struct {
 func (b *BlockSectionContact) Load(_ context.Context, _ Content, req Request) error {
 	// Submitting keeps the state of the page's other blocks.
 	b.State.Path = req.URLWithState()
-	b.State.Sent = b.UID != "" && req.Query.Get(SentParam) == b.UID
+	b.State.Sent = ShortID(b) != "" && req.Query.Get(SentParam) == ShortID(b)
 	return nil
 }
 
@@ -147,7 +147,7 @@ func (b *BlockSectionContact) BaseForm() BaseForm {
 	return BaseForm{
 		ID:     id + "-form",
 		Action: b.State.Path,
-		Hidden: []FormValue{{Name: TargetParam, Value: b.UID}},
+		Hidden: []FormValue{{Name: TargetParam, Value: ShortID(b)}},
 		Submit: "Send message",
 		Fields: []BaseFormField{
 			{ID: id + "-name", Name: "name", Label: "Name", Value: v.Name, Error: errs["name"],

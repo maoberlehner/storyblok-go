@@ -3,13 +3,13 @@
   "name": "Launch",
   "content": {
     "component": "page-landing-page",
-    "_uid": "6f1c2a8e-0b1d-4c55-9a7e-1d2f3a4b5c01",
+    "_uid": "285c1d53-f497-4ca3-922c-01795817eeb6",
     "title": "Ship content faster",
     "description": "Compose pages from tested sections, preview every change, and publish without waiting on a release.",
     "sections": [
       {
         "component": "block-section-hero",
-        "_uid": "6f1c2a8e-0b1d-4c55-9a7e-1d2f3a4b5c02",
+        "_uid": "a89c301a-2435-4b5d-8042-dceeae7d8bbc",
         "heading": "Ship content faster without waiting on developers",
         "text": "Editors compose pages from tested sections. Developers own the components. Everyone stops blocking each other.",
         "link": {
@@ -22,19 +22,19 @@
       },
       {
         "component": "block-section-intro",
-        "_uid": "6f1c2a8e-0b1d-4c55-9a7e-1d2f3a4b5c03",
+        "_uid": "fadaae3b-d7b6-45a8-a86f-b957335c3e19",
         "heading": "Built for teams that publish every day",
         "text": "Structured content keeps every page consistent. Live preview shows changes before they go out. Server-rendered HTML keeps pages fast on any device."
       },
       {
         "component": "block-section-articles",
-        "_uid": "6f1c2a8e-0b1d-4c55-9a7e-1d2f3a4b5c04",
+        "_uid": "d5c97623-ed8a-43ad-b1da-c89ab619242f",
         "heading": "From the blog",
         "folder": "articles"
       },
       {
         "component": "block-section-contact",
-        "_uid": "6f1c2a8e-0b1d-4c55-9a7e-1d2f3a4b5c05",
+        "_uid": "b1f92aab-f3b4-4425-b1cf-67efd75c3dff",
         "heading": "Talk to us",
         "text": "Tell us about your project. All fields are required.",
         "success_message": "Thanks for your message. We will get back to you within two working days."

@@ -62,3 +62,21 @@ func TestPageRejectsNestedPage(t *testing.T) {
 		t.Fatalf("accepted nested page: %#v", block)
 	}
 }
+
+func TestBlocksAreIdentifiedByShortIDs(t *testing.T) {
+	var block AnyBlock
+	if err := json.Unmarshal([]byte(`{"component":"block-section-articles","_uid":"6f1c2a8e-0b1d-4c55-9a7e-1d2f3a4b5c04"}`), &block); err != nil {
+		t.Fatal(err)
+	}
+	articles := block.Block.(*BlockSectionArticles)
+	if got := ElementID(articles); got != "b-6f1c2a8e" {
+		t.Errorf("ElementID = %q", got)
+	}
+	if got := articles.StateParams(); len(got) != 1 || got[0] != "page-6f1c2a8e" {
+		t.Errorf("StateParams = %q", got)
+	}
+	page := &PageLandingPage{Sections: Blocks{articles}}
+	if found, ok := FindSection(page, "6f1c2a8e"); !ok || found != Block(articles) {
+		t.Error("section not found by short ID")
+	}
+}
