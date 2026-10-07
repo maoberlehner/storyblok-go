@@ -25,8 +25,9 @@ settings.
 
 `ASSET_DELIVERY` selects how component CSS and JS reach the browser: `bundle`
 (default, one stylesheet and one script), `head` (used component CSS inlined in
-`<head>`), or `inline` (CSS and JS next to every component instance). htmx is
-self-hosted under `/assets/vendor/`.
+`<head>`), or `inline` (CSS and JS next to every component instance), also for
+the compose stack (`ASSET_DELIVERY=head make up`). htmx is self-hosted under
+`/assets/vendor/`.
 
 ## Demo content
 
@@ -39,7 +40,7 @@ make seed
 `make seed` creates or updates the stories in `seed/` and 22 generated articles
 in `STORYBLOK_SPACE`, creating folders as needed. Running it again overwrites
 these stories and leaves all others untouched. The landing pages are
-https://localhost:8080/landing/launch and `/landing/partners`.
+`/landing/launch` and `/landing/partners`.
 
 ## Asset delivery benchmark
 
@@ -48,8 +49,10 @@ make benchmark
 ```
 
 Runs [tools/asset-benchmark](tools/asset-benchmark/bench.mjs) against the demo
-content in Chrome on a throttled connection, for each `ASSET_DELIVERY` mode, and
-prints a table of medians. Requires Google Chrome and Node.js.
+content on the compose stack, for each `ASSET_DELIVERY` mode, in Chrome on a
+throttled connection, and prints a table of medians. It restarts the stack per
+mode and leaves it running with the defaults. Requires Google Chrome, Node.js,
+and mkcert.
 
 ## Production-like stack
 

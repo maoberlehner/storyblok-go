@@ -25,10 +25,11 @@ schema-validate:
 seed:
 	set -a && . ./.env && set +a && go run ./cmd/storyblok-seed
 
-# Compares ASSET_DELIVERY modes in Chrome against the seeded demo pages.
+# Compares ASSET_DELIVERY modes in Chrome against the seeded demo pages on
+# the compose stack, which it restarts per mode.
 benchmark: $(CERT)
 	cd tools/asset-benchmark && npm ci --silent
-	set -a && . ./.env && set +a && node tools/asset-benchmark/bench.mjs
+	NODE_EXTRA_CA_CERTS="$$(mkcert -CAROOT)/rootCA.pem" node tools/asset-benchmark/bench.mjs
 
 certs $(CERT):
 	mkdir -p .certs

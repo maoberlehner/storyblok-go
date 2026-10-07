@@ -1,6 +1,7 @@
 // Compares the component asset delivery modes (see ASSET_DELIVERY in main.go)
-// on the seeded landing pages. For each mode it starts the site, then
-// measures in Chrome on a throttled connection:
+// on the seeded landing pages. For each mode it restarts the compose stack,
+// which also empties the proxy cache, then measures in Chrome on a throttled
+// connection:
 //
 //   cold        first visit with an empty cache
 //   repeat      the same page again with a warm cache
@@ -8,14 +9,11 @@
 //   load more   three "load more" fragment requests
 //   form error  an invalid contact form submission
 //
-// Run from the repository root with `make benchmark`. The site fetches
-// content from Storyblok, so timings include API latency; compare transfer
-// sizes first and timings as medians. Time to first byte is not reported:
-// Navigation Timing misattributes the emulated latency.
+// A discarded first run fills the proxy cache, so measured pages and fragments
+// come from the cache, as they would from a CDN. Run from the repository root
+// with `make benchmark`. Time to first byte is not reported: Navigation Timing
+// misattributes the emulated latency.
 import { spawn } from "node:child_process";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { chromium } from "playwright";
 
 const MODES = ["inline", "head", "bundle"];
@@ -32,18 +30,17 @@ const NETWORK = {
 };
 const CPU_SLOWDOWN = 4;
 
-const binary = join(await mkdtemp(join(tmpdir(), "asset-benchmark-")), "site");
-await run("go", ["build", "-o", binary, "."]);
+const ORIGIN = "https://localhost:8443";
 
 const results = {};
-for (const [i, mode] of MODES.entries()) {
-  const port = 9100 + i;
-  const server = await startServer(mode, port);
-  try {
-    results[mode] = await measureMode(`https://localhost:${port}`);
-  } finally {
-    server.kill();
+try {
+  for (const mode of MODES) {
+    await startStack(mode);
+    results[mode] = await measureMode(ORIGIN);
   }
+} finally {
+  // Leaves the stack running with its default configuration.
+  await startStack("");
 }
 printReport(results);
 
@@ -51,6 +48,7 @@ async function measureMode(origin) {
   const browser = await chromium.launch({ channel: "chrome" });
   const runs = [];
   try {
+    await measureRun(browser, origin);
     for (let i = 0; i < RUNS; i++) runs.push(await measureRun(browser, origin));
   } finally {
     await browser.close();
@@ -150,31 +148,34 @@ function trackTransfer(cdp) {
   };
 }
 
-function startServer(mode, port) {
-  const server = spawn(binary, [], {
-    env: {
+async function startStack(mode) {
+  await run(
+    "docker",
+    ["compose", "up", "--build", "--detach", "--force-recreate", "--wait"],
+    {
       ...process.env,
-      ADDR: `:${port}`,
       ASSET_DELIVERY: mode,
-      TLS_CERT_FILE: ".certs/localhost.pem",
-      TLS_KEY_FILE: ".certs/localhost-key.pem",
-      DEV_TOOLBAR: "",
     },
-    stdio: ["ignore", "ignore", "pipe"],
-  });
-  return new Promise((resolve, reject) => {
-    server.stderr.on("data", (chunk) => {
-      if (chunk.toString().includes("listening")) resolve(server);
-    });
-    server.on("exit", (code) =>
-      reject(new Error(`server exited with ${code}`)),
-    );
-  });
+  );
+  // The proxy accepts connections before the app answers. The first pages
+  // the app renders have no ETag yet, and the proxy keeps them until they
+  // expire, so wait until cached pages can be revalidated.
+  for (const path of [FIRST_PAGE, SECOND_PAGE]) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const response = await fetch(ORIGIN + path);
+        if (response.ok && response.headers.has("ETag")) break;
+      } catch (error) {
+        if (attempt > 120) throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
 }
 
-function run(command, args) {
+function run(command, args, env) {
   return new Promise((resolve, reject) => {
-    spawn(command, args, { stdio: "inherit" }).on("exit", (code) =>
+    spawn(command, args, { stdio: "ignore", env }).on("exit", (code) =>
       code === 0
         ? resolve()
         : reject(new Error(`${command} exited with ${code}`)),
