@@ -33,10 +33,10 @@ func component(r Remote) schema.Component {
 	return schema.Component{Name: r.Name, DisplayName: r.DisplayName, IsRoot: r.IsRoot, IsNestable: r.IsNestable, Schema: r.Schema}
 }
 
-// normalized removes API-supplied field IDs and empty defaults for comparison.
+// Normalized removes API-supplied field IDs and empty defaults for comparison.
 // Nonempty unknown field properties remain visible in the diff: schemas are
 // fully code-owned, while top-level editor metadata is never sent in updates.
-func normalized(c schema.Component) schema.Component {
+func Normalized(c schema.Component) schema.Component {
 	data, _ := json.Marshal(c)
 	var result schema.Component
 	_ = json.Unmarshal(data, &result)
@@ -95,7 +95,7 @@ func BuildPlan(baseURL, space string, desired []schema.Component, remote []Remot
 	}
 	state := []Remote{}
 	for _, r := range remote {
-		n := normalized(component(r))
+		n := Normalized(component(r))
 		r.Schema = n.Schema
 		state = append(state, r)
 	}
@@ -111,7 +111,7 @@ func BuildPlan(baseURL, space string, desired []schema.Component, remote []Remot
 			p.Changes = append(p.Changes, Change{Action: "create", After: d})
 			continue
 		}
-		before, after := normalized(component(r)), normalized(d)
+		before, after := Normalized(component(r)), Normalized(d)
 		if hash(before) == hash(after) {
 			continue
 		}

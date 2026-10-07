@@ -132,8 +132,10 @@ func printPlan(w io.Writer, p mapi.Plan) {
 	for _, change := range p.Changes {
 		fmt.Fprintf(w, "%s %s\n", strings.ToUpper(change.Action), change.After.Name)
 		if change.Before != nil {
-			before, _ := json.Marshal(change.Before)
-			after, _ := json.Marshal(change.After)
+			// Normalized omits values the API reports differently but the plan
+			// treats as equal, such as null and "".
+			before, _ := json.Marshal(mapi.Normalized(*change.Before))
+			after, _ := json.Marshal(mapi.Normalized(change.After))
 			var a, b map[string]any
 			_ = json.Unmarshal(before, &a)
 			_ = json.Unmarshal(after, &b)

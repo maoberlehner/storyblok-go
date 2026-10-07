@@ -88,3 +88,18 @@ func TestCLIRejectsUnknownCommandsAndArguments(t *testing.T) {
 		}
 	}
 }
+
+func TestPlanDiffShowsOnlyMeaningfulChanges(t *testing.T) {
+	before := &schema.Component{Name: "block-section-x", Schema: map[string]map[string]any{
+		"heading": {"type": "text", "display_name": "Old", "description": nil, "required": nil, "id": "server-id"},
+	}}
+	after := schema.Component{Name: "block-section-x", Schema: map[string]map[string]any{
+		"heading": {"type": "text", "display_name": "New", "description": "", "required": false},
+	}}
+	var out bytes.Buffer
+	printPlan(&out, mapi.Plan{Changes: []mapi.Change{{Action: "update", Before: before, After: after}}})
+	if got := out.String(); !strings.Contains(got, `schema.heading.display_name: "Old" -> "New"`) ||
+		strings.Contains(got, "description") || strings.Contains(got, "required") || strings.Contains(got, "id:") {
+		t.Errorf("diff:\n%s", got)
+	}
+}
