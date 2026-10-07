@@ -270,59 +270,40 @@ func TestMessageLengthCountsLineBreaksOnce(t *testing.T) {
 	}
 }
 
-func TestAssetDelivery(t *testing.T) {
-	cardRule := ".base-card {"
-	for _, tt := range []struct {
-		mode components.AssetDelivery
-		// cardRules counts the base card rule in the page. Two listings render
-		// six cards each.
-		cardRules int
-		bundled   bool
-	}{
-		{components.DeliverBundle, 0, true},
-		{components.DeliverHead, 1, false},
-		{components.DeliverLinks, 0, false},
-		{components.DeliverInline, 12, false},
-	} {
-		t.Run(string(tt.mode), func(t *testing.T) {
-			ts := newServer(t, components.WithAssetDelivery(tt.mode))
-			body := request(t, http.MethodGet, ts.URL+"/landing", nil, nil).body
-			if got := strings.Count(body, cardRule); got != tt.cardRules {
-				t.Errorf("card rule appears %d times, want %d", got, tt.cardRules)
-			}
-			if got := strings.Contains(body, "/assets/app.css?v="); got != tt.bundled {
-				t.Errorf("links bundle = %t, want %t", got, tt.bundled)
-			}
-			if tt.mode == components.DeliverLinks {
-				head, _, _ := strings.Cut(body, "</head>")
-				for _, want := range []string{"/assets/components/base.css?v=", "/assets/components/base-card.css?v="} {
-					if !strings.Contains(head, want) {
-						t.Errorf("head does not link %s", want)
-					}
-				}
-				if strings.Contains(head, "block-section-hero.css") {
-					t.Error("head links an unused component")
-				}
-				_, href, _ := strings.Cut(head, `href="/assets/components/base-card.css`)
-				href, _, _ = strings.Cut(href, `"`)
-				css := request(t, http.MethodGet, ts.URL+"/assets/components/base-card.css"+href, nil, nil)
-				if !strings.Contains(css.body, cardRule) || !strings.Contains(css.header.Get("Cache-Control"), "immutable") {
-					t.Errorf("component stylesheet: %d %v", css.status, css.header)
-				}
-			}
-			if got := strings.Contains(body, "/assets/app.js?v="); got == (tt.mode == components.DeliverInline) {
-				t.Errorf("links script bundle = %t", got)
-			}
-			if tt.mode == components.DeliverHead {
-				head, _, _ := strings.Cut(body, "</head>")
-				if !strings.Contains(head, cardRule) || strings.Contains(head, ".block-section-hero {") {
-					t.Error("head does not hold exactly the used component styles")
-				}
-			}
-			fragment := request(t, http.MethodGet, ts.URL+"/landing?page-arts=2&_block=arts", nil, enhanced).body
-			if tt.mode != components.DeliverInline && strings.Contains(fragment, "<style>") {
-				t.Error("fragment repeats styles the page already has")
-			}
-		})
-	}
+func TestComponentAssets(t *testing.T) {
+	ts := newServer(t)
+	body := request(t, http.MethodGet, ts.URL+"/landing", nil, nil).body
+	head, page, _ := strings.Cut(body, "</head>")
+
+	t.Run("inlines the styles of used components once in the head", func(t *testing.T) {
+		// Two listings render six cards each.
+		if got := strings.Count(head, ".base-card {"); got != 1 {
+			t.Errorf("card styles appear %d times in the head", got)
+		}
+		if strings.Contains(head, ".block-section-hero {") {
+			t.Error("head contains styles of an unused component")
+		}
+		if strings.Contains(page, "<style>") {
+			t.Error("body contains styles")
+		}
+	})
+
+	t.Run("links one cacheable script for all components", func(t *testing.T) {
+		_, src, ok := strings.Cut(head, `<script src="/assets/app.js?v=`)
+		if !ok {
+			t.Fatal("no script bundle")
+		}
+		version, _, _ := strings.Cut(src, `"`)
+		js := request(t, http.MethodGet, ts.URL+"/assets/app.js?v="+version, nil, nil)
+		if !strings.Contains(js.body, "data-character-limit") || !strings.Contains(js.header.Get("Cache-Control"), "immutable") {
+			t.Errorf("script bundle: %d %v", js.status, js.header)
+		}
+	})
+
+	t.Run("leaves styles out of fragments", func(t *testing.T) {
+		fragment := request(t, http.MethodGet, ts.URL+"/landing?page-arts=2&_block=arts", nil, enhanced).body
+		if strings.Contains(fragment, "<style>") || strings.Contains(fragment, "<script") {
+			t.Errorf("fragment repeats assets:\n%s", fragment)
+		}
+	})
 }

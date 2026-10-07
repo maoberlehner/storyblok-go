@@ -6,7 +6,6 @@ services:
     environment:
       STORYBLOK_PREVIEW_TOKEN: ${STORYBLOK_PREVIEW_TOKEN:?set in .env}
       STORYBLOK_API_URL: ${STORYBLOK_API_URL:-}
-      ASSET_DELIVERY: ${ASSET_DELIVERY:-}
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
