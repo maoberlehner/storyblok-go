@@ -11,7 +11,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
+
+	"github.com/failsafe-go/failsafe-go"
 )
 
 const DefaultBaseURL = "https://api.storyblok.com/v2/cdn"
@@ -29,13 +30,15 @@ type Client struct {
 	baseURL    string
 	token      string
 	httpClient *http.Client
+	executor   failsafe.Executor[*http.Response]
 }
 
 func NewClient(baseURL, token string) *Client {
 	return &Client{
 		baseURL:    strings.TrimSuffix(baseURL, "/"),
 		token:      token,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: &http.Client{Timeout: requestTimeout},
+		executor:   newHTTPExecutor(),
 	}
 }
 
@@ -48,6 +51,9 @@ type StoryOptions struct {
 
 // Story returns the raw JSON of the story at slug.
 func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jsontext.Value, error) {
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
 	query := url.Values{"token": {c.token}, "version": {string(opts.Version)}}
 	if len(opts.ResolveRelations) > 0 {
 		query.Set("resolve_relations", strings.Join(opts.ResolveRelations, ","))
@@ -58,7 +64,7 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.httpClient.Do(req)
+	res, err := c.do(req)
 	if err != nil {
 		// The request URL carries the access token, so it must not end up in logs.
 		if urlErr, ok := errors.AsType[*url.Error](err); ok {
@@ -149,12 +155,15 @@ func walkBloks(node any, visit func(map[string]any)) {
 
 // SpaceID returns the ID of the space the access token belongs to.
 func (c *Client) SpaceID(ctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
 	endpoint := c.baseURL + "/spaces/me?" + url.Values{"token": {c.token}}.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return 0, err
 	}
-	res, err := c.httpClient.Do(req)
+	res, err := c.do(req)
 	if err != nil {
 		if urlErr, ok := errors.AsType[*url.Error](err); ok {
 			err = urlErr.Err
