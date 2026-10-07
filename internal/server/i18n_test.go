@@ -157,3 +157,22 @@ func TestFieldLevelGermanLinksItsEnglishVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestGermanListingsOfGermanFolders(t *testing.T) {
+	ts, content := newServerWithContent(t, &recordingInbox{}, nil)
+	content.stories["de/blog-start"] = `{"id": 30, "name": "Blog", "content": {"component": "page-landing-page", "_uid": "bs",
+		"title": "Blog", "description": "D", "sections": [
+			{"component": "block-section-articles", "_uid": "ba", "heading": "Neu", "folder": "de/blog"}]}}`
+	_, body := do(t, http.MethodGet, ts.URL+"/de/blog-start", "")
+	if !strings.Contains(body, `href="/de/blog/article-14"`) || strings.Contains(body, "/de/de/") {
+		t.Errorf("article links:\n%s", articleLinks(body))
+	}
+}
+
+func articleLinks(body string) string {
+	var links []string
+	for _, part := range strings.Split(body, `class="base-card__link" href="`)[1:] {
+		links = append(links, part[:strings.Index(part, `"`)])
+	}
+	return strings.Join(links, "\n")
+}

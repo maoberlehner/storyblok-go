@@ -68,9 +68,13 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 		ContentType:     "page-article",
 		SortBy:          "first_published_at:desc",
 		ExcludingFields: []string{"sections"},
-		Language:        req.Locale.StoryLanguage(),
 		Page:            1,
 		PerPage:         page * articlesPerPage,
+	}
+	// Stories in a language's folder are folder-level translations: the API
+	// would prefix their slugs with the language a second time.
+	if !strings.HasPrefix(opts.StartsWith, req.Locale.Code+"/") {
+		opts.Language = req.Locale.StoryLanguage()
 	}
 	firstPosition := 1
 	if req.Enhanced && req.Targets(b) {
