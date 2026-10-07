@@ -20,7 +20,8 @@ change for every new vendor.
   `frame-ancestors 'self' https://app.storyblok.com` (the Visual Editor).
 - Send `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin`, and
-  `Strict-Transport-Security: max-age=31536000` for HTTPS origins, without
+  `Strict-Transport-Security: max-age=31536000` for public HTTPS origins (not
+  localhost, which would pin every local dev server to HTTPS), without
   `includeSubDomains` or `preload`.
 - Send no `Permissions-Policy`: restricting camera, microphone, or geolocation
   would also block embeds marketing adds (meetings, maps); the site itself uses

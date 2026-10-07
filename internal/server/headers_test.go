@@ -45,3 +45,14 @@ func TestNoHSTSForHTTPOrigins(t *testing.T) {
 		t.Errorf("HSTS on an HTTP origin: %q", got)
 	}
 }
+
+// Browsers would otherwise refuse plain HTTP for every local dev server on
+// the same host for a year.
+func TestNoHSTSForLocalOrigins(t *testing.T) {
+	for _, origin := range []string{"https://localhost:8080", "https://127.0.0.1:8443", "https://[::1]:8443"} {
+		ts, _ := newServerWithContent(t, &recordingInbox{}, []server.Option{server.WithSiteURL(origin)})
+		if got := request(t, http.MethodGet, ts.URL+"/", nil, nil).header.Get("Strict-Transport-Security"); got != "" {
+			t.Errorf("%s: HSTS = %q", origin, got)
+		}
+	}
+}

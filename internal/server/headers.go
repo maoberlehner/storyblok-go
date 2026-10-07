@@ -1,7 +1,9 @@
 package server
 
 import (
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -25,10 +27,15 @@ const ContentSecurityPolicy = "default-src 'self'; " +
 	"upgrade-insecure-requests"
 
 // securityHeaders sets the headers every response carries. HSTS is only sent
-// for HTTPS origins; it has no includeSubDomains, so other subdomains keep
-// their own policy.
+// for public HTTPS origins: browsers would apply it to every local dev server
+// on the host. It has no includeSubDomains, so other subdomains keep their
+// own policy.
 func securityHeaders(next http.Handler, siteURL string) http.Handler {
-	hsts := strings.HasPrefix(siteURL, "https://")
+	hsts := false
+	if u, err := url.Parse(siteURL); err == nil && u.Scheme == "https" {
+		host := u.Hostname()
+		hsts = host != "localhost" && !strings.HasSuffix(host, ".localhost") && net.ParseIP(host) == nil
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 		h.Set("Content-Security-Policy", ContentSecurityPolicy)
