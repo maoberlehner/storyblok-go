@@ -1,4 +1,4 @@
-.PHONY: run test fonts certs
+.PHONY: run test fmt fonts certs
 
 CERT := .certs/localhost.pem
 KEY := .certs/localhost-key.pem
@@ -9,6 +9,10 @@ run: static/fonts/ABCMarfa-Regular.woff2 $(CERT)
 
 test:
 	go test ./...
+
+fmt:
+	gofmt -w .
+	npx -y oxfmt@0
 
 fonts static/fonts/ABCMarfa-Regular.woff2:
 	./scripts/fetch-fonts.sh

@@ -12,7 +12,10 @@
   gap: var(--spacing-3xl) var(--spacing-5xl);
   justify-content: center;
   margin: 0 auto;
-  max-width: calc(var(--default-container-max-width) - var(--default-container-padding-inline) * 2);
+  max-width: calc(
+    var(--default-container-max-width) -
+      var(--default-container-padding-inline) * 2
+  );
   overflow: hidden;
   padding-block: var(--spacing-3xl);
   position: relative;

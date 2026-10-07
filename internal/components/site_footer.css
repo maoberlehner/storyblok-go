@@ -56,7 +56,7 @@
 .site-footer__link,
 .site-footer__social {
   text-decoration: none;
-  transition: color .2s;
+  transition: color 0.2s;
 }
 
 .site-footer__link:hover,

@@ -13,13 +13,13 @@
   display: flex;
 }
 
-@media (width>=768px) {
+@media (width >= 768px) {
   .enterprise-faqs {
     margin-block: var(--spacing-4xl) 0;
   }
 }
 
-@media (width>=1280px) {
+@media (width >= 1280px) {
   .enterprise-faqs {
     flex-direction: row;
     align-items: flex-start;
@@ -50,7 +50,7 @@
   max-width: 100%;
 }
 
-@media (width>=1280px) {
+@media (width >= 1280px) {
   .enterprise-faqs__headline,
   .enterprise-faqs__text {
     text-align: initial;

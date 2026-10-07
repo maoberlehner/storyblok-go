@@ -17,7 +17,9 @@
   color: #fff;
   cursor: pointer;
   display: flex;
-  font: 500 14px/1 system-ui, sans-serif;
+  font:
+    500 14px/1 system-ui,
+    sans-serif;
   gap: 10px;
   padding: 12px 18px;
 }
@@ -51,7 +53,9 @@
   background: #00b3b0;
   color: #fff;
   content: attr(data-label);
-  font: 500 12px/1 system-ui, sans-serif;
+  font:
+    500 12px/1 system-ui,
+    sans-serif;
   left: -2px;
   padding: 4px 6px;
   position: absolute;

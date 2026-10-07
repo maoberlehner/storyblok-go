@@ -17,7 +17,15 @@
   margin: 0;
 }
 
-.spacer--sm { height: 30px; }
-.spacer--md { height: 80px; }
-.spacer--base { height: 100px; }
-.spacer--xl { height: 160px; }
+.spacer--sm {
+  height: 30px;
+}
+.spacer--md {
+  height: 80px;
+}
+.spacer--base {
+  height: 100px;
+}
+.spacer--xl {
+  height: 160px;
+}

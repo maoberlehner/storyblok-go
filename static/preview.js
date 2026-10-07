@@ -19,8 +19,11 @@ bridge.on("input", async ({ story }) => {
       body: JSON.stringify(story),
       signal: pending.signal,
     });
-    if (!response.ok) throw new Error(`Preview render failed: ${response.status}`);
-    window.Idiomorph.morph(root, await response.text(), { morphStyle: "innerHTML" });
+    if (!response.ok)
+      throw new Error(`Preview render failed: ${response.status}`);
+    window.Idiomorph.morph(root, await response.text(), {
+      morphStyle: "innerHTML",
+    });
   } catch (error) {
     if (error.name !== "AbortError") console.error(error);
   }

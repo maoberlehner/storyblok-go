@@ -25,7 +25,8 @@
 
 @media (width >= 1480px) {
   .blocks-group--rounded::before {
-    border-radius: var(--border-radius-2xl) clamp(100px, 15vw, 300px) var(--border-radius-2xl) var(--border-radius-2xl);
+    border-radius: var(--border-radius-2xl) clamp(100px, 15vw, 300px)
+      var(--border-radius-2xl) var(--border-radius-2xl);
     left: var(--default-container-padding-inline);
     max-width: calc(var(--breakpoint-xxl) + var(--spacing-5xl));
     right: var(--default-container-padding-inline);
@@ -49,9 +50,15 @@
   margin-bottom: 0;
 }
 
-.blocks-group__content--medium-large { max-width: 1200px; }
-.blocks-group__content--medium { max-width: 1006px; }
-.blocks-group__content--small { max-width: var(--small-container-max-width); }
+.blocks-group__content--medium-large {
+  max-width: 1200px;
+}
+.blocks-group__content--medium {
+  max-width: 1006px;
+}
+.blocks-group__content--small {
+  max-width: var(--small-container-max-width);
+}
 
 .blocks-group__shape {
   --block-offset: 25%;

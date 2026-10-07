@@ -95,7 +95,8 @@
   max-width: 955px;
 }
 
-.section-heading--center:not(.section-heading--has-eyebrow) :is(.section-heading__text, .section-heading__small-print) {
+.section-heading--center:not(.section-heading--has-eyebrow)
+  :is(.section-heading__text, .section-heading__small-print) {
   margin-inline: auto;
 }
 
@@ -118,6 +119,8 @@
   vertical-align: bottom;
 }
 
-.section-heading--center:not(.section-heading--has-eyebrow) .section-heading__text p {
+.section-heading--center:not(.section-heading--has-eyebrow)
+  .section-heading__text
+  p {
   margin-inline: auto;
 }

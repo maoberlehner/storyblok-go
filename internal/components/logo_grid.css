@@ -17,13 +17,37 @@
 @supports (background-attachment: local, local, scroll, scroll) {
   .logo-grid__wrapper {
     background:
-      linear-gradient(to right, var(--background-color) 30%, rgb(from var(--background-color) r g b / 0)) 0,
-      linear-gradient(to right, rgb(from var(--background-color) r g b / 0), var(--background-color) 70%) 100%,
-      radial-gradient(farthest-side at 0 50%, rgb(from var(--text-color) r g b / 20%), rgb(from var(--text-color) r g b / 0)) 0,
-      radial-gradient(farthest-side at 100% 50%, rgb(from var(--text-color) r g b / 20%), rgb(from var(--text-color) r g b / 0)) 100%;
+      linear-gradient(
+          to right,
+          var(--background-color) 30%,
+          rgb(from var(--background-color) r g b / 0)
+        )
+        0,
+      linear-gradient(
+          to right,
+          rgb(from var(--background-color) r g b / 0),
+          var(--background-color) 70%
+        )
+        100%,
+      radial-gradient(
+          farthest-side at 0 50%,
+          rgb(from var(--text-color) r g b / 20%),
+          rgb(from var(--text-color) r g b / 0)
+        )
+        0,
+      radial-gradient(
+          farthest-side at 100% 50%,
+          rgb(from var(--text-color) r g b / 20%),
+          rgb(from var(--text-color) r g b / 0)
+        )
+        100%;
     background-attachment: local, local, scroll, scroll;
     background-repeat: no-repeat;
-    background-size: var(--spacing-3xl) 100%, var(--spacing-3xl) 100%, var(--spacing-lg) 100%, var(--spacing-lg) 100%;
+    background-size:
+      var(--spacing-3xl) 100%,
+      var(--spacing-3xl) 100%,
+      var(--spacing-lg) 100%,
+      var(--spacing-lg) 100%;
   }
 }
 
@@ -39,7 +63,10 @@
 .logo-grid__grid {
   --mobile-item-max-width: 33vw;
   display: grid;
-  grid-template-columns: repeat(var(--items), minmax(var(--mobile-item-max-width), 1fr));
+  grid-template-columns: repeat(
+    var(--items),
+    minmax(var(--mobile-item-max-width), 1fr)
+  );
   position: relative;
   width: fit-content;
 }
@@ -114,7 +141,10 @@
   }
 }
 
-:not([data-multi-row="true"]) > * > .logo-grid-item:last-child .logo-grid-item__cross,
+:not([data-multi-row="true"])
+  > *
+  > .logo-grid-item:last-child
+  .logo-grid-item__cross,
 [data-multi-row="true"] .logo-grid-item:nth-child(4n) .logo-grid-item__cross {
   display: none;
 }

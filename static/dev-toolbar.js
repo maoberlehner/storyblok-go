@@ -55,8 +55,17 @@ document.addEventListener("keydown", (event) => {
     setSelecting(false);
     return;
   }
-  const typing = event.target.closest?.("input, textarea, select, [contenteditable]");
-  if (event.key.toLowerCase() !== SHORTCUT || typing || event.metaKey || event.ctrlKey || event.altKey) return;
+  const typing = event.target.closest?.(
+    "input, textarea, select, [contenteditable]",
+  );
+  if (
+    event.key.toLowerCase() !== SHORTCUT ||
+    typing ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey
+  )
+    return;
   event.preventDefault();
   setSelecting(!selecting);
 });
@@ -67,17 +76,26 @@ document.addEventListener("pointermove", (event) => {
 });
 
 // Scrolling moves content under a resting pointer.
-window.addEventListener("scroll", () => {
-  if (selecting) showHighlight(blockAt(document.elementFromPoint(pointer.x, pointer.y)));
-}, { passive: true });
+window.addEventListener(
+  "scroll",
+  () => {
+    if (selecting)
+      showHighlight(blockAt(document.elementFromPoint(pointer.x, pointer.y)));
+  },
+  { passive: true },
+);
 
 // Capture phase so links and buttons inside the block don't fire.
-document.addEventListener("click", (event) => {
-  if (!selecting || toolbar.contains(event.target)) return;
-  event.preventDefault();
-  event.stopPropagation();
-  const block = blockAt(event.target);
-  if (!block) return;
-  window.open(editorUrl(block.dataset.devBlok), "_blank", "noopener");
-  setSelecting(false);
-}, { capture: true });
+document.addEventListener(
+  "click",
+  (event) => {
+    if (!selecting || toolbar.contains(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const block = blockAt(event.target);
+    if (!block) return;
+    window.open(editorUrl(block.dataset.devBlok), "_blank", "noopener");
+    setSelecting(false);
+  },
+  { capture: true },
+);

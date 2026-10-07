@@ -19,7 +19,7 @@
   border: var(--button-border-width) solid var(--button-border-color);
   border-radius: var(--border-radius-base);
   color: var(--button-text-color);
-  column-gap: .5em;
+  column-gap: 0.5em;
   display: inline-flex;
   font-size: var(--font-size-base);
   font-weight: 500;
@@ -28,11 +28,14 @@
   margin: var(--button-margin);
   min-height: var(--button-height);
   overflow-wrap: anywhere;
-  padding-block: calc(var(--button-height) / 2 - var(--button-line-height) / 2 - var(--button-border-width));
+  padding-block: calc(
+    var(--button-height) / 2 - var(--button-line-height) / 2 -
+      var(--button-border-width)
+  );
   padding-inline: var(--button-padding-inline);
   text-align: center;
   text-decoration: none;
-  transition: all .2s;
+  transition: all 0.2s;
 }
 
 .button :where(svg) {
@@ -78,10 +81,10 @@
   --text-decoration: underline;
   --link-hover-text-color: var(--text-color-hover);
   align-items: center;
-  column-gap: .25em;
+  column-gap: 0.25em;
   display: inline-flex;
   text-decoration: var(--text-decoration);
-  transition: all .2s;
+  transition: all 0.2s;
 }
 
 .link:hover {
