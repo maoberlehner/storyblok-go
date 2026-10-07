@@ -23,6 +23,31 @@ to open it in Storyblok).
 For live preview, set `https://localhost:8080/` as the preview URL in your space
 settings.
 
+## Production-like stack
+
+```sh
+make up
+```
+
+Builds the app image and serves it at https://localhost:8443 behind nginx
+(`proxy/`), which terminates TLS, compresses with brotli or gzip, and caches
+pages. The `X-Cache-Status` response header shows the cache result.
+
+Published pages send `Cache-Control: no-cache` for browsers and a separate
+`CDN-Cache-Control` ([RFC 9213](https://www.rfc-editor.org/rfc/rfc9213)) for the
+shared cache: fresh for 10 seconds, then `stale-while-revalidate` and
+`stale-if-error` for a day. The shared cache gets these directives because
+browsers do not apply `stale-while-revalidate` consistently to documents. nginx
+cannot read `CDN-Cache-Control`, so `proxy/nginx.conf` mirrors the policy and
+caches only responses that carry the header. Requests with `_storyblok*` query
+parameters (Visual Editor) bypass the cache.
+
+Page ETags combine a hash of the server binary with the `cv` the content
+reflects. While the client's `cv` is confirmed (see below), a request with a
+matching `If-None-Match` gets a 304 without a Storyblok request or rendering.
+nginx revalidates expired pages in the background this way, so every request
+except the first per page is served from the cache.
+
 ## Storyblok requests
 
 The Content Delivery and Management API clients share an HTTP layer that retries

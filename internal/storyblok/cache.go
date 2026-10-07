@@ -44,6 +44,14 @@ func (c *cacheVersionTracker) next(ctx context.Context) (cv int64, discover bool
 	}
 }
 
+// current returns the known cv and whether published requests still use it
+// without discovering a newer one first.
+func (c *cacheVersionTracker) current() (cv int64, confirmed bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.version, c.version > 0 && time.Now().Before(c.nextRefresh)
+}
+
 // record stores the cv a published response reported, or 0 if the request
 // failed, and reports whether it is newer than the known version.
 func (c *cacheVersionTracker) record(cv int64, discovered bool) (advanced bool) {

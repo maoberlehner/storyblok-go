@@ -307,3 +307,25 @@ func TestConcurrentResponsesCannotRegressCacheVersion(t *testing.T) {
 		get("last")
 	})
 }
+
+func TestClientReportsCacheVersion(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		client := NewClient(DefaultBaseURL, "secret")
+		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return storyResponse(100, nil), nil
+		})
+		if cv, confirmed := client.CacheVersion(); cv != 0 || confirmed {
+			t.Errorf("before any request: CacheVersion() = %d, %v; want 0, false", cv, confirmed)
+		}
+		if _, err := client.Story(t.Context(), "home", StoryOptions{Version: Published}); err != nil {
+			t.Fatal(err)
+		}
+		if cv, confirmed := client.CacheVersion(); cv != 100 || !confirmed {
+			t.Errorf("after discovery: CacheVersion() = %d, %v; want 100, true", cv, confirmed)
+		}
+		time.Sleep(cacheVersionRefreshInterval)
+		if cv, confirmed := client.CacheVersion(); cv != 100 || confirmed {
+			t.Errorf("when a refresh is due: CacheVersion() = %d, %v; want 100, false", cv, confirmed)
+		}
+	})
+}

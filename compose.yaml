@@ -1,0 +1,21 @@
+# Local production-like stack: nginx terminates TLS, compresses, and caches
+# pages in front of the app. Run `make up`.
+services:
+  app:
+    build: .
+    environment:
+      STORYBLOK_PREVIEW_TOKEN: ${STORYBLOK_PREVIEW_TOKEN:?set in .env}
+      STORYBLOK_API_URL: ${STORYBLOK_API_URL:-}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+  proxy:
+    build: proxy
+    depends_on: [app]
+    ports:
+      - "8443:443"
+    volumes:
+      - ./.certs:/etc/nginx/certs:ro
+    restart: unless-stopped

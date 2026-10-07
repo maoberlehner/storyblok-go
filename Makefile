@@ -1,4 +1,4 @@
-.PHONY: run test fmt schema-validate certs skills
+.PHONY: run up test fmt schema-validate certs skills
 
 CERT := .certs/localhost.pem
 KEY := .certs/localhost-key.pem
@@ -6,6 +6,10 @@ KEY := .certs/localhost-key.pem
 # Serves HTTPS because the Visual Editor only loads https preview URLs.
 run: $(CERT)
 	set -a && . ./.env && set +a && DEV_TOOLBAR=1 TLS_CERT_FILE=$(CERT) TLS_KEY_FILE=$(KEY) go run .
+
+# Production-like stack with the caching proxy on https://localhost:8443.
+up: $(CERT)
+	docker compose up --build
 
 test:
 	go test ./...
