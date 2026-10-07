@@ -29,6 +29,10 @@ as loaded "load more" pages. `/sitemap.xml` lists every published story with a
 page component, and `/robots.txt` points to it. Previews are marked `noindex`.
 `make run` and `make up` default `SITE_URL` to their local origins.
 
+`FORM_SECRET` signs the tokens that protect forms against bots; every instance
+of a site needs the same value. `make run` and `make up` default to a
+development value.
+
 Pages have optional search (`seo_title`, `seo_description`) and share
 (`og_title`, `og_description`, `og_image`) overrides. Share fields fall back to
 search fields, search fields to `title` and `description`, and the share image

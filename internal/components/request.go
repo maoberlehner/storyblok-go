@@ -22,6 +22,8 @@ type Request struct {
 	// Enhanced is set for htmx requests, which only render a fragment of the
 	// targeted block.
 	Enhanced bool
+	// FormToken is the guard token forms rendered for this request carry.
+	FormToken string
 }
 
 // TargetParam names the request parameter that holds the short ID of the
@@ -131,8 +133,9 @@ func FindSection(page Block, id string) (Block, bool) {
 
 // Submission is a valid form submission.
 type Submission struct {
-	Form   string
-	Fields []SubmissionField
+	Form        string
+	Fields      []SubmissionField
+	Attribution []SubmissionField
 }
 
 type SubmissionField struct {
@@ -150,4 +153,25 @@ type FormHandler interface {
 	// Submit validates the form values and delivers them if they are valid.
 	// It keeps the values and errors for rendering the response.
 	Submit(ctx context.Context, inbox Inbox, values url.Values) (valid bool, err error)
+	// Confirm shows the form as sent without delivering anything; bots get
+	// the same response as people.
+	Confirm()
+	// Reject shows the form again with the submitted values and a
+	// form-level error, without delivering anything.
+	Reject(values url.Values, message string)
+}
+
+// FormGuard returns the hidden fields for forms on this page. UTM parameters
+// of the current URL are prefilled, so attribution works without JavaScript
+// for submissions from the landing page itself.
+func (r Request) FormGuard() FormGuardFields {
+	fields := FormGuardFields{Token: r.FormToken}
+	for _, name := range AttributionFields {
+		value := ""
+		if strings.HasPrefix(name, "utm_") {
+			value = truncate(r.Query.Get(name), maxAttributionChars)
+		}
+		fields.Attribution = append(fields.Attribution, FormValue{Name: name, Value: value})
+	}
+	return fields
 }

@@ -17,10 +17,12 @@ deliberate exceptions with reasons.
 - **Enhancement / forms:** htmx 4 is self-hosted. Load more and the contact form
   follow [patterns/](patterns/README.md). Forms always post against the
   published story, so a form on an unpublished page fails in the Visual Editor.
-  Submissions are only logged (`server.LogInbox`); there is no spam protection.
-  Preview and dev tooling deliberately require JS because their purpose is live
-  editing/debugging; published content renders without them. Web vitals
-  reporting requires JavaScript by nature.
+  Submissions are only logged (`server.LogInbox`), with attribution values. Spam
+  protection is a honeypot and time trap; there is no rate limiting. Attribution
+  across pages requires JavaScript (`sessionStorage`). Preview and dev tooling
+  deliberately require JS because their purpose is live editing/debugging;
+  published content renders without them. Web vitals reporting requires
+  JavaScript by nature.
 - **Legacy tooling CSS:** `static/dev-toolbar.css` still uses pixel values,
   off-scale spacing, and literal colors. Public component CSS now uses relative
   units and global color properties.

@@ -61,12 +61,32 @@ bundle, in their own scope.
   `htmx:after:swap`.
 - The page works without the script; it only adds the count.
 
+## Spam protection and attribution
+
+Every `BaseForm` renders a honeypot input (`website`, hidden from people and
+assistive technology), a signed `form_started` token, and hidden attribution
+fields (UTM parameters, external referrer, landing page). The server checks
+submissions before calling `Submit`:
+
+- A filled honeypot or an invalid token drops the submission but answers like a
+  success (`Confirm`), so bots learn nothing.
+- A submission sent within 3 seconds of rendering shows the form again with a
+  form-level error and the entered values (`Reject`); people with autofill can
+  simply send again.
+- Tokens never expire, because pages are cached for up to a day.
+
+Without JavaScript, attribution carries the current URL's UTM parameters.
+`static/attribution.js` keeps the first page's values for the visit in
+`sessionStorage` and fills them in on submit.
+
 ## Adapting
 
 1. Define fields as `BaseFormField` values in Go, with IDs derived from the
    section's `ElementID`.
 2. Implement `Submit`: normalize values, validate into a field → message map,
-   deliver valid submissions to the `Inbox`.
+   deliver valid submissions to the `Inbox` with `AttributionFrom(values)`.
+   Implement `Confirm` and `Reject`, and pass `req.FormGuard()` from `Load` to
+   `BaseForm.Guard`.
 3. Render `{{base "base-form" .BaseForm}}` in the section's `-fragment`
    template, or the success message once it is sent.
 4. Test both paths (see `TestContactForm` in `internal/server`).

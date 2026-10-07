@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -19,6 +20,10 @@ type response struct {
 
 func request(t *testing.T, method, target string, form url.Values, header map[string]string) response {
 	t.Helper()
+	if form != nil && method == http.MethodPost && !form.Has(components.StartedField) {
+		form = maps.Clone(form)
+		form.Set(components.StartedField, validFormToken())
+	}
 	var body io.Reader
 	if form != nil {
 		body = strings.NewReader(form.Encode())

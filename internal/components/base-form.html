@@ -8,6 +8,15 @@
   {{- range .Hidden}}
   <input type="hidden" name="{{.Name}}" value="{{.Value}}">
   {{- end}}
+  {{- /* People never see or reach the trap; bots that fill in every field do. */}}
+  <div class="base-form__trap" aria-hidden="true">
+    <label for="{{.ID}}-website">Website</label>
+    <input id="{{.ID}}-website" type="text" name="website" tabindex="-1" autocomplete="off">
+  </div>
+  <input type="hidden" name="form_started" value="{{.Guard.Token}}">
+  {{- range .Guard.Attribution}}
+  <input type="hidden" name="{{.Name}}" value="{{.Value}}" data-attribution>
+  {{- end}}
   {{- range .Fields}}
   {{base "base-form-field" .}}
   {{- end}}

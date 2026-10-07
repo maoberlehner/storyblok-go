@@ -10,6 +10,8 @@
 //	TLS_CERT_FILE            certificate for serving HTTPS, which the Visual
 //	TLS_KEY_FILE             Editor requires for preview URLs (optional)
 //	DEV_TOOLBAR              "1" adds a toolbar to open blocks in the editor
+//	FORM_SECRET              signs form tokens; all instances need the same
+//	                         value (required)
 //	METRICS_ADDR             listen address for Prometheus metrics, never
 //	                         proxied (default: :9090)
 package main
@@ -53,6 +55,10 @@ func run(logger *slog.Logger) error {
 	if previewToken == "" {
 		return errors.New("STORYBLOK_PREVIEW_TOKEN is required")
 	}
+	formSecret := os.Getenv("FORM_SECRET")
+	if formSecret == "" {
+		return errors.New("FORM_SECRET is required")
+	}
 	siteURL, err := parseSiteURL(os.Getenv("SITE_URL"))
 	if err != nil {
 		return err
@@ -87,7 +93,7 @@ func run(logger *slog.Logger) error {
 	}
 	m := metrics.New()
 	srv := server.New(m.Content(client), renderer, static.FS, server.LogInbox{Logger: logger}, previewToken, logger,
-		server.WithBuildID(buildID), server.WithSiteURL(siteURL), server.WithVitals(m.RecordVital))
+		server.WithBuildID(buildID), server.WithSiteURL(siteURL), server.WithVitals(m.RecordVital), server.WithFormSecret([]byte(formSecret)))
 	httpServer := &http.Server{
 		Addr:              addr,
 		Handler:           m.Middleware(srv.Handler()),

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"crypto/rand"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"errors"
@@ -54,6 +55,8 @@ type Server struct {
 	siteURL      string
 	recordVital  func(name string, value float64)
 	lastSettings atomic.Pointer[components.SiteSettings]
+	formSecret   []byte
+	guard        components.FormGuard
 }
 
 type Option func(*Server)
@@ -70,6 +73,12 @@ func WithSiteURL(origin string) Option {
 	return func(s *Server) { s.siteURL = strings.TrimSuffix(origin, "/") }
 }
 
+// WithFormSecret signs form tokens. All instances behind one site need the
+// same secret.
+func WithFormSecret(secret []byte) Option {
+	return func(s *Server) { s.formSecret = secret }
+}
+
 func New(content ContentSource, renderer *components.Renderer, assets fs.FS, inbox components.Inbox, previewToken string, logger *slog.Logger, opts ...Option) *Server {
 	s := &Server{
 		content:      content,
@@ -83,6 +92,13 @@ func New(content ContentSource, renderer *components.Renderer, assets fs.FS, inb
 	for _, opt := range opts {
 		opt(s)
 	}
+	if len(s.formSecret) == 0 {
+		// Tokens from other processes fail with a random secret; production
+		// sets FORM_SECRET.
+		s.formSecret = make([]byte, 32)
+		_, _ = rand.Read(s.formSecret)
+	}
+	s.guard = components.NewFormGuard(s.formSecret, s.now)
 	return s
 }
 
@@ -187,10 +203,20 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	valid, err := form.Submit(r.Context(), s.inbox, r.PostForm)
-	if err != nil {
-		s.fail(w, r, err)
-		return
+	valid := false
+	switch s.guard.Check(r.PostForm) {
+	case components.Bot:
+		s.logger.InfoContext(r.Context(), "form spam dropped", "form", form.Meta().Component, "path", r.URL.Path)
+		form.Confirm()
+		valid = true
+	case components.TooFast:
+		form.Reject(r.PostForm, "Your message was sent faster than people usually type. Please send it again.")
+	default:
+		var err error
+		if valid, err = form.Submit(r.Context(), s.inbox, r.PostForm); err != nil {
+			s.fail(w, r, err)
+			return
+		}
 	}
 
 	status := http.StatusOK
@@ -287,10 +313,11 @@ func storyPath(fullSlug string) string {
 
 func (s *Server) componentRequest(r *http.Request, version storyblok.Version) components.Request {
 	return components.Request{
-		Path:     r.URL.Path,
-		Query:    r.URL.Query(),
-		Version:  version,
-		Enhanced: r.Header.Get("HX-Request") == "true",
+		Path:      r.URL.Path,
+		Query:     r.URL.Query(),
+		Version:   version,
+		Enhanced:  r.Header.Get("HX-Request") == "true",
+		FormToken: s.guard.Token(),
 	}
 }
 
@@ -400,6 +427,9 @@ func (i LogInbox) Deliver(ctx context.Context, s components.Submission) error {
 	attrs := []any{"form", s.Form}
 	for _, f := range s.Fields {
 		attrs = append(attrs, f.Name+"_chars", len([]rune(f.Value)))
+	}
+	for _, f := range s.Attribution {
+		attrs = append(attrs, "attribution_"+f.Name, f.Value)
 	}
 	i.Logger.InfoContext(ctx, "form submitted", attrs...)
 	return nil

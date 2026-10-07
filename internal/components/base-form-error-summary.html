@@ -1,10 +1,15 @@
 {{define "base-form-error-summary" -}}
 <div class="base-form-error-summary" id="{{.ID}}" tabindex="-1" autofocus>
   <h3 class="base-form-error-summary__title">There is a problem</h3>
+  {{- with .Message}}
+  <p class="base-form-error-summary__message">{{.}}</p>
+  {{- end}}
+  {{- with .Fields}}
   <ul class="base-form-error-summary__list">
-    {{- range .Fields}}
+    {{- range .}}
     <li><a href="#{{.ID}}">{{.Error}}</a></li>
     {{- end}}
   </ul>
+  {{- end}}
 </div>
 {{- end}}

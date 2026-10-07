@@ -46,10 +46,12 @@ type BlockSectionContact struct {
 }
 
 type ContactState struct {
-	Path   string
-	Values ContactValues
-	Errors map[string]string
-	Sent   bool
+	Path      string
+	Values    ContactValues
+	Errors    map[string]string
+	Sent      bool
+	Guard     FormGuardFields
+	FormError string
 }
 
 type ContactValues struct {
@@ -61,17 +63,14 @@ func (b *BlockSectionContact) Load(_ context.Context, _ Content, req Request) er
 	// Submitting keeps the state of the page's other blocks.
 	b.State.Path = req.URLWithState()
 	b.State.Sent = ShortID(b) != "" && req.Query.Get(SentParam) == ShortID(b)
+	b.State.Guard = req.FormGuard()
 	return nil
 }
 
 func (b *BlockSectionContact) Submit(ctx context.Context, inbox Inbox, form url.Values) (bool, error) {
-	v := ContactValues{
-		Name:  strings.TrimSpace(form.Get("name")),
-		Email: strings.TrimSpace(form.Get("email")),
-		Topic: form.Get("topic"),
-		// Browsers submit line breaks as CRLF but count them as one character.
-		Message: strings.TrimSpace(strings.ReplaceAll(form.Get("message"), "\r\n", "\n")),
-		Consent: form.Get("consent") != "",
+	v := contactValues(form)
+	for i, field := range b.State.Guard.Attribution {
+		b.State.Guard.Attribution[i].Value = truncate(form.Get(field.Name), maxAttributionChars)
 	}
 	b.State.Values = v
 	b.State.Errors = validateContact(v)
@@ -83,12 +82,30 @@ func (b *BlockSectionContact) Submit(ctx context.Context, inbox Inbox, form url.
 		{Name: "email", Value: v.Email},
 		{Name: "topic", Value: v.Topic},
 		{Name: "message", Value: v.Message},
-	}})
+	}, Attribution: AttributionFrom(form)})
 	if err != nil {
 		return false, err
 	}
 	b.State.Sent = true
 	return true, nil
+}
+
+func contactValues(form url.Values) ContactValues {
+	return ContactValues{
+		Name:  strings.TrimSpace(form.Get("name")),
+		Email: strings.TrimSpace(form.Get("email")),
+		Topic: form.Get("topic"),
+		// Browsers submit line breaks as CRLF but count them as one character.
+		Message: strings.TrimSpace(strings.ReplaceAll(form.Get("message"), "\r\n", "\n")),
+		Consent: form.Get("consent") != "",
+	}
+}
+
+func (b *BlockSectionContact) Confirm() { b.State.Sent = true }
+
+func (b *BlockSectionContact) Reject(form url.Values, message string) {
+	b.State.Values = contactValues(form)
+	b.State.FormError = message
 }
 
 func validateContact(v ContactValues) map[string]string {
@@ -149,6 +166,8 @@ func (b *BlockSectionContact) BaseForm() BaseForm {
 		ID:     id + "-form",
 		Action: b.State.Path,
 		Hidden: []FormValue{{Name: TargetParam, Value: ShortID(b)}},
+		Guard:  b.State.Guard,
+		Error:  b.State.FormError,
 		Submit: "Send message",
 		Fields: []BaseFormField{
 			{ID: id + "-name", Name: "name", Label: "Name", Value: v.Name, Error: errs["name"],

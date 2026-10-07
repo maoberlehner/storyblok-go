@@ -162,7 +162,7 @@ func newServerWithContent(t *testing.T, inbox components.Inbox, serverOpts []ser
 		"home": homeStory, "settings": settingsStory, "busy": rateLimited, "landing": landingStory,
 		"legacy": `{"name": "Legacy", "content": {"component": "page", "body": []}}`,
 	}}
-	serverOpts = append([]server.Option{server.WithSiteURL(siteURL)}, serverOpts...)
+	serverOpts = append([]server.Option{server.WithSiteURL(siteURL), server.WithFormSecret([]byte(formSecret))}, serverOpts...)
 	srv := server.New(content, renderer, fstest.MapFS{}, inbox, previewToken, slog.New(slog.DiscardHandler), serverOpts...)
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
@@ -346,4 +346,12 @@ func TestDevToolbar(t *testing.T) {
 			t.Error("preview page contains dev toolbar markup")
 		}
 	})
+}
+
+const formSecret = "form-secret"
+
+// validFormToken is a token rendered a minute ago, so submissions using it
+// pass the time trap.
+func validFormToken() string {
+	return components.NewFormGuard([]byte(formSecret), func() time.Time { return time.Now().Add(-time.Minute) }).Token()
 }
