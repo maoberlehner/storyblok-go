@@ -14,3 +14,5 @@ otherwise have to repeat. Use the format of the existing records.
   interactions
 - [0003](0003-search-engine-indexing.md): Canonical URLs without view state and
   a sitemap for discovery
+- [0004](0004-permissive-content-security-policy.md): A Content Security Policy
+  that tolerates tag managers

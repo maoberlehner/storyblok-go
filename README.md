@@ -72,6 +72,11 @@ matching `If-None-Match` gets a 304 without a Storyblok request or rendering.
 nginx revalidates expired pages in the background this way, so every request
 except the first per page is served from the cache.
 
+Every response carries a Content Security Policy, `nosniff`, a referrer policy,
+and HSTS for HTTPS origins. The policy deliberately allows inline scripts,
+`eval`, and any HTTPS origin so tag managers keep working
+([ADR 0004](adr/0004-permissive-content-security-policy.md)).
+
 ## Storyblok requests
 
 The Content Delivery and Management API clients share an HTTP layer that retries

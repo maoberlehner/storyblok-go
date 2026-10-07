@@ -92,7 +92,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{slug...}", s.showStory)
 	mux.HandleFunc("POST /{slug...}", s.submitForm)
 	mux.HandleFunc("PUT /{slug...}", s.previewStory)
-	return http.NewCrossOriginProtection().Handler(mux)
+	return securityHeaders(http.NewCrossOriginProtection().Handler(mux), s.siteURL)
 }
 
 func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
