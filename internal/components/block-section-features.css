@@ -1,0 +1,41 @@
+.block-section-features {
+  container-type: inline-size;
+  display: grid;
+  gap: 2rem;
+}
+
+.block-section-features__header {
+  display: grid;
+  gap: 0.75rem;
+  max-inline-size: 40rem;
+}
+
+.block-section-features__heading {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.block-section-features__text {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 1.125rem;
+  white-space: pre-line;
+}
+
+.block-section-features__items {
+  display: grid;
+  gap: 2rem 1.5rem;
+}
+
+@container (inline-size >= 40rem) {
+  .block-section-features__items {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@container (inline-size >= 60rem) {
+  .block-section-features__items {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

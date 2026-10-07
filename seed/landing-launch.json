@@ -3,13 +3,13 @@
   "name": "Launch",
   "content": {
     "component": "page-landing-page",
-    "_uid": "285c1d53-f497-4ca3-922c-01795817eeb6",
+    "_uid": "aa1d50a4-295f-444c-b77a-c138a995fdbe",
     "title": "Ship content faster",
     "description": "Compose pages from tested sections, preview every change, and publish without waiting on a release.",
     "sections": [
       {
         "component": "block-section-hero",
-        "_uid": "a89c301a-2435-4b5d-8042-dceeae7d8bbc",
+        "_uid": "97901354-174c-427b-a996-4c95b77d7620",
         "heading": "Ship content faster without waiting on developers",
         "text": "Editors compose pages from tested sections. Developers own the components. Everyone stops blocking each other.",
         "link": {
@@ -21,20 +21,179 @@
         "link_label": "Become a partner"
       },
       {
+        "component": "block-section-stats",
+        "_uid": "dc759947-6464-4bf2-9c5c-46985b5f437c",
+        "heading": "Trusted by content teams",
+        "items": [
+          {
+            "component": "block-content-stat",
+            "_uid": "d00fa972-9eaf-465e-90f8-65deaaf46904",
+            "value": "3×",
+            "label": "faster page launches"
+          },
+          {
+            "component": "block-content-stat",
+            "_uid": "3e851078-28cc-476f-8410-7d4b1e929c1c",
+            "value": "40%",
+            "label": "fewer support tickets"
+          },
+          {
+            "component": "block-content-stat",
+            "_uid": "9de308a5-3ac0-4948-a4f6-5d9f6dd6ab56",
+            "value": "1,200+",
+            "label": "pages published per week"
+          },
+          {
+            "component": "block-content-stat",
+            "_uid": "e4d8da01-04f6-4f0f-a657-9c51027ffd69",
+            "value": "99.99%",
+            "label": "uptime last year"
+          }
+        ]
+      },
+      {
+        "component": "block-section-features",
+        "_uid": "7d714cd5-6db7-448d-a357-34975a8a0331",
+        "heading": "Everything a content team needs",
+        "text": "One workflow from first draft to published page, with the guardrails that keep a site consistent.",
+        "items": [
+          {
+            "component": "block-content-feature",
+            "_uid": "f2426a1a-1173-4932-a918-79d12310bf58",
+            "title": "Visual editing",
+            "text": "See every change in context before it goes live. Click any section to edit it in place."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "ffb93d44-d071-4512-a626-5b5f72c177b1",
+            "title": "Reusable sections",
+            "text": "Build pages from components your developers tested once and maintain in one place."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "1007d272-c052-410a-90ad-bec19d8e9b4c",
+            "title": "Scheduled releases",
+            "text": "Plan launches across dozens of pages and publish them together at the right time."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "e4ce054b-66ec-4c81-bc87-3357d67cf0f6",
+            "title": "Roles and approvals",
+            "text": "Decide who can edit, review, and publish, per space, folder, or content type."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "b0f71c00-edd7-432f-9b00-04a1c4810c32",
+            "title": "Localization",
+            "text": "Translate field by field and keep every language in sync with the source."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "c56aa348-591f-428f-a792-815ca1d720f2",
+            "title": "Fast by default",
+            "text": "Pages are rendered on the server, cached at the edge, and work without JavaScript."
+          }
+        ]
+      },
+      {
         "component": "block-section-intro",
-        "_uid": "fadaae3b-d7b6-45a8-a86f-b957335c3e19",
+        "_uid": "b0f2d86d-782a-4bb1-8a03-23139ae33d37",
         "heading": "Built for teams that publish every day",
         "text": "Structured content keeps every page consistent. Live preview shows changes before they go out. Server-rendered HTML keeps pages fast on any device."
       },
       {
+        "component": "block-section-testimonials",
+        "_uid": "80754d2d-fc19-4bde-8750-6e5a5daf7536",
+        "heading": "What our customers say",
+        "items": [
+          {
+            "component": "block-content-quote",
+            "_uid": "1a0b9717-b9cc-41d6-ab2f-1f2c650a7919",
+            "quote": "We used to wait two sprints for a landing page. Now marketing ships one before lunch.",
+            "name": "Dana Whitfield",
+            "role": "Head of Growth, Northwind"
+          },
+          {
+            "component": "block-content-quote",
+            "_uid": "fbe0a667-abbd-4870-93ff-8f2971a31ec6",
+            "quote": "The component library finally means the same thing to designers, developers, and editors.",
+            "name": "Marco Reyes",
+            "role": "Design Lead, Lumen Health"
+          },
+          {
+            "component": "block-content-quote",
+            "_uid": "4e1013f7-0a60-41d1-86af-9ab0204728f7",
+            "quote": "Our pages got faster after the migration, and our editors stopped asking for help.",
+            "name": "Priya Natarajan",
+            "role": "Engineering Manager, Atlas Travel"
+          }
+        ]
+      },
+      {
         "component": "block-section-articles",
-        "_uid": "d5c97623-ed8a-43ad-b1da-c89ab619242f",
+        "_uid": "34007a9a-0578-4e3b-a804-a0a159693053",
         "heading": "From the blog",
         "folder": "articles"
       },
       {
+        "component": "block-section-faq",
+        "_uid": "28b9e047-2e2c-4a35-bc11-c768d44b2092",
+        "heading": "Frequently asked questions",
+        "items": [
+          {
+            "component": "block-content-question",
+            "_uid": "9a45a71e-bcd9-4168-a660-f75e57b919dd",
+            "question": "How long does a migration take?",
+            "answer": "Most teams move their first site in four to eight weeks. We help you model content, migrate it with scripts, and train editors."
+          },
+          {
+            "component": "block-content-question",
+            "_uid": "b07a919e-5028-465e-9e3b-5a9f76820857",
+            "question": "Do editors need to learn HTML?",
+            "answer": "No. Editors work with fields and sections. Developers decide what each section can contain."
+          },
+          {
+            "component": "block-content-question",
+            "_uid": "c04cf51d-b5cc-4c16-a494-0a1786c5f004",
+            "question": "Can we keep our existing design system?",
+            "answer": "Yes. Components are your own code, so they follow your design system and your accessibility standards."
+          },
+          {
+            "component": "block-content-question",
+            "_uid": "c2fa6fc3-9558-42a3-950f-17787c2fe5e6",
+            "question": "How do previews work?",
+            "answer": "The editor shows your real site in a frame and updates it as you type. Drafts stay private until you publish."
+          },
+          {
+            "component": "block-content-question",
+            "_uid": "28ca5fdf-7080-4b7b-95a4-b52006e6d247",
+            "question": "What happens if the content API is down?",
+            "answer": "Published pages are cached and keep being served. Edits wait until the API is back."
+          },
+          {
+            "component": "block-content-question",
+            "_uid": "d374b917-e786-422f-bb75-2805c64d24f0",
+            "question": "Is there a free trial?",
+            "answer": "Yes, every plan starts with a 14-day trial with all features enabled. No credit card required."
+          }
+        ]
+      },
+      {
+        "component": "block-section-cta",
+        "_uid": "170cc46f-40a1-49dd-beee-833ef039e6f7",
+        "heading": "Ready to ship your next page?",
+        "text": "Talk to our team about your content and your stack. We will show you a demo with your own pages.",
+        "link": {
+          "linktype": "story",
+          "cached_url": "landing/partners",
+          "url": "",
+          "fieldtype": "multilink"
+        },
+        "link_label": "See partner options"
+      },
+      {
         "component": "block-section-contact",
-        "_uid": "b1f92aab-f3b4-4425-b1cf-67efd75c3dff",
+        "_uid": "99cc7976-7119-4ac6-be49-5a9abc28c563",
         "heading": "Talk to us",
         "text": "Tell us about your project. All fields are required.",
         "success_message": "Thanks for your message. We will get back to you within two working days."

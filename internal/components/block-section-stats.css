@@ -1,0 +1,29 @@
+.block-section-stats {
+  container-type: inline-size;
+  display: grid;
+  gap: 1.5rem;
+  padding: 2rem 1.5rem;
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+
+.block-section-stats__heading {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.block-section-stats__items {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@container (inline-size >= 40rem) {
+  .block-section-stats__items {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+}

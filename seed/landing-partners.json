@@ -3,13 +3,13 @@
   "name": "Partners",
   "content": {
     "component": "page-landing-page",
-    "_uid": "7a3bbb7f-9649-4dd2-9132-4704c4d537f4",
+    "_uid": "d0678609-d16f-4656-957d-c91a5d60a17e",
     "title": "Partner program",
     "description": "Early access, training, and leads for agencies and freelancers who build with us.",
     "sections": [
       {
         "component": "block-section-hero",
-        "_uid": "33c55da5-f714-4824-bb0b-06fcfc82325f",
+        "_uid": "a6b0d9a0-ce93-4dc3-8c7a-42528b745b44",
         "heading": "Grow with our partner program",
         "text": "Agencies and freelancers get early access, training, and leads from teams looking for help.",
         "link": {
@@ -21,14 +21,92 @@
         "link_label": "See the product"
       },
       {
+        "component": "block-section-features",
+        "_uid": "10e327af-4534-470e-8327-8e272977dc5a",
+        "heading": "What partners get",
+        "text": "Support at every stage, from your first project to a dedicated practice.",
+        "items": [
+          {
+            "component": "block-content-feature",
+            "_uid": "dc3801c8-aa81-467b-9ea1-f4086ea073fe",
+            "title": "Certified training",
+            "text": "Self-paced courses and live workshops for developers and content strategists."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "d330391d-58ba-4845-9b80-d18283e9021a",
+            "title": "Qualified leads",
+            "text": "We introduce you to customers who need help in your region and industry."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "4d952959-c79b-4b80-a4a3-d1144c9b492a",
+            "title": "Early access",
+            "text": "Try new features before release and shape them with direct feedback."
+          },
+          {
+            "component": "block-content-feature",
+            "_uid": "4f182b58-b2a2-4636-a748-190f52c52614",
+            "title": "Co-marketing",
+            "text": "Case studies, webinars, and a listing in our partner directory."
+          }
+        ]
+      },
+      {
+        "component": "block-section-testimonials",
+        "_uid": "e21c2807-3758-4cb3-9d06-a0daf78b8891",
+        "heading": "Partners on the program",
+        "items": [
+          {
+            "component": "block-content-quote",
+            "_uid": "165c3fac-2b91-4350-839e-956634dbd0ae",
+            "quote": "Certification made it easy to staff projects. Clients ask for it by name now.",
+            "name": "Lea Brandt",
+            "role": "Managing Director, Kiln Studio"
+          },
+          {
+            "component": "block-content-quote",
+            "_uid": "ccd51144-5d67-4ca7-8428-c9cbd24a6b9a",
+            "quote": "Half of our new projects last year came through partner leads.",
+            "name": "Tom Okafor",
+            "role": "Founder, Northbound Digital"
+          }
+        ]
+      },
+      {
         "component": "block-section-articles",
-        "_uid": "7019c290-32c1-45cd-923b-036576a9bc1f",
+        "_uid": "ab724392-5ffa-4cd1-872f-39bdc8999016",
         "heading": "Partner stories",
         "folder": "articles"
       },
       {
+        "component": "block-section-faq",
+        "_uid": "091761ae-3cba-4843-9555-1410acfbc5cb",
+        "heading": "Partner questions",
+        "items": [
+          {
+            "component": "block-content-question",
+            "_uid": "79bb627f-5f69-444a-a225-ff54100839ee",
+            "question": "Who can join?",
+            "answer": "Agencies, consultancies, and freelancers who build websites or content platforms for clients."
+          },
+          {
+            "component": "block-content-question",
+            "_uid": "5b114184-e734-49b4-a82f-7f9d764f8026",
+            "question": "What does it cost?",
+            "answer": "Joining is free. Some certifications have an exam fee, which we waive for your first two developers."
+          },
+          {
+            "component": "block-content-question",
+            "_uid": "18d01b30-54c0-45a2-8159-ffa4d5ee52fa",
+            "question": "How are leads assigned?",
+            "answer": "We match leads by region, industry, and tier, and you decide whether to take them."
+          }
+        ]
+      },
+      {
         "component": "block-section-contact",
-        "_uid": "8316d01d-9e34-4901-acf0-1e752f257794",
+        "_uid": "2e6552e6-a8a3-476a-82e8-e191da9a6f00",
         "heading": "Apply as a partner",
         "text": "Tell us about your team and the projects you work on. All fields are required.",
         "success_message": "Thanks for applying. Our partner team will contact you within a week."

@@ -1,0 +1,6 @@
+{{define "block-section-faq" -}}
+<section {{editable .}} class="block-section-faq" aria-labelledby="{{id .}}-heading">
+  <h2 class="block-section-faq__heading" id="{{id .}}-heading">{{.Heading}}</h2>
+  <div class="block-section-faq__items">{{renderAll .Items}}</div>
+</section>
+{{- end}}

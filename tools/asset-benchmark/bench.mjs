@@ -16,7 +16,7 @@
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 
-const MODES = ["inline", "head", "bundle"];
+const MODES = ["inline", "head", "links", "bundle"];
 const RUNS = Number(process.env.RUNS ?? 5);
 const FIRST_PAGE = "/landing/launch";
 const SECOND_PAGE = "/landing/partners";

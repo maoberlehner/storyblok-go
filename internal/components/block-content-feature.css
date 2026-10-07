@@ -1,0 +1,20 @@
+.block-content-feature {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  padding-block-start: 1rem;
+  border-block-start: 0.25rem solid var(--color-accent);
+}
+
+.block-content-feature__title {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.block-content-feature__text {
+  margin: 0;
+  color: var(--color-muted);
+  white-space: pre-line;
+}

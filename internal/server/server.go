@@ -80,6 +80,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /assets/app.css", s.serveBundle("text/css; charset=utf-8", s.renderer.Stylesheet))
 	mux.HandleFunc("GET /assets/app.js", s.serveBundle("text/javascript; charset=utf-8", s.renderer.Script))
+	mux.HandleFunc("GET "+components.ComponentStylesheetPrefix+"{file}", s.serveComponentStylesheet)
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", s.serveAsset(http.FileServerFS(s.assets))))
 	mux.HandleFunc("GET /{slug...}", s.showStory)
 	mux.HandleFunc("POST /{slug...}", s.submitForm)
@@ -283,6 +284,15 @@ func (s *Server) serveBundle(contentType string, content func() []byte) http.Han
 		}
 		_, _ = w.Write(content())
 	}
+}
+
+func (s *Server) serveComponentStylesheet(w http.ResponseWriter, r *http.Request) {
+	css, ok := s.renderer.ComponentStylesheet(r.PathValue("file"))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	s.serveBundle("text/css; charset=utf-8", func() []byte { return css })(w, r)
 }
 
 // serveAsset marks versioned vendor files as cacheable forever.

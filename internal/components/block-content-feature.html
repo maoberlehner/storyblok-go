@@ -1,0 +1,6 @@
+{{define "block-content-feature" -}}
+<div {{editable .}} class="block-content-feature">
+  <h3 class="block-content-feature__title">{{.Title}}</h3>
+  {{with .Text}}<p class="block-content-feature__text">{{.}}</p>{{end}}
+</div>
+{{- end}}

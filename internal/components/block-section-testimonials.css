@@ -1,0 +1,23 @@
+.block-section-testimonials {
+  container-type: inline-size;
+  display: grid;
+  gap: 2rem;
+}
+
+.block-section-testimonials__heading {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.block-section-testimonials__items {
+  display: grid;
+  gap: 1rem;
+}
+
+@container (inline-size >= 48rem) {
+  .block-section-testimonials__items {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
