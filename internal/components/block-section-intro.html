@@ -1,0 +1,6 @@
+{{define "block-section-intro" -}}
+<section {{editable .}} class="block-section-intro">
+  {{with .Heading}}<h2 class="block-section-intro__heading">{{.}}</h2>{{end}}
+  {{with .Text}}<p class="block-section-intro__text">{{.}}</p>{{end}}
+</section>
+{{- end}}

@@ -25,10 +25,10 @@ import (
 const (
 	previewToken = "preview-token"
 	homeStory    = `{"id": 7, "name": "Home", "content": {
-		"component": "enterprise_page", "_uid": "u1",
-		"meta_title": "Welcome",
-		"_editable": "<!--#storyblok#{\"name\": \"enterprise_page\", \"uid\": \"u1\", \"id\": \"1\"}-->",
-		"body": [{"component": "not_built_yet", "_uid": "u2", "_editable": "<!--#storyblok#{\"name\": \"not_built_yet\", \"uid\": \"u2\", \"id\": \"1\"}-->"}]
+		"component": "page-landing-page", "_uid": "u1",
+		"title": "Welcome",
+		"_editable": "<!--#storyblok#{\"name\": \"page-landing-page\", \"uid\": \"u1\", \"id\": \"1\"}-->",
+		"sections": [{"component": "not_built_yet", "_uid": "u2", "_editable": "<!--#storyblok#{\"name\": \"not_built_yet\", \"uid\": \"u2\", \"id\": \"1\"}-->"}]
 	}}`
 )
 
@@ -72,7 +72,7 @@ func newServer(t *testing.T, opts ...components.RendererOption) *httptest.Server
 	if err != nil {
 		t.Fatal(err)
 	}
-	content := fakeContent{"home": homeStory, "config": `{"content": {"component": "configuration"}}`}
+	content := fakeContent{"home": homeStory}
 	srv := server.New(content, renderer, fstest.MapFS{}, previewToken, slog.New(slog.DiscardHandler))
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
@@ -135,7 +135,7 @@ func TestShowStory(t *testing.T) {
 
 func TestPreviewStory(t *testing.T) {
 	ts := newServer(t)
-	edited := strings.Replace(homeStory, `"body": [`, `"body": [{"component": "edited_block", "_editable": "<!--#storyblok#{}-->"},`, 1)
+	edited := strings.Replace(homeStory, `"sections": [`, `"sections": [{"component": "edited_block", "_editable": "<!--#storyblok#{}-->"},`, 1)
 
 	t.Run("renders the posted story as the main content fragment", func(t *testing.T) {
 		status, body := do(t, http.MethodPut, ts.URL+"/"+previewQuery(), edited)

@@ -1,0 +1,14 @@
+.page-landing-page {
+  display: grid;
+  gap: 3rem;
+  margin-inline: auto;
+  max-inline-size: 72rem;
+  padding: 2rem 1.5rem;
+}
+
+.page-landing-page__title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}

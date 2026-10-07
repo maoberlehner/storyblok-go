@@ -1,6 +1,0 @@
-{{define "navigation_group" -}}
-<div class="site-footer__column" {{editable .}}>
-  {{- with .GroupName}}<h2 class="site-footer__title">{{.}}</h2>{{end}}
-  <ul class="site-footer__list">{{renderAll .NavItems}}</ul>
-</div>
-{{- end}}

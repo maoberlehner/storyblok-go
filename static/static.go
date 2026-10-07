@@ -3,8 +3,7 @@ package static
 
 import "embed"
 
-// FS contains the live preview script and the brand fonts, which are fetched
-// by scripts/fetch-fonts.sh because they are licensed and not committed.
+// FS contains the live preview and development toolbar assets.
 //
-//go:embed preview.js dev-toolbar.js dev-toolbar.css all:fonts
+//go:embed preview.js dev-toolbar.js dev-toolbar.css
 var FS embed.FS

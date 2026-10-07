@@ -1,6 +1,0 @@
-{{define "enterprise_cta" -}}
-<a {{editable .}} class="button button--{{.Variant}}" href="{{.Link.Href}}"
-  {{- if .OpensNewWindow}} target="_blank" rel="noopener"{{end}}>
-  {{- .Text}}{{if .OpensNewWindow}}<span class="visually-hidden"> (opens in a new window)</span>{{end -}}
-</a>
-{{- end}}
