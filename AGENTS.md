@@ -8,6 +8,11 @@ Follow them for new work and improve touched code incrementally.
 [GAPS.md](GAPS.md) tracks known deviations and pending decisions; update it when
 these change. Avoid unrelated migrations.
 
+[adr/](adr/README.md) records architecture decisions with their context and
+evidence. Read the relevant record before changing such a decision; add one when
+a decision chooses between real alternatives, is costly to reverse, or rests on
+measurements or research.
+
 ## Components
 
 - Structure HTML into components; keep their `.go`, `.html`, `.css`, and
@@ -93,22 +98,10 @@ interactions; follow them for similar features and add new ones there:
 
 ## Asset delivery
 
-Keep CSS/JS source files colocated with their component. Pages inline the CSS of
-the components they use in `<head>`, once per component type; global document
-defaults come first. Fragments carry no CSS, so they may only render components
-their page already rendered. Component scripts are bundled into one deferred,
-cacheable `app.js`, each file in its own function scope.
-
-Benchmarked on the compose stack (slow 4G, realistic landing page with 19
-components, 2.2 KB of compressed CSS) against per-instance inlining,
-per-component `<link>`s, and one linked stylesheet: inlining in `<head>` had the
-fastest first visit (about 100 ms before a linked bundle, 300 ms before
-per-component links) and costs about 2 KB per navigation to another page. Repeat
-visits are free in every variant (ETag revalidation). Minification would save
-about 0.5 KB per page after compression and is not used. Revisit when a page's
-CSS no longer fits the first round trip with its HTML (about 14 KB compressed).
-The benchmark tool is in the history at commit `540a686`
-(`tools/asset-benchmark`).
+Pages inline the CSS of the components they render in `<head>`, once per
+component type. htmx fragments carry no CSS, so they may only render components
+their page already rendered. Component scripts are bundled into one deferred
+`app.js`, each file in its own function scope.
 
 ## Verification
 
