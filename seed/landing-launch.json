@@ -6,6 +6,7 @@
     "_uid": "aa1d50a4-295f-444c-b77a-c138a995fdbe",
     "title": "Ship content faster",
     "description": "Compose pages from tested sections, preview every change, and publish without waiting on a release.",
+    "seo_title": "Ship content faster | Acme Content",
     "sections": [
       {
         "component": "block-section-hero",

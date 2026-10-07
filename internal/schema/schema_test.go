@@ -10,18 +10,27 @@ import (
 )
 
 type testBlock interface{ Meta() *storyblok.Blok }
+type testMeta struct {
+	SEOTitle       string          `json:"seo_title"`
+	SEODescription string          `json:"seo_description"`
+	OGTitle        string          `json:"og_title"`
+	OGDescription  string          `json:"og_description"`
+	OGImage        storyblok.Asset `json:"og_image"`
+}
+
 type testPage struct {
 	storyblok.Blok
+	testMeta
 	Title       string      `json:"title"`
 	Sections    []testBlock `json:"sections"`
 	Description string      `json:"description"`
 }
 
 func validDefinition() Definition[testPage] {
-	return Definition[testPage]{Name: "page-test", Category: Page, Fields: []Field{
+	return Definition[testPage]{Name: "page-test", Category: Page, Fields: append([]Field{
 		{Name: "title", Type: "text", Required: true}, {Name: "sections", Type: "bloks", Allow: Section},
 		{Name: "description", Type: "textarea", Required: true},
-	}}
+	}, PageMetaGroups()...)}
 }
 
 func TestModelValidation(t *testing.T) {
@@ -38,6 +47,7 @@ func TestModelValidation(t *testing.T) {
 		{"no restrictions", func(d *Definition[testPage]) { d.Fields[1].Allow = "" }, "nestable category"},
 		{"base", func(d *Definition[testPage]) { d.Name = "base-test" }, "invalid component"},
 		{"page without description", func(d *Definition[testPage]) { d.Fields = d.Fields[:2] }, "pages require a required description"},
+		{"page without share image", func(d *Definition[testPage]) { d.Fields = d.Fields[:4] }, "pages require a og_title field"},
 		{"optional page title", func(d *Definition[testPage]) { d.Fields[0].Required = false }, "pages require a required title"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

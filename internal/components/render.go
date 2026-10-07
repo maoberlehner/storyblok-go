@@ -30,9 +30,57 @@ var (
 var ResolveRelations []string
 
 type Metadata struct {
-	Title       string
-	Description string
-	Image       storyblok.Asset
+	Title, Description       string
+	SEOTitle, SEODescription string
+	OGTitle, OGDescription   string
+	OGImage                  storyblok.Asset
+	// Type is the Open Graph type; empty means "website".
+	Type string
+}
+
+// Share images are cropped to the size link previews display.
+const ShareImageWidth, ShareImageHeight = 1200, 630
+
+type ShareImage struct {
+	URL, Alt string
+}
+
+func (p Page) DocumentTitle() string    { return cmp.Or(p.SEOTitle, p.Title) }
+func (p Page) MetaDescription() string  { return cmp.Or(p.SEODescription, p.Description) }
+func (p Page) ShareTitle() string       { return cmp.Or(p.OGTitle, p.DocumentTitle()) }
+func (p Page) ShareDescription() string { return cmp.Or(p.OGDescription, p.MetaDescription()) }
+func (p Page) OGType() string           { return cmp.Or(p.Type, "website") }
+
+func (p Page) settings() *SiteSettings {
+	if p.Chrome == nil {
+		return nil
+	}
+	return p.Chrome.Settings
+}
+
+func (p Page) SiteName() string {
+	if s := p.settings(); s != nil {
+		return s.SiteName
+	}
+	return ""
+}
+
+// ShareImage is the page's image for link previews, else the site's default.
+// Link previews don't support SVG.
+func (p Page) ShareImage() *ShareImage {
+	image := p.OGImage
+	if image.IsZero() {
+		if s := p.settings(); s != nil {
+			image = s.DefaultOGImage
+		}
+	}
+	if image.IsZero() || image.IsSVG() {
+		return nil
+	}
+	return &ShareImage{
+		URL: image.Image(storyblok.ImageOptions{Width: ShareImageWidth, Height: ShareImageHeight}),
+		Alt: image.Alt,
+	}
 }
 
 // Page is everything the layout needs to render a full document.

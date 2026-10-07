@@ -29,6 +29,12 @@ as loaded "load more" pages. `/sitemap.xml` lists every published story with a
 page component, and `/robots.txt` points to it. Previews are marked `noindex`.
 `make run` and `make up` default `SITE_URL` to their local origins.
 
+Pages have optional search (`seo_title`, `seo_description`) and share
+(`og_title`, `og_description`, `og_image`) overrides. Share fields fall back to
+search fields, search fields to `title` and `description`, and the share image
+to the settings' default, cropped to 1200×630. FAQ sections add `FAQPage`
+structured data.
+
 The icons in `static/icons/` are a placeholder mark. Replace `icon.svg` and the
 PNG/ICO renderings together; `/favicon.ico`, `/apple-touch-icon.png`, and
 `/manifest.webmanifest` are served at the root.

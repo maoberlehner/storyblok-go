@@ -231,17 +231,47 @@ func (d Definition[T]) validateField(f Field, model map[string]reflect.Type, see
 	return nil
 }
 
-// pageMetadataFields are the fields every page needs for its document title
-// and meta description.
-var pageMetadataFields = []Field{{Name: "title", Type: "text"}, {Name: "description", Type: "textarea"}}
+// pageMetadataFields are the fields every page needs for its document title,
+// meta description, and link previews.
+var pageMetadataFields = []Field{
+	{Name: "title", Type: "text", Required: true},
+	{Name: "description", Type: "textarea", Required: true},
+	{Name: "seo_title", Type: "text"},
+	{Name: "seo_description", Type: "textarea"},
+	{Name: "og_title", Type: "text"},
+	{Name: "og_description", Type: "textarea"},
+	{Name: "og_image", Type: "asset"},
+}
+
+// PageMetaGroups are the optional search and sharing overrides every page
+// offers. Empty overrides fall back: share fields to the search fields, search
+// fields to title and description.
+func PageMetaGroups() []Field {
+	return []Field{
+		{Name: "seo", Type: groupType, Label: "SEO", Fields: []Field{
+			{Name: "seo_title", Type: "text", Label: "Search title", Description: "Replaces the title in search results and browser tabs."},
+			{Name: "seo_description", Type: "textarea", Label: "Search description", Description: "Replaces the description in search results."},
+		}},
+		{Name: "social", Type: groupType, Label: "Social sharing", Fields: []Field{
+			{Name: "og_title", Type: "text", Label: "Share title", Description: "Defaults to the search title."},
+			{Name: "og_description", Type: "textarea", Label: "Share description", Description: "Defaults to the search description."},
+			{Name: "og_image", Type: "asset", Label: "Share image", Filetypes: []string{"images"},
+				Description: "Shown at 1200×630 around the focus point. Defaults to the site's share image."},
+		}},
+	}
+}
 
 func (d Definition[T]) validatePageMetadata() error {
 	fields := d.flatFields()
 	for _, want := range pageMetadataFields {
 		i := slices.IndexFunc(fields, func(f Field) bool { return f.Name == want.Name })
-		if i < 0 || fields[i].Type != want.Type || !fields[i].Required {
+		if i >= 0 && fields[i].Type == want.Type && (fields[i].Required || !want.Required) {
+			continue
+		}
+		if want.Required {
 			return fmt.Errorf("%s: pages require a required %s field of type %s", d.Name, want.Name, want.Type)
 		}
+		return fmt.Errorf("%s: pages require a %s field of type %s", d.Name, want.Name, want.Type)
 	}
 	return nil
 }
