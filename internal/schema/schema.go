@@ -53,6 +53,11 @@ func (d Definition[T]) Validate() error {
 	if !validCategory(d.Category) || !strings.HasPrefix(d.Name, string(d.Category)+"-") || !identifier.MatchString(d.Name) {
 		return fmt.Errorf("invalid component name/category: %q (%s)", d.Name, d.Category)
 	}
+	if d.Category == Page {
+		if err := d.validatePageMetadata(); err != nil {
+			return err
+		}
+	}
 	t := reflect.TypeFor[T]()
 	if t.Kind() != reflect.Struct {
 		return fmt.Errorf("%s: model must be a struct", d.Name)
@@ -90,6 +95,10 @@ func (d Definition[T]) Validate() error {
 			if ft.Kind() != reflect.String || f.Allow != "" {
 				return fmt.Errorf("%s.%s: text requires a string and no block restrictions", d.Name, f.Name)
 			}
+		case "multilink":
+			if ft != reflect.TypeFor[storyblok.Link]() || f.Allow != "" {
+				return fmt.Errorf("%s.%s: multilink requires a storyblok.Link and no block restrictions", d.Name, f.Name)
+			}
 		case "bloks":
 			meta := reflect.TypeFor[interface{ Meta() *storyblok.Blok }]()
 			if ft.Kind() != reflect.Slice || !ft.Elem().Implements(meta) || !validCategory(f.Allow) || f.Allow == Page {
@@ -105,6 +114,20 @@ func (d Definition[T]) Validate() error {
 	for name := range model {
 		if !seen[name] {
 			return fmt.Errorf("%s.%s: Go content field has no schema", d.Name, name)
+		}
+	}
+	return nil
+}
+
+// pageMetadataFields are the fields every page needs for its document title
+// and meta description.
+var pageMetadataFields = []Field{{Name: "title", Type: "text"}, {Name: "description", Type: "textarea"}}
+
+func (d Definition[T]) validatePageMetadata() error {
+	for _, want := range pageMetadataFields {
+		i := slices.IndexFunc(d.Fields, func(f Field) bool { return f.Name == want.Name })
+		if i < 0 || d.Fields[i].Type != want.Type || !d.Fields[i].Required {
+			return fmt.Errorf("%s: pages require a required %s field of type %s", d.Name, want.Name, want.Type)
 		}
 	}
 	return nil

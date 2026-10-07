@@ -1,0 +1,28 @@
+.block-section-hero {
+  container-type: inline-size;
+  display: grid;
+  gap: 1.5rem;
+  justify-items: start;
+  padding-block: 2rem;
+}
+
+.block-section-hero__heading {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.block-section-hero__text {
+  margin: 0;
+  max-inline-size: 40rem;
+  color: var(--color-muted);
+  font-size: 1.25rem;
+  white-space: pre-line;
+}
+
+@container (inline-size >= 40rem) {
+  .block-section-hero__heading {
+    font-size: 2.5rem;
+  }
+}

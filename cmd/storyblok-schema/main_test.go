@@ -10,9 +10,19 @@ import (
 	"strings"
 	"testing"
 
+	"storyblok-go-website/internal/components"
 	"storyblok-go-website/internal/mapi"
 	"storyblok-go-website/internal/schema"
 )
+
+func registeredComponents(t *testing.T) int {
+	t.Helper()
+	all, err := components.Schemas()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(all)
+}
 
 func TestValidateNeedsNoCredentialsAndEmitsDeterministicJSON(t *testing.T) {
 	var first bytes.Buffer
@@ -21,12 +31,12 @@ func TestValidateNeedsNoCredentialsAndEmitsDeterministicJSON(t *testing.T) {
 		if err := run(t.Context(), []string{"validate"}, func(string) string { return "" }, &out, &log); err != nil {
 			t.Fatal(err)
 		}
-		var components []schema.Component
-		if err := json.Unmarshal(out.Bytes(), &components); err != nil {
+		var validated []schema.Component
+		if err := json.Unmarshal(out.Bytes(), &validated); err != nil {
 			t.Fatal(err)
 		}
-		if len(components) != 2 {
-			t.Fatalf("got %d", len(components))
+		if want := registeredComponents(t); len(validated) != want {
+			t.Fatalf("got %d, want %d", len(validated), want)
 		}
 		if i == 0 {
 			first.Write(out.Bytes())
@@ -65,7 +75,7 @@ func TestPlanIsReadOnlyAndShowsMigrationWarnings(t *testing.T) {
 	if err := json.Unmarshal(data, &p); err != nil {
 		t.Fatal(err)
 	}
-	if len(p.Changes) != 2 || !strings.Contains(log.String(), "MIGRATION CHECK: enterprise_page") {
+	if len(p.Changes) != registeredComponents(t) || !strings.Contains(log.String(), "MIGRATION CHECK: enterprise_page") {
 		t.Fatalf("plan=%#v log=%s", p, log.String())
 	}
 }

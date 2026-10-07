@@ -1,0 +1,43 @@
+.block-section-articles {
+  container-type: inline-size;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.block-section-articles__heading {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.block-section-articles__list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.block-section-articles__more {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  text-align: center;
+}
+
+.block-section-articles__count {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+@container (inline-size >= 40rem) {
+  .block-section-articles__list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@container (inline-size >= 60rem) {
+  .block-section-articles__list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

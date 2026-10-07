@@ -1,4 +1,4 @@
-.PHONY: run up test fmt schema-validate certs skills
+.PHONY: run up test fmt schema-validate seed benchmark certs skills
 
 CERT := .certs/localhost.pem
 KEY := .certs/localhost-key.pem
@@ -20,6 +20,15 @@ fmt:
 
 schema-validate:
 	go run ./cmd/storyblok-schema validate
+
+# Creates or updates the demo stories in STORYBLOK_SPACE. Apply the schemas first.
+seed:
+	set -a && . ./.env && set +a && go run ./cmd/storyblok-seed
+
+# Compares ASSET_DELIVERY modes in Chrome against the seeded demo pages.
+benchmark: $(CERT)
+	cd tools/asset-benchmark && npm ci --silent
+	set -a && . ./.env && set +a && node tools/asset-benchmark/bench.mjs
 
 certs $(CERT):
 	mkdir -p .certs

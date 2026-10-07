@@ -1,7 +1,15 @@
 :root {
+  color-scheme: light;
   --color-background: #fff;
+  --color-surface: #f4f5f8;
   --color-text: #1f1f1f;
+  --color-muted: #545a66;
+  --color-border: #8a909c;
   --color-accent: #184db5;
+  --color-accent-hover: #123b8c;
+  --color-on-accent: #fff;
+  --color-success-background: #edf7ef;
+  --color-success: #1d6b34;
   --color-error-background: #fef3ee;
   --color-error: #911d1b;
 }
@@ -20,7 +28,18 @@ body {
   background: var(--color-background);
   color: var(--color-text);
 }
+a {
+  color: var(--color-accent);
+}
 :focus-visible {
   outline: 0.125rem solid var(--color-accent);
   outline-offset: 0.25rem;
+}
+[tabindex="-1"]:focus {
+  outline: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }

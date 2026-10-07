@@ -15,9 +15,6 @@ func TestEveryCMSComponentHasCompanionFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(schemas) != 2 {
-		t.Fatalf("want two CMS components, got %d", len(schemas))
-	}
 	for _, s := range schemas {
 		for _, suffix := range []string{".go", ".schema.go", ".html", ".css"} {
 			if _, err := os.Stat(s.Name + suffix); err != nil {
@@ -29,7 +26,7 @@ func TestEveryCMSComponentHasCompanionFiles(t *testing.T) {
 
 func TestLandingPageRendersSectionsAndEscapesContent(t *testing.T) {
 	var story storyblok.Story[AnyBlock]
-	err := json.Unmarshal([]byte(`{"name":"Fallback","content":{"component":"page-landing-page","title":"Hello <world>","sections":[{"component":"block-section-intro","heading":"Welcome","text":"<script>alert(1)</script>"}]}}`), &story)
+	err := json.Unmarshal([]byte(`{"name":"Fallback","content":{"component":"page-landing-page","title":"Hello <world>","description":"About <world>","sections":[{"component":"block-section-intro","heading":"Welcome","text":"<script>alert(1)</script>"}]}}`), &story)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +38,12 @@ func TestLandingPageRendersSectionsAndEscapesContent(t *testing.T) {
 	if err := r.Page(&out, NewPage(story)); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"<title>Hello &lt;world&gt;</title>", `class="block-section-intro"`, "<h2", "&lt;script&gt;alert(1)&lt;/script&gt;"} {
+	for _, want := range []string{
+		"<title>Hello &lt;world&gt;</title>",
+		`<meta name="description" content="About &lt;world&gt;">`,
+		`<h1 class="page-landing-page__title">Hello &lt;world&gt;</h1>`,
+		`class="block-section-intro"`, "<h2", "&lt;script&gt;alert(1)&lt;/script&gt;",
+	} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("missing %s", want)
 		}

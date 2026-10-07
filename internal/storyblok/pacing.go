@@ -53,7 +53,9 @@ func newCDNPacer() *cdnPacer {
 }
 
 func isPublishedStory(request *http.Request) bool {
-	return strings.Contains(request.URL.Path, "/stories/") && request.URL.Query().Get("version") == string(Published)
+	path := request.URL.Path
+	isStories := strings.Contains(path, "/stories/") || strings.HasSuffix(path, "/stories")
+	return isStories && request.URL.Query().Get("version") == string(Published)
 }
 
 func isCacheEligible(request *http.Request) bool {

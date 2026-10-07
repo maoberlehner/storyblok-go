@@ -1,0 +1,6 @@
+{{define "base-card" -}}
+<article {{with .ID}}id="{{.}}" {{end}}class="base-card">
+  <h3 class="base-card__title"><a class="base-card__link" href="{{.Href}}"{{if .Autofocus}} autofocus{{end}}>{{.Title}}</a></h3>
+  {{with .Text}}<p class="base-card__text">{{.}}</p>{{end}}
+</article>
+{{- end}}

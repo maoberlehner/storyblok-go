@@ -1,4 +1,5 @@
-// Package mapi implements the schema CLI's small Management API surface.
+// Package mapi implements the small Management API surface the schema and
+// seed commands need.
 package mapi
 
 import (
@@ -69,7 +70,7 @@ func (c *Client) List(ctx context.Context) ([]Remote, error) {
 		var envelope struct {
 			Components []Remote `json:"components"`
 		}
-		headers, err := c.request(ctx, http.MethodGet, fmt.Sprintf("?per_page=1000&page=%d", page), nil, &envelope)
+		headers, err := c.request(ctx, http.MethodGet, fmt.Sprintf("/components?per_page=1000&page=%d", page), nil, &envelope)
 		if err != nil {
 			return nil, err
 		}
@@ -103,21 +104,22 @@ func (c *Client) List(ctx context.Context) ([]Remote, error) {
 }
 
 func (c *Client) Write(ctx context.Context, id int64, component any) (Remote, error) {
-	method, suffix := http.MethodPost, ""
+	method, path := http.MethodPost, "/components"
 	if id != 0 {
-		method, suffix = http.MethodPut, "/"+strconv.FormatInt(id, 10)
+		method, path = http.MethodPut, "/components/"+strconv.FormatInt(id, 10)
 	}
 	var envelope struct {
 		Component Remote `json:"component"`
 	}
-	_, err := c.request(ctx, method, suffix, map[string]any{"component": component}, &envelope)
+	_, err := c.request(ctx, method, path, map[string]any{"component": component}, &envelope)
 	if err == nil && envelope.Component.ID <= 0 {
 		err = fmt.Errorf("API response omitted the component ID; re-plan before retrying")
 	}
 	return envelope.Component, err
 }
 
-func (c *Client) request(ctx context.Context, method, suffix string, body, out any) (http.Header, error) {
+// request calls path relative to the space.
+func (c *Client) request(ctx context.Context, method, path string, body, out any) (http.Header, error) {
 	var payload io.Reader
 	if body != nil {
 		data, err := json.Marshal(body)
@@ -126,7 +128,13 @@ func (c *Client) request(ctx context.Context, method, suffix string, body, out a
 		}
 		payload = bytes.NewReader(data)
 	}
-	endpoint := c.BaseURL + "/spaces/" + c.Space + "/components" + suffix
+	endpoint := c.BaseURL + "/spaces/" + c.Space + path
+	resource, _, _ := strings.Cut(strings.TrimPrefix(path, "/"), "/")
+	resource, _, _ = strings.Cut(resource, "?")
+	hint := ""
+	if resource == "components" {
+		hint = "; re-plan before retrying a write"
+	}
 	req, err := http.NewRequestWithContext(ctx, method, endpoint, payload)
 	if err != nil {
 		return nil, err
@@ -138,7 +146,7 @@ func (c *Client) request(ctx context.Context, method, suffix string, body, out a
 	}
 	response, err := c.api.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%s components failed: %w; re-plan before retrying a write", method, err)
+		return nil, fmt.Errorf("%s %s failed: %w%s", method, resource, err, hint)
 	}
 	defer response.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes))
@@ -147,7 +155,7 @@ func (c *Client) request(ctx context.Context, method, suffix string, body, out a
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		// Don't print response bodies: they can contain reflected credentials.
-		return nil, fmt.Errorf("%s components returned HTTP %d; re-plan after a failed write", method, response.StatusCode)
+		return nil, fmt.Errorf("%s %s returned HTTP %d%s", method, resource, response.StatusCode, hint)
 	}
 	if err := json.Unmarshal(data, out); err != nil {
 		return nil, fmt.Errorf("invalid Management API response: %w", err)

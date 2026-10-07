@@ -72,3 +72,40 @@ func TestClientStoryErrorsDoNotLeakToken(t *testing.T) {
 		t.Errorf("err = %v, want error without the token", err)
 	}
 }
+
+func TestClientStories(t *testing.T) {
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/stories" {
+			http.NotFound(w, r)
+			return
+		}
+		q := r.URL.Query()
+		for key, want := range map[string]string{
+			"starts_with": "articles/", "content_type": "page-article", "page": "2", "per_page": "6",
+			"sort_by": "first_published_at:desc", "excluding_fields": "sections", "version": "published",
+		} {
+			if got := q.Get(key); got != want {
+				t.Errorf("%s = %q, want %q", key, got, want)
+			}
+		}
+		w.Header().Set("Total", "14")
+		w.Write([]byte(`{"stories": [{"name": "Seven", "full_slug": "articles/seven"}], "cv": 3}`))
+	}))
+	defer api.Close()
+	client := storyblok.NewClient(api.URL, "secret")
+
+	list, err := client.Stories(t.Context(), storyblok.StoriesOptions{
+		StartsWith: "articles/", ContentType: "page-article", Page: 2, PerPage: 6,
+		SortBy: "first_published_at:desc", ExcludingFields: []string{"sections"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stories []storyblok.Story[struct{}]
+	if err := json.Unmarshal(list.Stories, &stories); err != nil {
+		t.Fatal(err)
+	}
+	if list.Total != 14 || len(stories) != 1 || stories[0].FullSlug != "articles/seven" {
+		t.Errorf("list = %+v, stories = %+v", list, stories)
+	}
+}
