@@ -5,7 +5,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
-  <link rel="stylesheet" href="{{.StylesheetURL}}">
+  {{- /* Keeps browsers from requesting /favicon.ico, which would be looked up as a story. */}}
+  <link rel="icon" href="data:,">
+  {{- with .Description}}
+  <meta name="description" content="{{.}}">
+  {{- end}}
+  {{- with .StylesheetURL}}
+  <link rel="stylesheet" href="{{.}}">
+  {{- end}}
+  {{.Head}}
+  <meta name="htmx-config" content='{"includeIndicatorCSS": false}'>
+  <script src="{{.HTMXURL}}" defer></script>
+  {{- with .ScriptURL}}
+  <script src="{{.}}" defer></script>
+  {{- end}}
   {{- with .DevToolbar}}
   <link rel="stylesheet" href="/assets/dev-toolbar.css">
   <script src="/assets/dev-toolbar.js" data-space-id="{{.SpaceID}}" data-story-id="{{.StoryID}}" defer></script>
@@ -17,7 +30,7 @@
   {{- end}}
 </head>
 <body>
-  <main id="main" data-preview-root>{{render .Content}}</main>
+  <main id="main" data-preview-root>{{.Body}}</main>
 </body>
 </html>
 {{- end}}

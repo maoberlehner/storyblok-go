@@ -1,0 +1,33 @@
+.block-section-contact {
+  display: grid;
+  gap: 1.5rem;
+  max-inline-size: 40rem;
+}
+
+.block-section-contact__heading {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.block-section-contact__text {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.block-section-contact__success {
+  padding: 1.5rem;
+  border-inline-start: 0.25rem solid var(--color-success);
+  background: var(--color-success-background);
+}
+
+.block-section-contact__success-title {
+  margin: 0 0 0.5em;
+  color: var(--color-success);
+  font-size: 1.25rem;
+}
+
+.block-section-contact__success-text {
+  margin: 0;
+  white-space: pre-line;
+}

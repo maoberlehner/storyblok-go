@@ -1,0 +1,38 @@
+{
+  "full_slug": "landing/partners",
+  "name": "Partners",
+  "content": {
+    "component": "page-landing-page",
+    "_uid": "7a2d3b9f-1c2e-4d66-8b8f-2e3a4b5c6d01",
+    "title": "Partner program",
+    "description": "Early access, training, and leads for agencies and freelancers who build with us.",
+    "sections": [
+      {
+        "component": "block-section-hero",
+        "_uid": "7a2d3b9f-1c2e-4d66-8b8f-2e3a4b5c6d02",
+        "heading": "Grow with our partner program",
+        "text": "Agencies and freelancers get early access, training, and leads from teams looking for help.",
+        "link": {
+          "linktype": "story",
+          "cached_url": "landing/launch",
+          "url": "",
+          "fieldtype": "multilink"
+        },
+        "link_label": "See the product"
+      },
+      {
+        "component": "block-section-articles",
+        "_uid": "7a2d3b9f-1c2e-4d66-8b8f-2e3a4b5c6d03",
+        "heading": "Partner stories",
+        "folder": "articles"
+      },
+      {
+        "component": "block-section-contact",
+        "_uid": "7a2d3b9f-1c2e-4d66-8b8f-2e3a4b5c6d04",
+        "heading": "Apply as a partner",
+        "text": "Tell us about your team and the projects you work on. All fields are required.",
+        "success_message": "Thanks for applying. Our partner team will contact you within a week."
+      }
+    ]
+  }
+}

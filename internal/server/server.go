@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,8 @@ const (
 	homeSlug = "home"
 	// maxPreviewBodyBytes bounds the story JSON the Visual Editor sends.
 	maxPreviewBodyBytes = 10 << 20
+	maxFormBodyBytes    = 64 << 10
+	vendorAssetsPrefix  = "/assets/vendor/"
 
 	// Browsers revalidate published pages on every view; the ETag keeps that
 	// cheap. Not all browsers limit stale-while-revalidate to subresources, so
@@ -33,6 +36,7 @@ const (
 )
 
 type ContentSource interface {
+	components.Content
 	Story(ctx context.Context, slug string, opts storyblok.StoryOptions) (jsontext.Value, error)
 	CacheVersion() (cv int64, confirmed bool)
 }
@@ -41,6 +45,7 @@ type Server struct {
 	content      ContentSource
 	renderer     *components.Renderer
 	assets       fs.FS
+	inbox        components.Inbox
 	previewToken string
 	logger       *slog.Logger
 	now          func() time.Time
@@ -55,11 +60,12 @@ func WithBuildID(id string) Option {
 	return func(s *Server) { s.buildID = id }
 }
 
-func New(content ContentSource, renderer *components.Renderer, assets fs.FS, previewToken string, logger *slog.Logger, opts ...Option) *Server {
+func New(content ContentSource, renderer *components.Renderer, assets fs.FS, inbox components.Inbox, previewToken string, logger *slog.Logger, opts ...Option) *Server {
 	s := &Server{
 		content:      content,
 		renderer:     renderer,
 		assets:       assets,
+		inbox:        inbox,
 		previewToken: previewToken,
 		logger:       logger,
 		now:          time.Now,
@@ -72,71 +78,243 @@ func New(content ContentSource, renderer *components.Renderer, assets fs.FS, pre
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /assets/app.css", s.serveStylesheet)
-	mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServerFS(s.assets)))
+	mux.HandleFunc("GET /assets/app.css", s.serveBundle("text/css; charset=utf-8", s.renderer.Stylesheet))
+	mux.HandleFunc("GET /assets/app.js", s.serveBundle("text/javascript; charset=utf-8", s.renderer.Script))
+	mux.Handle("GET /assets/", http.StripPrefix("/assets/", s.serveAsset(http.FileServerFS(s.assets))))
 	mux.HandleFunc("GET /{slug...}", s.showStory)
+	mux.HandleFunc("POST /{slug...}", s.submitForm)
 	mux.HandleFunc("PUT /{slug...}", s.previewStory)
-	return mux
+	return http.NewCrossOriginProtection().Handler(mux)
 }
 
 func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
-	slug := cmp.Or(strings.Trim(r.PathValue("slug"), "/"), homeSlug)
 	preview := storyblok.IsValidPreview(r.URL.Query(), s.previewToken, s.now())
-	opts := storyblok.StoryOptions{
-		Version:          storyblok.Published,
-		ResolveRelations: components.ResolveRelations,
-	}
+	version := storyblok.Published
 	if preview {
-		opts.Version = storyblok.Draft
+		version = storyblok.Draft
 	}
+	req := s.componentRequest(r, version)
+	w.Header().Add("Vary", "HX-Request")
 
 	// Read before fetching: the story reflects at least this cv, so the ETag
 	// can only understate it, which costs a render but never serves stale
 	// content.
 	cv, confirmed := s.content.CacheVersion()
-	etag := s.pageETag(cv)
+	etag := s.pageETag(cv, req.Enhanced)
 	if !preview && confirmed && etag != "" && etagMatches(r.Header.Get("If-None-Match"), etag) {
 		setPageCaching(w.Header(), etag)
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 
-	var story storyblok.Story[components.AnyBlock]
-	storyErr := s.fetch(r.Context(), slug, opts, &story)
-
-	switch {
-	case errors.Is(storyErr, storyblok.ErrNotFound):
-		http.NotFound(w, r)
+	story, ok := s.story(w, r, version)
+	if !ok {
 		return
-	case storyErr != nil:
-		s.fail(w, r, storyErr)
+	}
+	if preview {
+		w.Header().Set("Cache-Control", "no-store")
+	} else {
+		setPageCaching(w.Header(), etag)
+	}
+
+	// Enhanced requests addressed to a section only render its fragment.
+	if target, ok := components.FindSection(story.Content.Block, req.Query.Get(components.TargetParam)); ok && req.Enhanced {
+		if err := components.Load(r.Context(), s.content, target, req); err != nil {
+			s.fail(w, r, err)
+			return
+		}
+		// Reloading the page then shows the same state without JavaScript.
+		w.Header().Set("HX-Replace-Url", r.URL.RequestURI())
+		s.writeFragment(w, r, http.StatusOK, target)
 		return
 	}
 
+	if err := components.LoadSections(r.Context(), s.content, story.Content.Block, req); err != nil {
+		s.fail(w, r, err)
+		return
+	}
 	page := components.NewPage(story)
 	page.Preview = preview
+	s.writePage(w, r, http.StatusOK, page)
+}
 
+// submitForm handles forms of the page's sections. Without JavaScript, valid
+// submissions redirect to the page, which confirms them; invalid ones render
+// the page with errors. Enhanced requests get the form's fragment instead.
+// The confirmation and the error summary take focus with autofocus, which
+// browsers skip for URLs with a fragment.
+func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormBodyBytes)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
+	story, ok := s.story(w, r, storyblok.Published)
+	if !ok {
+		return
+	}
+	uid := r.PostForm.Get(components.TargetParam)
+	section, _ := components.FindSection(story.Content.Block, uid)
+	form, ok := section.(components.FormHandler)
+	if !ok {
+		http.Error(w, "unknown form", http.StatusBadRequest)
+		return
+	}
+
+	req := s.componentRequest(r, storyblok.Published)
+	load := func() error { return components.Load(r.Context(), s.content, form, req) }
+	if !req.Enhanced {
+		load = func() error { return components.LoadSections(r.Context(), s.content, story.Content.Block, req) }
+	}
+	if err := load(); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	valid, err := form.Submit(r.Context(), s.inbox, r.PostForm)
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+
+	status := http.StatusOK
+	if !valid {
+		status = http.StatusUnprocessableEntity
+	}
+	switch {
+	case req.Enhanced:
+		s.writeFragment(w, r, status, form)
+	case valid:
+		query := url.Values{components.SentParam: {uid}}
+		http.Redirect(w, r, req.Path+"?"+query.Encode(), http.StatusSeeOther)
+	default:
+		page := components.NewPage(story)
+		page.Title = "Error: " + page.Title
+		s.writePage(w, r, status, page)
+	}
+}
+
+// previewStory renders a story sent by the Visual Editor bridge and returns
+// the markup of the page's main content for the live preview to morph in.
+func (s *Server) previewStory(w http.ResponseWriter, r *http.Request) {
+	if !storyblok.IsValidPreview(r.URL.Query(), s.previewToken, s.now()) {
+		http.Error(w, "invalid or expired preview token", http.StatusForbidden)
+		return
+	}
+	var story storyblok.Story[components.AnyBlock]
+	if err := json.UnmarshalRead(http.MaxBytesReader(w, r.Body, maxPreviewBodyBytes), &story); err != nil {
+		http.Error(w, "invalid story: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	req := s.componentRequest(r, storyblok.Draft)
+	if err := components.LoadSections(r.Context(), s.content, story.Content.Block, req); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+
+	var buf bytes.Buffer
+	if err := s.renderer.Block(&buf, story.Content.Block); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = buf.WriteTo(w)
+}
+
+// story fetches the story at the request path. It responds with an error and
+// returns false if that fails.
+func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok.Version) (storyblok.Story[components.AnyBlock], bool) {
+	slug := cmp.Or(strings.Trim(r.PathValue("slug"), "/"), homeSlug)
+	var story storyblok.Story[components.AnyBlock]
+	raw, err := s.content.Story(r.Context(), slug, storyblok.StoryOptions{
+		Version:          version,
+		ResolveRelations: components.ResolveRelations,
+	})
+	if err == nil {
+		err = json.Unmarshal(raw, &story)
+	}
+	switch {
+	case errors.Is(err, storyblok.ErrNotFound):
+		http.NotFound(w, r)
+		return story, false
+	case err != nil:
+		s.fail(w, r, err)
+		return story, false
+	}
+	return story, true
+}
+
+func (s *Server) componentRequest(r *http.Request, version storyblok.Version) components.Request {
+	return components.Request{
+		Path:     r.URL.Path,
+		Query:    r.URL.Query(),
+		Version:  version,
+		Enhanced: r.Header.Get("HX-Request") == "true",
+	}
+}
+
+func (s *Server) writePage(w http.ResponseWriter, r *http.Request, status int, page components.Page) {
 	var buf bytes.Buffer
 	if err := s.renderer.Page(&buf, page); err != nil {
 		s.fail(w, r, err)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if preview {
-		w.Header().Set("Cache-Control", "no-store")
-	} else {
-		setPageCaching(w.Header(), etag)
-	}
+	w.WriteHeader(status)
 	_, _ = buf.WriteTo(w)
 }
 
-// pageETag identifies a published page by the code that renders it and the
-// content version it reflects.
-func (s *Server) pageETag(cv int64) string {
+func (s *Server) writeFragment(w http.ResponseWriter, r *http.Request, status int, block components.Block) {
+	var buf bytes.Buffer
+	if err := s.renderer.Fragment(&buf, block); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = buf.WriteTo(w)
+}
+
+func (s *Server) serveBundle(contentType string, content func() []byte) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", contentType)
+		if r.URL.Query().Has("v") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		}
+		_, _ = w.Write(content())
+	}
+}
+
+// serveAsset marks versioned vendor files as cacheable forever.
+func (s *Server) serveAsset(files http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix("/assets/"+r.URL.Path, vendorAssetsPrefix) {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		}
+		files.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
+	s.logger.ErrorContext(r.Context(), "request failed", "method", r.Method, "path", r.URL.Path, "err", err)
+	status := http.StatusInternalServerError
+	if errors.Is(err, storyblok.ErrRateLimited) {
+		status = http.StatusServiceUnavailable
+	}
+	http.Error(w, http.StatusText(status), status)
+}
+
+// pageETag identifies a published page by the code that renders it, the
+// content version it reflects, and whether it is the htmx fragment.
+func (s *Server) pageETag(cv int64, fragment bool) string {
 	if s.buildID == "" || cv == 0 {
 		return ""
 	}
-	return `"` + s.buildID + "-" + strconv.FormatInt(cv, 10) + `"`
+	etag := s.buildID + "-" + strconv.FormatInt(cv, 10)
+	if fragment {
+		etag += "-fragment"
+	}
+	return `"` + etag + `"`
 }
 
 func setPageCaching(h http.Header, etag string) {
@@ -158,50 +336,17 @@ func etagMatches(ifNoneMatch, etag string) bool {
 	return false
 }
 
-// previewStory renders a story sent by the Visual Editor bridge and returns
-// the markup of the page's main content for the live preview to morph in.
-func (s *Server) previewStory(w http.ResponseWriter, r *http.Request) {
-	if !storyblok.IsValidPreview(r.URL.Query(), s.previewToken, s.now()) {
-		http.Error(w, "invalid or expired preview token", http.StatusForbidden)
-		return
-	}
-	var story storyblok.Story[components.AnyBlock]
-	if err := json.UnmarshalRead(http.MaxBytesReader(w, r.Body, maxPreviewBodyBytes), &story); err != nil {
-		http.Error(w, "invalid story: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var buf bytes.Buffer
-	if err := s.renderer.Block(&buf, story.Content.Block); err != nil {
-		s.fail(w, r, err)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	_, _ = buf.WriteTo(w)
+// LogInbox logs form submissions without their values, standing in for a
+// delivery to a CRM or mailbox.
+type LogInbox struct {
+	Logger *slog.Logger
 }
 
-func (s *Server) serveStylesheet(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/css; charset=utf-8")
-	if r.URL.Query().Has("v") {
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+func (i LogInbox) Deliver(ctx context.Context, s components.Submission) error {
+	attrs := []any{"form", s.Form}
+	for _, f := range s.Fields {
+		attrs = append(attrs, f.Name+"_chars", len([]rune(f.Value)))
 	}
-	_, _ = w.Write(s.renderer.Stylesheet())
-}
-
-func (s *Server) fetch(ctx context.Context, slug string, opts storyblok.StoryOptions, out any) error {
-	raw, err := s.content.Story(ctx, slug, opts)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(raw, out)
-}
-
-func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
-	s.logger.ErrorContext(r.Context(), "request failed", "method", r.Method, "path", r.URL.Path, "err", err)
-	status := http.StatusInternalServerError
-	if errors.Is(err, storyblok.ErrRateLimited) {
-		status = http.StatusServiceUnavailable
-	}
-	http.Error(w, http.StatusText(status), status)
+	i.Logger.InfoContext(ctx, "form submitted", attrs...)
+	return nil
 }

@@ -6,3 +6,4 @@
 /schema-plan.json
 /schemas.json
 /.agents/skills/storyblok-content-ops
+node_modules/

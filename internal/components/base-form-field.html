@@ -1,0 +1,45 @@
+{{define "base-form-field" -}}
+<div class="base-form-field base-form-field--{{.Control}}{{if .Error}} base-form-field--invalid{{end}}">
+  {{- if eq .Control "checkbox"}}
+  {{template "base-form-field-error" .}}
+  <div class="base-form-field__choice">
+    <input class="base-form-field__checkbox" type="checkbox" id="{{.ID}}" name="{{.Name}}" value="yes"
+      {{- if .Value}} checked{{end}}{{template "base-form-field-attrs" .}}>
+    <label class="base-form-field__label" for="{{.ID}}">{{.Label}}</label>
+  </div>
+  {{template "base-form-field-hint" .}}
+  {{- else}}
+  <label class="base-form-field__label" for="{{.ID}}">{{.Label}}</label>
+  {{template "base-form-field-hint" .}}
+  {{template "base-form-field-error" .}}
+  {{- if eq .Control "textarea"}}
+  <textarea class="base-form-field__control" id="{{.ID}}" name="{{.Name}}" rows="6"
+    {{- with .CharacterLimit}} data-character-limit="{{.}}"{{end}}{{template "base-form-field-attrs" .}}>{{.Value}}</textarea>
+  {{- else if eq .Control "select"}}
+  <select class="base-form-field__control" id="{{.ID}}" name="{{.Name}}"{{template "base-form-field-attrs" .}}>
+    {{- range .Options}}
+    <option value="{{.Value}}"{{if eq .Value $.Value}} selected{{end}}>{{.Label}}</option>
+    {{- end}}
+  </select>
+  {{- else}}
+  <input class="base-form-field__control" id="{{.ID}}" name="{{.Name}}" type="{{or .Type "text"}}" value="{{.Value}}"
+    {{- with .Autocomplete}} autocomplete="{{.}}"{{end}}
+    {{- if eq .Type "email"}} spellcheck="false"{{end}}{{template "base-form-field-attrs" .}}>
+  {{- end}}
+  {{- end}}
+</div>
+{{- end}}
+
+{{define "base-form-field-attrs"}}
+  {{- if .Required}} required{{end}}
+  {{- with .DescribedBy}} aria-describedby="{{.}}"{{end}}
+  {{- if .Error}} aria-invalid="true"{{end}}
+{{- end}}
+
+{{define "base-form-field-hint"}}{{with .Hint -}}
+  <p class="base-form-field__hint" id="{{$.HintID}}">{{.}}</p>
+{{- end}}{{end}}
+
+{{define "base-form-field-error"}}{{with .Error -}}
+  <p class="base-form-field__error" id="{{$.ErrorID}}"><span class="base-form-field__error-prefix">Error: </span>{{.}}</p>
+{{- end}}{{end}}

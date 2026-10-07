@@ -24,7 +24,9 @@ these change. Avoid unrelated migrations.
   technical identifiers. Apply them to new components and migrate existing
   identifiers gradually with one-off scripts:
   - `page-<type>` (optionally suffixed): e.g. `page-blog`, `page-landing-page`.
-    Page content consists only of consecutive sections as direct children.
+    Page content consists only of consecutive sections as direct children. Every
+    page has required `title` (rendered as the `h1` and document title) and
+    `description` (meta description) fields; schema validation enforces them.
   - `block-section-*`: page sections, e.g. `block-section-newsletter`,
     `block-section-testimonials`.
   - `block-media-*`: visual blocks, e.g. `block-media-image`,
@@ -78,6 +80,16 @@ go in `.env` (see `.env.template`).
 - Preserve labels, keyboard access, focus, and understandable errors with and
   without enhancement. Initialization must tolerate repeated component instances
   and HTML replacement.
+
+## Patterns
+
+[patterns/](patterns/README.md) holds reference implementations for recurring
+interactions; follow them for similar features and add new ones there:
+
+- [Load more](patterns/load-more.md): paginated listings and other "fetch the
+  next part" actions.
+- [Form](patterns/form.md): server validation, error summary, inline errors,
+  inline success, and component JavaScript conventions.
 
 ## Asset delivery: undecided
 

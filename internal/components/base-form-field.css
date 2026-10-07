@@ -1,0 +1,92 @@
+.base-form-field {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+}
+
+.base-form-field--invalid {
+  padding-inline-start: 1rem;
+  border-inline-start: 0.25rem solid var(--color-error);
+}
+
+.base-form-field__label {
+  font-weight: 600;
+}
+
+.base-form-field__hint {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.base-form-field__error {
+  margin: 0;
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.base-form-field__error-prefix {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.base-form-field__control {
+  inline-size: 100%;
+  max-inline-size: 36rem;
+  min-block-size: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 0.125rem solid var(--color-border);
+  border-radius: 0.25rem;
+  background: var(--color-background);
+  color: inherit;
+  font: inherit;
+}
+
+textarea.base-form-field__control {
+  resize: vertical;
+}
+
+.base-form-field--invalid .base-form-field__control,
+.base-form-field--invalid .base-form-field__checkbox {
+  border-color: var(--color-error);
+}
+
+.base-form-field__choice {
+  display: flex;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.base-form-field__choice .base-form-field__label {
+  font-weight: normal;
+}
+
+.base-form-field__checkbox {
+  flex: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.base-form-field__count {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.base-form-field__count--over {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.base-form-field__announcer {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,0 +1,25 @@
+.page-article {
+  display: grid;
+  gap: 3rem;
+  margin-inline: auto;
+  max-inline-size: 48rem;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.page-article__header {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-article__title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.page-article__description {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 1.25rem;
+}

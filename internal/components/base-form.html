@@ -1,0 +1,16 @@
+{{/* novalidate leaves validation to the server, which shows all errors consistently. */}}
+{{define "base-form" -}}
+<form class="base-form" id="{{.ID}}" method="post" action="{{.Action}}" novalidate
+  hx-post="{{.Action}}" hx-target="this" hx-swap="outerHTML" hx-disable="find button">
+  {{- with .ErrorSummary}}
+  {{base "base-form-error-summary" .}}
+  {{- end}}
+  {{- range .Hidden}}
+  <input type="hidden" name="{{.Name}}" value="{{.Value}}">
+  {{- end}}
+  {{- range .Fields}}
+  {{base "base-form-field" .}}
+  {{- end}}
+  <div class="base-form__actions">{{base "base-form-button" .Submit}}</div>
+</form>
+{{- end}}

@@ -8,6 +8,8 @@
 //	TLS_CERT_FILE            certificate for serving HTTPS, which the Visual
 //	TLS_KEY_FILE             Editor requires for preview URLs (optional)
 //	DEV_TOOLBAR              "1" adds a toolbar to open blocks in the editor
+//	ASSET_DELIVERY           how component CSS and JS are delivered: inline,
+//	                         head, or bundle (default)
 package main
 
 import (
@@ -49,12 +51,19 @@ func run(logger *slog.Logger) error {
 	addr := cmp.Or(os.Getenv("ADDR"), ":8080")
 	certFile, keyFile := os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE")
 
+	delivery, err := components.ParseAssetDelivery(os.Getenv("ASSET_DELIVERY"))
+	if err != nil {
+		return err
+	}
+
 	client := storyblok.NewClient(apiURL, previewToken)
 	buildID, err := executableHash()
 	if err != nil {
 		return err
 	}
-	var rendererOpts []components.RendererOption
+	// The delivery mode changes page markup without changing the build.
+	buildID += "-" + string(delivery)
+	rendererOpts := []components.RendererOption{components.WithAssetDelivery(delivery)}
 	if os.Getenv("DEV_TOOLBAR") == "1" {
 		// The toolbar changes page markup without changing the build.
 		buildID += "-dev"
@@ -70,7 +79,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	srv := server.New(client, renderer, static.FS, previewToken, logger, server.WithBuildID(buildID))
+	srv := server.New(client, renderer, static.FS, server.LogInbox{Logger: logger}, previewToken, logger, server.WithBuildID(buildID))
 	httpServer := &http.Server{
 		Addr:              addr,
 		Handler:           srv.Handler(),
@@ -83,11 +92,11 @@ func run(logger *slog.Logger) error {
 	errs := make(chan error, 1)
 	go func() {
 		if certFile != "" {
-			logger.Info("listening", "url", "https://localhost"+addr)
+			logger.Info("listening", "url", "https://localhost"+addr, "asset_delivery", delivery)
 			errs <- httpServer.ListenAndServeTLS(certFile, keyFile)
 			return
 		}
-		logger.Info("listening", "url", "http://localhost"+addr)
+		logger.Info("listening", "url", "http://localhost"+addr, "asset_delivery", delivery)
 		errs <- httpServer.ListenAndServe()
 	}()
 

@@ -1,0 +1,6 @@
+{{/* A submit button. Its form shows the progress indicator during enhanced requests. */}}
+{{define "base-form-button" -}}
+<button class="base-form-button" type="submit">
+  {{- .}}<span class="base-form-button__indicator" aria-hidden="true"></span>
+</button>
+{{- end}}

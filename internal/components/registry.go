@@ -124,8 +124,8 @@ func decodeBlock(raw jsontext.Value) Block {
 	if err := json.Unmarshal(raw, block); err != nil {
 		return &Unknown{Blok: meta, Err: fmt.Errorf("decoding %s: %w", meta.Component, err)}
 	}
-	if page, ok := block.(*PageLandingPage); ok {
-		for _, child := range page.Sections {
+	if page, ok := block.(sectioned); ok {
+		for _, child := range page.SectionBlocks() {
 			if !strings.HasPrefix(child.Meta().Component, "block-section-") {
 				// Keep unknown blocks visible to editors, but reject known non-sections.
 				if _, unknown := child.(*Unknown); !unknown {

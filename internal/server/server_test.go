@@ -28,7 +28,14 @@ import (
 const (
 	previewToken = "preview-token"
 	rateLimited  = "rate-limited"
-	homeStory    = `{"id": 7, "name": "Home", "content": {
+	landingStory = `{"id": 8, "name": "Landing", "content": {
+		"component": "page-landing-page", "_uid": "l1", "title": "Landing",
+		"sections": [
+			{"component": "block-section-articles", "_uid": "arts", "heading": "Latest", "folder": "articles"},
+			{"component": "block-section-contact", "_uid": "contact", "heading": "Contact us"}
+		]
+	}}`
+	homeStory = `{"id": 7, "name": "Home", "content": {
 		"component": "page-landing-page", "_uid": "u1",
 		"title": "Welcome",
 		"_editable": "<!--#storyblok#{\"name\": \"page-landing-page\", \"uid\": \"u1\", \"id\": \"1\"}-->",
@@ -43,6 +50,23 @@ type fakeContent struct {
 	cv        atomic.Int64
 	confirmed atomic.Bool
 	fetches   atomic.Int64
+}
+
+const totalArticles = 14
+
+// Stories returns totalArticles articles, newest ("article-14") first.
+func (f *fakeContent) Stories(_ context.Context, opts storyblok.StoriesOptions) (storyblok.StoryList, error) {
+	var stories []map[string]any
+	first := (opts.Page-1)*opts.PerPage + 1
+	for n := first; n < first+opts.PerPage && n <= totalArticles; n++ {
+		id := totalArticles + 1 - n
+		stories = append(stories, map[string]any{
+			"full_slug": fmt.Sprintf("%sarticle-%d", opts.StartsWith, id),
+			"content":   map[string]any{"component": "page-article", "title": fmt.Sprintf("Article %d", id), "description": "Teaser"},
+		})
+	}
+	raw, err := json.Marshal(stories)
+	return storyblok.StoryList{Stories: raw, Total: totalArticles}, err
 }
 
 func (f *fakeContent) CacheVersion() (int64, bool) { return f.cv.Load(), f.confirmed.Load() }
@@ -81,20 +105,33 @@ func removeEditable(node any) {
 	}
 }
 
+type recordingInbox struct{ submissions []components.Submission }
+
+func (i *recordingInbox) Deliver(_ context.Context, s components.Submission) error {
+	i.submissions = append(i.submissions, s)
+	return nil
+}
+
 func newServer(t *testing.T, opts ...components.RendererOption) *httptest.Server {
 	t.Helper()
-	ts, _ := newServerWithContent(t, nil, opts...)
+	ts, _ := newServerWithContent(t, &recordingInbox{}, nil, opts...)
 	return ts
 }
 
-func newServerWithContent(t *testing.T, serverOpts []server.Option, opts ...components.RendererOption) (*httptest.Server, *fakeContent) {
+func newServerWithInbox(t *testing.T, inbox components.Inbox, opts ...components.RendererOption) *httptest.Server {
+	t.Helper()
+	ts, _ := newServerWithContent(t, inbox, nil, opts...)
+	return ts
+}
+
+func newServerWithContent(t *testing.T, inbox components.Inbox, serverOpts []server.Option, opts ...components.RendererOption) (*httptest.Server, *fakeContent) {
 	t.Helper()
 	renderer, err := components.NewRenderer(opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	content := &fakeContent{stories: map[string]string{"home": homeStory, "busy": rateLimited}}
-	srv := server.New(content, renderer, fstest.MapFS{}, previewToken, slog.New(slog.DiscardHandler), serverOpts...)
+	content := &fakeContent{stories: map[string]string{"home": homeStory, "busy": rateLimited, "landing": landingStory}}
+	srv := server.New(content, renderer, fstest.MapFS{}, inbox, previewToken, slog.New(slog.DiscardHandler), serverOpts...)
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
 	return ts, content
@@ -176,7 +213,7 @@ func get(t *testing.T, url string, header http.Header) *http.Response {
 }
 
 func TestPageCaching(t *testing.T) {
-	ts, content := newServerWithContent(t, []server.Option{server.WithBuildID("b1")})
+	ts, content := newServerWithContent(t, &recordingInbox{}, []server.Option{server.WithBuildID("b1")})
 	content.cv.Store(100)
 	content.confirmed.Store(true)
 

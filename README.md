@@ -23,6 +23,34 @@ to open it in Storyblok).
 For live preview, set `https://localhost:8080/` as the preview URL in your space
 settings.
 
+`ASSET_DELIVERY` selects how component CSS and JS reach the browser: `bundle`
+(default, one stylesheet and one script), `head` (used component CSS inlined in
+`<head>`), or `inline` (CSS and JS next to every component instance). htmx is
+self-hosted under `/assets/vendor/`.
+
+## Demo content
+
+```sh
+go run ./cmd/storyblok-schema plan --out schema-plan.json
+go run ./cmd/storyblok-schema apply --plan schema-plan.json
+make seed
+```
+
+`make seed` creates or updates the stories in `seed/` and 22 generated articles
+in `STORYBLOK_SPACE`, creating folders as needed. Running it again overwrites
+these stories and leaves all others untouched. The landing pages are
+https://localhost:8080/landing/launch and `/landing/partners`.
+
+## Asset delivery benchmark
+
+```sh
+make benchmark
+```
+
+Runs [tools/asset-benchmark](tools/asset-benchmark/bench.mjs) against the demo
+content in Chrome on a throttled connection, for each `ASSET_DELIVERY` mode, and
+prints a table of medians. Requires Google Chrome and Node.js.
+
 ## Production-like stack
 
 ```sh
@@ -111,11 +139,16 @@ template actions inside tags.
 
 ## Components and schemas
 
-The starter contains exactly two CMS components:
+CMS components:
 
-- `page-landing-page`: required `title` and a `sections` field restricted to
-  section blocks.
+- `page-landing-page` and `page-article`: required `title` (the `h1` and
+  document title) and `description` (meta description; articles also show it
+  below the title and in listings), and `sections`.
+- `block-section-hero`: heading, text, and a call-to-action link.
 - `block-section-intro`: required `heading` and optional plain `text`.
+- `block-section-articles`: articles in a folder with "load more"
+  ([pattern](patterns/load-more.md)).
+- `block-section-contact`: contact form ([pattern](patterns/form.md)).
 
 Every CMS component has matching `.go`, `.schema.go`, `.html`, and `.css` files
 in `internal/components/`. Register the typed definition from `.schema.go`;
@@ -123,10 +156,11 @@ registration without a schema is not supported. JSON field names and Go types
 must match the schema. Field order determines editor order. Base components are
 not registered with the CMS.
 
-The schema package currently supports `text`, `textarea`, and `bloks`. Extend
-its field validation and compiler when adding other field types. Block
-categories resolve to explicit, sorted component allowlists; pages can only
-contain sections. `validate` checks definitions and templates offline;
+The schema package currently supports `text`, `textarea`, `multilink`, and
+`bloks`. Extend its field validation and compiler when adding other field types.
+Block categories resolve to explicit, sorted component allowlists; pages can
+only contain sections and must define required `title` (text) and `description`
+(textarea) fields. `validate` checks definitions and templates offline;
 `make test` also checks companion files and rendering.
 
 ```sh
