@@ -57,7 +57,8 @@ type ContactValues struct {
 }
 
 func (b *BlockSectionContact) Load(_ context.Context, _ Content, req Request) error {
-	b.State.Path = req.Path
+	// Submitting keeps the state of the page's other blocks.
+	b.State.Path = req.URLWithState()
 	b.State.Sent = b.UID != "" && req.Query.Get(SentParam) == b.UID
 	return nil
 }

@@ -32,7 +32,8 @@ const (
 		"component": "page-landing-page", "_uid": "l1", "title": "Landing",
 		"sections": [
 			{"component": "block-section-articles", "_uid": "arts", "heading": "Latest", "folder": "articles"},
-			{"component": "block-section-contact", "_uid": "contact", "heading": "Contact us"}
+			{"component": "block-section-contact", "_uid": "contact", "heading": "Contact us"},
+			{"component": "block-section-articles", "_uid": "more", "heading": "More", "folder": "articles"}
 		]
 	}}`
 	homeStory = `{"id": 7, "name": "Home", "content": {

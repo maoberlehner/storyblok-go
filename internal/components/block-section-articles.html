@@ -26,9 +26,11 @@ URL fragment would keep browsers from applying autofocus. */}}
   <p class="block-section-articles__count">Showing {{.Listing.Shown}} of {{.Listing.Total}} articles</p>
   {{- if .Listing.HasMore}}
   <form method="get" action="{{.Listing.Path}}"
-    hx-get="{{.Listing.Path}}" hx-target="#{{id .}}-list" hx-swap="beforeend" hx-disable="find button">
-    <input type="hidden" name="_block" value="{{.UID}}">
-    <input type="hidden" name="page" value="{{.Listing.NextPage}}">
+    hx-get="{{.Listing.Path}}" hx-vals='{"_block": "{{.UID}}"}' hx-target="#{{id .}}-list" hx-swap="beforeend" hx-disable="find button">
+    {{- range .Listing.State}}
+    <input type="hidden" name="{{.Name}}" value="{{.Value}}">
+    {{- end}}
+    <input type="hidden" name="{{.Listing.Param}}" value="{{.Listing.NextPage}}">
     {{base "base-form-button" "Load more articles"}}
   </form>
   {{- end}}

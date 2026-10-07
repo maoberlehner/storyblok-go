@@ -23,13 +23,52 @@ type Request struct {
 	Enhanced bool
 }
 
-// TargetParam names the request parameter that holds the UID of the block a
-// form or link targets.
+// TargetParam names the request parameter that holds the UID of the block an
+// enhanced request or a form submission is addressed to.
 const TargetParam = "_block"
 
 // Targets reports whether the request is addressed to block.
 func (r Request) Targets(block Block) bool {
 	return block.Meta().UID != "" && r.Query.Get(TargetParam) == block.Meta().UID
+}
+
+// StateQuery returns the query parameters that describe the page's state,
+// such as the pages each listing shows. Forms and redirects carry them over,
+// so one block's request does not reset the others.
+func (r Request) StateQuery() url.Values {
+	state := url.Values{}
+	for key, values := range r.Query {
+		if key != TargetParam && key != SentParam {
+			state[key] = values
+		}
+	}
+	return state
+}
+
+// URLWithState returns the page path with the state query, minus the given
+// parameters.
+func (r Request) URLWithState(without ...string) string {
+	state := r.StateQuery()
+	for _, key := range without {
+		state.Del(key)
+	}
+	if len(state) == 0 {
+		return r.Path
+	}
+	return r.Path + "?" + state.Encode()
+}
+
+// stateful is a block that keeps its state in URL query parameters.
+type stateful interface {
+	StateParams() []string
+}
+
+// StateParams lists the query parameters block keeps its state in.
+func StateParams(block Block) []string {
+	if s, ok := block.(stateful); ok {
+		return s.StateParams()
+	}
+	return nil
 }
 
 // Content is the content source blocks load additional data from.
