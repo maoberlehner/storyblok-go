@@ -9,6 +9,7 @@ func init() {
 			{Name: "heading", Type: "text", Label: "Heading", Required: true},
 			{Name: "text", Type: "textarea", Label: "Text"},
 			{Name: "success_message", Type: "textarea", Label: "Success message", Description: "Shown after the message was sent."},
+			sectionBackgroundField("default"),
 		},
 	})
 }

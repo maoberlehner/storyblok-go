@@ -1,5 +1,5 @@
 {{define "block-section-features" -}}
-<section {{editable .}} class="block-section-features" aria-labelledby="{{id .}}-heading">
+<section {{editable .}} class="{{section .}}" aria-labelledby="{{id .}}-heading">
   <header class="block-section-features__header">
     <h2 class="block-section-features__heading" id="{{id .}}-heading">{{.Heading}}</h2>
     {{with .Text}}<p class="block-section-features__text">{{.}}</p>{{end}}

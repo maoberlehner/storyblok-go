@@ -4,9 +4,6 @@
   gap: 1.5rem;
   justify-items: start;
   padding: 2.5rem 1.5rem;
-  border-radius: 0.5rem;
-  background: var(--color-accent);
-  color: var(--color-on-accent);
 }
 
 .block-section-cta__content {
@@ -24,20 +21,6 @@
 .block-section-cta__text {
   margin: 0;
   white-space: pre-line;
-}
-
-/* The button inverts on the accent background. */
-.block-section-cta .base-button {
-  background: var(--color-on-accent);
-  color: var(--color-accent);
-}
-
-.block-section-cta .base-button:hover {
-  background: color-mix(
-    in srgb,
-    var(--color-on-accent),
-    var(--color-accent) 12%
-  );
 }
 
 @container (inline-size >= 48rem) {

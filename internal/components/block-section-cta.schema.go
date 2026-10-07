@@ -10,6 +10,7 @@ func init() {
 			{Name: "text", Type: "textarea", Label: "Text"},
 			{Name: "link", Type: "multilink", Label: "Link", Required: true},
 			{Name: "link_label", Type: "text", Label: "Link label", Required: true},
+			sectionBackgroundField("accent"),
 		},
 	})
 }

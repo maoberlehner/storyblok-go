@@ -1,0 +1,29 @@
+/* Variants remap the semantic colors, so nested components adapt without
+   knowing the section's background. Components use --color-* only. */
+.base-section--muted,
+.base-section--accent {
+  padding-inline: 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.base-section--muted {
+  --color-background: var(--palette-gray-50);
+  --color-surface: var(--palette-white);
+}
+
+.base-section--accent {
+  --color-background: var(--palette-blue-700);
+  --color-surface: var(--palette-blue-800);
+  --color-text: var(--palette-white);
+  --color-muted: var(--palette-blue-100);
+  --color-border: var(--palette-blue-300);
+  --color-accent: var(--palette-white);
+  --color-accent-hover: var(--palette-blue-50);
+  --color-on-accent: var(--palette-blue-700);
+  --color-success-background: var(--palette-blue-800);
+  --color-success: var(--palette-white);
+  --color-error-background: var(--palette-blue-800);
+  --color-error: var(--palette-white);
+}

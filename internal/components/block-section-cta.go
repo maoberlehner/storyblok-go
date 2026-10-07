@@ -1,9 +1,14 @@
 package components
 
-import "storyblok-go-website/internal/storyblok"
+import (
+	"cmp"
+
+	"storyblok-go-website/internal/storyblok"
+)
 
 type BlockSectionCta struct {
 	storyblok.Blok
+	SectionStyle
 	Heading   string         `json:"heading"`
 	Text      string         `json:"text"`
 	Link      storyblok.Link `json:"link"`
@@ -17,3 +22,7 @@ func (c *BlockSectionCta) Button() *BaseButton {
 	}
 	return &BaseButton{Href: c.Link.Href(), Label: c.LinkLabel}
 }
+
+// SectionBackground defaults to accent: a call to action stands out unless the
+// editor chooses otherwise.
+func (c *BlockSectionCta) SectionBackground() string { return cmp.Or(c.Background, "accent") }

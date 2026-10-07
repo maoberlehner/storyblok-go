@@ -23,6 +23,7 @@ const (
 // "load more" button.
 type BlockSectionArticles struct {
 	storyblok.Blok
+	SectionStyle
 	Heading string `json:"heading"`
 	Folder  string `json:"folder"`
 

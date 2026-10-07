@@ -37,6 +37,7 @@ var (
 // fields and their validation are defined here.
 type BlockSectionContact struct {
 	storyblok.Blok
+	SectionStyle
 	Heading        string `json:"heading"`
 	Text           string `json:"text"`
 	SuccessMessage string `json:"success_message"`

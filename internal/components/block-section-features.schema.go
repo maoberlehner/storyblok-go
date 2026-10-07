@@ -9,6 +9,7 @@ func init() {
 			{Name: "heading", Type: "text", Label: "Heading", Required: true},
 			{Name: "text", Type: "textarea", Label: "Text"},
 			{Name: "items", Type: "bloks", Label: "Items", Allow: schema.Content},
+			sectionBackgroundField("default"),
 		},
 	})
 }

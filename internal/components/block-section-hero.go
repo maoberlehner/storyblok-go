@@ -4,6 +4,7 @@ import "storyblok-go-website/internal/storyblok"
 
 type BlockSectionHero struct {
 	storyblok.Blok
+	SectionStyle
 	Heading   string         `json:"heading"`
 	Text      string         `json:"text"`
 	Link      storyblok.Link `json:"link"`

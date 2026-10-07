@@ -42,7 +42,7 @@ func TestLandingPageRendersSectionsAndEscapesContent(t *testing.T) {
 		"<title>Hello &lt;world&gt;</title>",
 		`<meta name="description" content="About &lt;world&gt;">`,
 		`<h1 class="page-landing-page__title">Hello &lt;world&gt;</h1>`,
-		`class="block-section-intro"`, "<h2", "&lt;script&gt;alert(1)&lt;/script&gt;",
+		`class="block-section-intro`, "<h2", "&lt;script&gt;alert(1)&lt;/script&gt;",
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("missing %s", want)

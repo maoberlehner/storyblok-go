@@ -60,8 +60,11 @@ go in `.env` (see `.env.template`).
 ## CSS
 
 - Use plain modern CSS and global custom properties for colors.
-- CMS color choices use a semantic palette (e.g. default, muted, accent) mapped
-  to global custom properties; no arbitrary editor-entered colors.
+- CMS color choices use a semantic palette: sections offer `background`
+  (`default | muted | accent`), and `base-section.css` remaps the global
+  `--color-*` properties per variant, so nested components adapt. Components
+  only use `--color-*`; `--palette-*` tokens are for `base.css` and
+  `base-section.css`. No arbitrary editor-entered colors.
 - Use `rem` and other relative units; no `px` in CSS.
 - Layout spacing uses `0.25rem` increments through `2rem`, then `0.5rem`
   increments. Paragraph and heading spacing may use font-relative `em` values.

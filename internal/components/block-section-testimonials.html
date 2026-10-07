@@ -1,5 +1,5 @@
 {{define "block-section-testimonials" -}}
-<section {{editable .}} class="block-section-testimonials" aria-labelledby="{{id .}}-heading">
+<section {{editable .}} class="{{section .}}" aria-labelledby="{{id .}}-heading">
   <h2 class="block-section-testimonials__heading" id="{{id .}}-heading">{{.Heading}}</h2>
   <div class="block-section-testimonials__items">{{renderAll .Items}}</div>
 </section>

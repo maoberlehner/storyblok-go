@@ -22,18 +22,33 @@
 
 :root {
   color-scheme: light;
-  --color-background: #fff;
-  --color-surface: #f4f5f8;
-  --color-text: #1f1f1f;
-  --color-muted: #545a66;
-  --color-border: #8a909c;
-  --color-accent: #184db5;
-  --color-accent-hover: #123b8c;
-  --color-on-accent: #fff;
-  --color-success-background: #edf7ef;
-  --color-success: #1d6b34;
-  --color-error-background: #fef3ee;
-  --color-error: #911d1b;
+  --palette-white: #fff;
+  --palette-gray-50: #f4f5f8;
+  --palette-gray-400: #8a909c;
+  --palette-gray-600: #545a66;
+  --palette-gray-900: #1f1f1f;
+  --palette-blue-50: #eef3fd;
+  --palette-blue-100: #dbe6fb;
+  --palette-blue-300: #9db8ee;
+  --palette-blue-700: #184db5;
+  --palette-blue-800: #123b8c;
+  --palette-green-50: #edf7ef;
+  --palette-green-800: #1d6b34;
+  --palette-red-50: #fef3ee;
+  --palette-red-800: #911d1b;
+
+  --color-background: var(--palette-white);
+  --color-surface: var(--palette-gray-50);
+  --color-text: var(--palette-gray-900);
+  --color-muted: var(--palette-gray-600);
+  --color-border: var(--palette-gray-400);
+  --color-accent: var(--palette-blue-700);
+  --color-accent-hover: var(--palette-blue-800);
+  --color-on-accent: var(--palette-white);
+  --color-success-background: var(--palette-green-50);
+  --color-success: var(--palette-green-800);
+  --color-error-background: var(--palette-red-50);
+  --color-error: var(--palette-red-800);
 }
 
 *,

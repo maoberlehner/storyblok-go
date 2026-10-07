@@ -8,6 +8,7 @@ func init() {
 		Fields: []schema.Field{
 			{Name: "heading", Type: "text", Label: "Heading", Required: true},
 			{Name: "items", Type: "bloks", Label: "Items", Allow: schema.Content},
+			sectionBackgroundField("default"),
 		},
 	})
 }

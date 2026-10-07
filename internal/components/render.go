@@ -268,8 +268,12 @@ func (r *Renderer) newRender() *render {
 
 func (rn *render) funcs() template.FuncMap {
 	return template.FuncMap{
-		"render":         rn.block,
-		"renderAll":      rn.blocks,
+		"render":    rn.block,
+		"renderAll": rn.blocks,
+		"section": func(block Block) string {
+			rn.markUsed("base-section")
+			return sectionClass(block)
+		},
 		"renderSections": rn.sections,
 		"firstSection":   func() bool { return rn.firstSection },
 		"base":           rn.base,
@@ -328,12 +332,16 @@ func (rn *render) base(name string, data any) (template.HTML, error) {
 	return rn.component(name, name, data)
 }
 
-// component executes a template and records the component whose styles the
-// page needs.
-func (rn *render) component(templateName, component string, data any) (template.HTML, error) {
+func (rn *render) markUsed(component string) {
 	if !slices.Contains(rn.used, component) {
 		rn.used = append(rn.used, component)
 	}
+}
+
+// component executes a template and records the component whose styles the
+// page needs.
+func (rn *render) component(templateName, component string, data any) (template.HTML, error) {
+	rn.markUsed(component)
 	var buf strings.Builder
 	if err := rn.templates.ExecuteTemplate(&buf, templateName, data); err != nil {
 		return "", err
