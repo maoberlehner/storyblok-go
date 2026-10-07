@@ -80,3 +80,26 @@ func TestBlocksAreIdentifiedByShortIDs(t *testing.T) {
 		t.Error("section not found by short ID")
 	}
 }
+
+func TestPagesPreloadTheFontAndPreconnectToImages(t *testing.T) {
+	var story storyblok.Story[AnyBlock]
+	if err := json.Unmarshal([]byte(`{"name":"P","content":{"component":"page-landing-page","title":"T","description":"D"}}`), &story); err != nil {
+		t.Fatal(err)
+	}
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := r.Page(&out, NewPage(story)); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`<link rel="preload" href="/assets/vendor/inter-4.1-latin.woff2" as="font" type="font/woff2" crossorigin>`,
+		`<link rel="preconnect" href="https://a.storyblok.com">`,
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+}

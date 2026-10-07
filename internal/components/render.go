@@ -84,6 +84,11 @@ const HTMXURL = "/assets/vendor/htmx-4.0.0.min.js"
 
 func (p Page) HTMXURL() string { return HTMXURL }
 
+// FontURL is the self-hosted Inter variable font (Latin subset, all weights).
+const FontURL = "/assets/vendor/inter-4.1-latin.woff2"
+
+func (p Page) FontURL() string { return FontURL }
+
 // WebVitalsURL is the self-hosted web-vitals build, versioned like HTMXURL.
 const WebVitalsURL = "/assets/vendor/web-vitals-6.2.3.iife.js"
 

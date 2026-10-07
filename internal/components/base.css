@@ -1,3 +1,25 @@
+@font-face {
+  font-family: "Inter";
+  src: url("/assets/vendor/inter-4.1-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+/* Arial scaled to Inter's metrics, so swapping fonts barely shifts layout. */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  size-adjust: 107.12%;
+  ascent-override: 90.44%;
+  descent-override: 22.52%;
+  line-gap-override: 0%;
+}
+
 :root {
   color-scheme: light;
   --color-background: #fff;
@@ -20,7 +42,7 @@
   box-sizing: border-box;
 }
 html {
-  font-family: system-ui, sans-serif;
+  font-family: "Inter", "Inter Fallback", system-ui, sans-serif;
   line-height: 1.5;
 }
 body {
