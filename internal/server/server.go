@@ -51,6 +51,7 @@ type Server struct {
 	now          func() time.Time
 	buildID      string
 	siteURL      string
+	recordVital  func(name string, value float64)
 }
 
 type Option func(*Server)
@@ -87,6 +88,8 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /assets/app.js", s.serveBundle("text/javascript; charset=utf-8", s.renderer.Script))
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", s.serveAsset(http.FileServerFS(s.assets))))
+	mux.HandleFunc("GET /healthz", s.serveHealthz)
+	mux.HandleFunc("POST /vitals", s.receiveVital)
 	mux.HandleFunc("GET /sitemap.xml", s.serveSitemap)
 	mux.HandleFunc("GET /robots.txt", s.serveRobots)
 	mux.HandleFunc("GET /{slug...}", s.showStory)

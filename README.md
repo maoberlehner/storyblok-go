@@ -122,6 +122,16 @@ outcome unknown. A `Retry-After` on 429/503 (seconds or HTTP date) is used
 as-is. If it exceeds the remaining deadline, the request fails with that status
 immediately.
 
+## Operations
+
+- `GET /healthz` answers `ok` without calling Storyblok.
+- Prometheus metrics are served on `METRICS_ADDR` (default `:9090`), a separate
+  listener the proxy never exposes: responses by route pattern and status,
+  response times, Content Delivery API calls by outcome, and web vitals.
+- Published pages report LCP, INP, CLS, FCP, and TTFB with the self-hosted
+  [web-vitals](https://github.com/GoogleChrome/web-vitals) library to
+  `POST /vitals`. This needs JavaScript by nature; previews don't report.
+
 ## Test
 
 ```sh

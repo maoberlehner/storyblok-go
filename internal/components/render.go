@@ -84,6 +84,11 @@ const HTMXURL = "/assets/vendor/htmx-4.0.0.min.js"
 
 func (p Page) HTMXURL() string { return HTMXURL }
 
+// WebVitalsURL is the self-hosted web-vitals build, versioned like HTMXURL.
+const WebVitalsURL = "/assets/vendor/web-vitals-6.2.3.iife.js"
+
+func (p Page) WebVitalsURL() string { return WebVitalsURL }
+
 type componentAssets struct {
 	css, js string
 }

@@ -16,7 +16,8 @@ deliberate exceptions with reasons.
   published story, so a form on an unpublished page fails in the Visual Editor.
   Submissions are only logged (`server.LogInbox`); there is no spam protection.
   Preview and dev tooling deliberately require JS because their purpose is live
-  editing/debugging; published content renders without them.
+  editing/debugging; published content renders without them. Web vitals
+  reporting requires JavaScript by nature.
 - **Legacy tooling CSS:** `static/dev-toolbar.css` still uses pixel values,
   off-scale spacing, and literal colors. Public component CSS now uses relative
   units and global color properties.

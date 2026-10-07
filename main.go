@@ -10,6 +10,8 @@
 //	TLS_CERT_FILE            certificate for serving HTTPS, which the Visual
 //	TLS_KEY_FILE             Editor requires for preview URLs (optional)
 //	DEV_TOOLBAR              "1" adds a toolbar to open blocks in the editor
+//	METRICS_ADDR             listen address for Prometheus metrics, never
+//	                         proxied (default: :9090)
 package main
 
 import (
@@ -30,6 +32,7 @@ import (
 	"time"
 
 	"storyblok-go-website/internal/components"
+	"storyblok-go-website/internal/metrics"
 	"storyblok-go-website/internal/server"
 	"storyblok-go-website/internal/storyblok"
 	"storyblok-go-website/static"
@@ -82,17 +85,29 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	srv := server.New(client, renderer, static.FS, server.LogInbox{Logger: logger}, previewToken, logger, server.WithBuildID(buildID), server.WithSiteURL(siteURL))
+	m := metrics.New()
+	srv := server.New(m.Content(client), renderer, static.FS, server.LogInbox{Logger: logger}, previewToken, logger,
+		server.WithBuildID(buildID), server.WithSiteURL(siteURL), server.WithVitals(m.RecordVital))
 	httpServer := &http.Server{
 		Addr:              addr,
-		Handler:           srv.Handler(),
+		Handler:           m.Middleware(srv.Handler()),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	errs := make(chan error, 1)
+	errs := make(chan error, 2)
+	metricsServer := &http.Server{
+		Addr:              cmp.Or(os.Getenv("METRICS_ADDR"), ":9090"),
+		Handler:           m.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	go func() {
+		if err := metricsServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errs <- err
+		}
+	}()
 	go func() {
 		if certFile != "" {
 			logger.Info("listening", "url", "https://localhost"+addr)
@@ -109,6 +124,7 @@ func run(logger *slog.Logger) error {
 	case <-ctx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
+		_ = metricsServer.Shutdown(shutdownCtx)
 		return httpServer.Shutdown(shutdownCtx)
 	}
 }

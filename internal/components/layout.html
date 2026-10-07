@@ -21,6 +21,10 @@
   {{- with .ScriptURL}}
   <script src="{{.}}" defer></script>
   {{- end}}
+  {{- if not .Preview}}
+  <script src="{{.WebVitalsURL}}" defer></script>
+  <script src="/assets/vitals.js" defer></script>
+  {{- end}}
   {{- with .DevToolbar}}
   <link rel="stylesheet" href="/assets/dev-toolbar.css">
   <script src="/assets/dev-toolbar.js" data-space-id="{{.SpaceID}}" data-story-id="{{.StoryID}}" defer></script>
