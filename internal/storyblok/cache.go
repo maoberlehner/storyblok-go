@@ -1,34 +1,65 @@
 package storyblok
 
-import "time"
+import (
+	"context"
+	"sync"
+	"time"
+)
 
+// An old cv can stay cached indefinitely, so the client periodically sends a
+// published request without cv to learn the current one. space.version is no
+// substitute: it differs from cv for tokens with a minimum cache TTL.
 const cacheVersionRefreshInterval = 30 * time.Second
 
-func (c *Client) currentCacheVersion() int64 {
-	c.cacheMu.Lock()
-	defer c.cacheMu.Unlock()
-	// An old cv can stay cached indefinitely. Periodically discover the latest
-	// cv through a story response rather than substituting space.version (which
-	// can differ from cv for tokens with a TTL).
-	if !time.Now().Before(c.nextCVRefresh) {
-		return 0
-	}
-	return c.cacheVersion
+type cacheVersionTracker struct {
+	mu          sync.Mutex
+	version     int64
+	nextRefresh time.Time
+	// discovery is closed when the in-flight discovery request finishes.
+	discovery chan struct{}
 }
 
-func (c *Client) updateCacheVersion(cv int64, refreshed bool) {
-	c.cacheMu.Lock()
-	defer c.cacheMu.Unlock()
-	// Concurrent responses may arrive out of order; never regress the version.
-	if cv <= 0 || cv < c.cacheVersion {
-		return
+// next returns the cv for a published request. When discover is true, the
+// caller sends no cv and must report the outcome with record.
+func (c *cacheVersionTracker) next(ctx context.Context) (cv int64, discover bool, err error) {
+	for {
+		c.mu.Lock()
+		if c.discovery == nil && (c.version == 0 || !time.Now().Before(c.nextRefresh)) {
+			c.discovery = make(chan struct{})
+			c.mu.Unlock()
+			return 0, true, nil
+		}
+		version, discovery := c.version, c.discovery
+		c.mu.Unlock()
+		if version > 0 {
+			return version, false, nil
+		}
+		// No cv yet: wait for the first discovery instead of sending more
+		// requests without one.
+		select {
+		case <-discovery:
+		case <-ctx.Done():
+			return 0, false, ctx.Err()
+		}
 	}
-	if cv > c.cacheVersion {
-		c.cacheVersion = cv
-		c.pacing.reset()
-		refreshed = true
+}
+
+// record stores the cv a published response reported, or 0 if the request
+// failed, and reports whether it is newer than the known version.
+func (c *cacheVersionTracker) record(cv int64, discovered bool) (advanced bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if discovered {
+		close(c.discovery)
+		c.discovery = nil
+		if cv > 0 {
+			c.nextRefresh = time.Now().Add(cacheVersionRefreshInterval)
+		}
 	}
-	if refreshed {
-		c.nextCVRefresh = time.Now().Add(cacheVersionRefreshInterval)
+	// Concurrent responses may arrive out of order.
+	if cv <= c.version {
+		return false
 	}
+	c.version = cv
+	return true
 }

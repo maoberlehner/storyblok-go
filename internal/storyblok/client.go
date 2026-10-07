@@ -3,6 +3,7 @@
 package storyblok
 
 import (
+	"cmp"
 	"context"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
@@ -12,8 +13,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/failsafe-go/failsafe-go"
 )
@@ -21,6 +20,10 @@ import (
 const DefaultBaseURL = "https://api.storyblok.com/v2/cdn"
 
 var ErrNotFound = errors.New("storyblok: story not found")
+
+// ErrRateLimited reports that a request could not get a permit from the
+// client's rate limiter in time.
+var ErrRateLimited = errors.New("rate-limit wait exceeded")
 
 type Version string
 
@@ -35,23 +38,22 @@ type Client struct {
 	httpClient *http.Client
 	executor   failsafe.Executor[*http.Response]
 	pacing     *adaptiveRateLimiter
-
-	cacheMu       sync.Mutex
-	cacheVersion  int64
-	nextCVRefresh time.Time
+	versions   cacheVersionTracker
 }
 
 func NewClient(baseURL, token string) *Client {
+	pacing := newAdaptiveRateLimiter()
 	return &Client{
 		baseURL:    strings.TrimSuffix(baseURL, "/"),
 		token:      token,
-		httpClient: &http.Client{Timeout: requestTimeout},
+		httpClient: newHTTPClient(pacing),
 		executor:   newHTTPExecutor(),
-		pacing:     newAdaptiveRateLimiter(),
+		pacing:     pacing,
 	}
 }
 
 type StoryOptions struct {
+	// Version defaults to Published.
 	Version Version
 	// ResolveRelations lists relation fields as "component.field". Resolved
 	// stories replace the UUIDs in the returned content.
@@ -60,14 +62,21 @@ type StoryOptions struct {
 
 // Story returns the raw JSON of the story at slug.
 func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jsontext.Value, error) {
-	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 
-	query := url.Values{"token": {c.token}, "version": {string(opts.Version)}}
-	if opts.Version == Published {
-		if cv := c.currentCacheVersion(); cv > 0 {
+	version := cmp.Or(opts.Version, Published)
+	query := url.Values{"token": {c.token}, "version": {string(version)}}
+	var reportedCV int64
+	if version == Published {
+		cv, discover, err := c.versions.next(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("storyblok: fetching story %q: %w", slug, err)
+		}
+		if !discover {
 			query.Set("cv", strconv.FormatInt(cv, 10))
 		}
+		defer func() { c.recordCacheVersion(reportedCV, discover) }()
 	}
 	if len(opts.ResolveRelations) > 0 {
 		query.Set("resolve_relations", strings.Join(opts.ResolveRelations, ","))
@@ -103,13 +112,18 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	if err := json.UnmarshalRead(res.Body, &payload); err != nil {
 		return nil, fmt.Errorf("storyblok: decoding story %q: %w", slug, err)
 	}
-	if opts.Version == Published {
-		c.updateCacheVersion(payload.CV, !query.Has("cv"))
-	}
+	reportedCV = payload.CV
 	if len(payload.Rels) == 0 {
 		return payload.Story, nil
 	}
 	return inlineRelations(payload.Story, payload.Rels, opts.ResolveRelations)
+}
+
+func (c *Client) recordCacheVersion(cv int64, discovered bool) {
+	if c.versions.record(cv, discovered) {
+		// Nothing is cached for a new cv yet.
+		c.pacing.capCachedRate()
+	}
 }
 
 // inlineRelations replaces relation UUIDs with the stories the API returned
@@ -173,7 +187,7 @@ func walkBloks(node any, visit func(map[string]any)) {
 
 // SpaceID returns the ID of the space the access token belongs to.
 func (c *Client) SpaceID(ctx context.Context) (int64, error) {
-	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 
 	endpoint := c.baseURL + "/spaces/me?" + url.Values{"token": {c.token}}.Encode()

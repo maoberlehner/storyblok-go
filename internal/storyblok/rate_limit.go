@@ -2,7 +2,6 @@ package storyblok
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -12,32 +11,56 @@ import (
 )
 
 const (
-	initialRequestRate = 25
-	maxCachedRate      = 1000
-	minRequestRate     = 1
-	cacheHitsToGrow    = 10
+	baseRequestRate  rate.Limit = 25
+	maxCachedRate    rate.Limit = 1000
+	minRequestRate   rate.Limit = 1
+	cacheHitsToGrow             = 10
+	growthInterval              = time.Second
+	throttleCooldown            = 5 * time.Second
+	maxPermitWait               = 2 * time.Second
 )
 
-var errRateLimitWait = errors.New("storyblok: rate-limit queue exceeded one second")
+const (
+	cloudFrontCacheHit = "Hit from cloudfront"
+	genericCacheHit    = "HIT"
+)
 
+// adaptiveRateLimiter paces requests in two tiers. Published story requests
+// with a cv can be served from the CDN cache, so their tier grows past the
+// base rate while responses are cache hits. Drafts, space metadata, and cv
+// discovery stay at or below the base rate in a tier of their own.
 type adaptiveRateLimiter struct {
-	mu         sync.Mutex
+	mu       sync.Mutex
+	cached   *pacingTier
+	uncached *pacingTier
+}
+
+type pacingTier struct {
 	limiter    *rate.Limiter
-	uncached   *rate.Limiter
-	cacheHits  int
-	nextGrowth time.Time
 	queue      chan struct{}
 	changed    chan struct{}
+	cacheHits  int
+	nextGrowth time.Time
+	nextCut    time.Time
 }
 
 func newAdaptiveRateLimiter() *adaptiveRateLimiter {
-	return &adaptiveRateLimiter{
-		limiter:    rate.NewLimiter(initialRequestRate, 1),
-		uncached:   rate.NewLimiter(initialRequestRate, 1),
-		nextGrowth: time.Now().Add(time.Second),
+	return &adaptiveRateLimiter{cached: newPacingTier(), uncached: newPacingTier()}
+}
+
+func newPacingTier() *pacingTier {
+	return &pacingTier{
+		limiter:    rate.NewLimiter(baseRequestRate, burstFor(baseRequestRate)),
 		queue:      make(chan struct{}, 1),
 		changed:    make(chan struct{}),
+		nextGrowth: time.Now().Add(growthInterval),
 	}
+}
+
+// burstFor allows up to one second of the base rate at once, but never more
+// than one second of a throttled rate.
+func burstFor(limit rate.Limit) int {
+	return int(max(1, min(limit, baseRequestRate)))
 }
 
 func isPublishedStory(request *http.Request) bool {
@@ -48,52 +71,50 @@ func isCacheEligible(request *http.Request) bool {
 	return isPublishedStory(request) && request.URL.Query().Get("cv") != ""
 }
 
+func isCacheHit(response *http.Response) bool {
+	cache := strings.TrimSpace(response.Header.Get("X-Cache"))
+	return strings.EqualFold(cache, cloudFrontCacheHit) || strings.EqualFold(cache, genericCacheHit)
+}
+
+func (l *adaptiveRateLimiter) tierFor(request *http.Request) *pacingTier {
+	if isCacheEligible(request) {
+		return l.cached
+	}
+	return l.uncached
+}
+
 func (l *adaptiveRateLimiter) wait(request *http.Request) error {
-	ctx, cancel := context.WithTimeout(request.Context(), time.Second)
+	tier := l.tierFor(request)
+	ctx, cancel := context.WithTimeout(request.Context(), maxPermitWait)
 	defer cancel()
-	// Only the first waiter reserves a future permit. Other waiters stay in
-	// the queue, so a rate reduction cannot leave a batch of old-rate permits.
+	// Only the first waiter holds a reservation, so a rate change cannot leave
+	// a batch of permits reserved at the old rate.
 	select {
-	case l.queue <- struct{}{}:
-		defer func() { <-l.queue }()
+	case tier.queue <- struct{}{}:
+		defer func() { <-tier.queue }()
 	case <-ctx.Done():
 		return rateWaitError(request)
 	}
-	// Drafts, space metadata, and cv discovery cannot borrow the CDN allowance.
-	if !isCacheEligible(request) {
-		if err := l.uncached.Wait(ctx); err != nil {
-			return rateWaitError(request)
-		}
-	}
 	for {
 		l.mu.Lock()
-		reservation := l.limiter.Reserve()
-		changed := l.changed
+		reservation := tier.limiter.Reserve()
+		changed := tier.changed
 		l.mu.Unlock()
-		if delay := reservation.Delay(); delay > 0 {
-			timer := time.NewTimer(delay)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				reservation.Cancel()
-				return rateWaitError(request)
-			case <-changed:
-				timer.Stop()
-				reservation.Cancel()
-				continue
-			case <-timer.C:
-			}
+		delay := reservation.Delay()
+		if delay == 0 {
+			return nil
 		}
-		if ctx.Err() != nil {
+		timer := time.NewTimer(delay)
+		select {
+		case <-timer.C:
+			return nil
+		case <-changed:
+			timer.Stop()
+			reservation.Cancel()
+		case <-ctx.Done():
+			timer.Stop()
 			reservation.Cancel()
 			return rateWaitError(request)
-		}
-		select {
-		case <-changed:
-			reservation.Cancel()
-			continue
-		default:
-			return nil
 		}
 	}
 }
@@ -102,61 +123,95 @@ func rateWaitError(request *http.Request) error {
 	if err := request.Context().Err(); err != nil {
 		return err
 	}
-	return errRateLimitWait
+	return ErrRateLimited
 }
 
-// setRate is called with mu held and wakes the current waiter to re-reserve.
-func (l *adaptiveRateLimiter) setRate(now time.Time, limit rate.Limit) {
-	if limit == l.limiter.Limit() {
-		return
-	}
-	l.limiter.SetLimitAt(now, limit)
-	close(l.changed)
-	l.changed = make(chan struct{})
-}
-
+// observe adjusts the tier of the request that produced response. After a
+// redirect, that is the final request, not the one the caller sent.
 func (l *adaptiveRateLimiter) observe(request *http.Request, response *http.Response) {
 	if response == nil {
 		return
 	}
+	if response.Request != nil {
+		request = response.Request
+	}
+	tier := l.tierFor(request)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := time.Now()
-	current := l.limiter.Limit()
-	if response.StatusCode == http.StatusTooManyRequests {
-		// Drop out of the CDN tier immediately; repeated 429s can go below 25/s.
-		l.setRate(now, max(minRequestRate, min(initialRequestRate, current/2)))
-		l.cacheHits = 0
-		l.nextGrowth = now.Add(5 * time.Second)
-		return
-	}
-	if !isPublishedStory(request) {
-		return
-	}
-	cache := strings.TrimSpace(response.Header.Get("X-Cache"))
-	hit := strings.EqualFold(cache, "Hit from cloudfront") || strings.EqualFold(cache, "HIT")
-	if response.StatusCode != http.StatusOK || !isCacheEligible(request) || !hit {
-		l.setRate(now, min(initialRequestRate, current))
-		l.cacheHits = 0
-		if earliest := now.Add(time.Second); earliest.After(l.nextGrowth) {
-			l.nextGrowth = earliest
-		}
-		return
-	}
-	l.cacheHits++
-	if l.cacheHits >= cacheHitsToGrow && !now.Before(l.nextGrowth) {
-		l.setRate(now, min(maxCachedRate, current*2))
-		l.cacheHits = 0
-		l.nextGrowth = now.Add(time.Second)
+	switch {
+	case response.StatusCode == http.StatusTooManyRequests:
+		tier.throttle(now)
+	case response.StatusCode == http.StatusOK:
+		tier.succeed(now, tier == l.cached && isCacheHit(response))
 	}
 }
 
-func (l *adaptiveRateLimiter) reset() {
+// capCachedRate returns the cached tier to the base rate, for example when a
+// new cv makes every cached response stale.
+func (l *adaptiveRateLimiter) capCachedRate() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.setRate(time.Now(), min(initialRequestRate, l.limiter.Limit()))
-	l.cacheHits = 0
-	if earliest := time.Now().Add(time.Second); earliest.After(l.nextGrowth) {
-		l.nextGrowth = earliest
+	l.cached.capAtBase(time.Now())
+}
+
+// The pacingTier methods below must be called with adaptiveRateLimiter.mu held.
+
+func (t *pacingTier) throttle(now time.Time) {
+	current := t.limiter.Limit()
+	limit := min(baseRequestRate, current)
+	// Requests sent before the first 429 arrive as a burst of 429s; halve once
+	// per burst rather than once per response.
+	if !now.Before(t.nextCut) {
+		limit = max(minRequestRate, min(baseRequestRate, current/2))
+		t.nextCut = now.Add(growthInterval)
 	}
+	t.setRate(now, limit)
+	t.cacheHits = 0
+	t.nextGrowth = now.Add(throttleCooldown)
+}
+
+func (t *pacingTier) succeed(now time.Time, hit bool) {
+	if !hit {
+		t.cacheHits = 0
+		if t.limiter.Limit() > baseRequestRate {
+			t.capAtBase(now)
+			return
+		}
+	} else {
+		t.cacheHits++
+	}
+	if now.Before(t.nextGrowth) {
+		return
+	}
+	current := t.limiter.Limit()
+	switch {
+	case current < baseRequestRate:
+		t.setRate(now, min(baseRequestRate, current*2))
+	case hit && t.cacheHits >= cacheHitsToGrow:
+		t.setRate(now, min(maxCachedRate, current*2))
+		t.cacheHits = 0
+	default:
+		return
+	}
+	t.nextGrowth = now.Add(growthInterval)
+}
+
+func (t *pacingTier) capAtBase(now time.Time) {
+	t.setRate(now, min(baseRequestRate, t.limiter.Limit()))
+	t.cacheHits = 0
+	if earliest := now.Add(growthInterval); earliest.After(t.nextGrowth) {
+		t.nextGrowth = earliest
+	}
+}
+
+// setRate wakes the queued waiter so it re-reserves at the new rate.
+func (t *pacingTier) setRate(now time.Time, limit rate.Limit) {
+	if limit == t.limiter.Limit() {
+		return
+	}
+	t.limiter.SetLimitAt(now, limit)
+	t.limiter.SetBurstAt(now, burstFor(limit))
+	close(t.changed)
+	t.changed = make(chan struct{})
 }
