@@ -247,7 +247,7 @@ func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok
 	slug := cmp.Or(strings.Trim(r.PathValue("slug"), "/"), homeSlug)
 	var story storyblok.Story[components.AnyBlock]
 	if isReservedSlug(slug) && version != storyblok.Draft {
-		http.NotFound(w, r)
+		s.notFound(w, r, version)
 		return story, false
 	}
 	raw, err := s.content.Story(r.Context(), slug, storyblok.StoryOptions{
@@ -259,7 +259,7 @@ func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok
 	}
 	switch {
 	case errors.Is(err, storyblok.ErrNotFound):
-		http.NotFound(w, r)
+		s.notFound(w, r, version)
 		return story, false
 	case err != nil:
 		s.fail(w, r, err)
@@ -337,15 +337,6 @@ func (s *Server) serveAsset(files http.Handler) http.Handler {
 		}
 		files.ServeHTTP(w, r)
 	})
-}
-
-func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
-	s.logger.ErrorContext(r.Context(), "request failed", "method", r.Method, "path", r.URL.Path, "err", err)
-	status := http.StatusInternalServerError
-	if errors.Is(err, storyblok.ErrRateLimited) {
-		status = http.StatusServiceUnavailable
-	}
-	http.Error(w, http.StatusText(status), status)
 }
 
 // replaceURL returns the browser URL after an enhanced request to target: the

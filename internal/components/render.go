@@ -47,6 +47,8 @@ type Page struct {
 	// Chrome renders the site header and footer; nil renders the page
 	// without them.
 	Chrome *Chrome
+	// NoIndex keeps the page out of search indexes, e.g. error pages.
+	NoIndex bool
 
 	body             template.HTML
 	siteHeader       template.HTML

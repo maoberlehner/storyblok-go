@@ -55,6 +55,11 @@ The `settings` story (content type `site-settings`) holds the header navigation,
 footer, site name, and default share image. It is not a page: `/settings`
 answers 404 except in the Visual Editor, which previews it as header and footer.
 
+Missing pages render the `error-404` story with status 404 (or a built-in page
+if it is missing). Server errors render a built-in page with the last loaded
+header and footer, without calling Storyblok. htmx requests get plain-text
+errors.
+
 `make seed` also uploads generated placeholder images once, with their pixel
 size so asset URLs carry dimensions; later runs reuse them by file name.
 

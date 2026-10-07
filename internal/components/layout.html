@@ -7,7 +7,7 @@
   <link rel="preload" href="{{.FontURL}}" as="font" type="font/woff2" crossorigin>
   <link rel="preconnect" href="https://a.storyblok.com">
   <title>{{.Title}}</title>
-  {{- if .Preview}}
+  {{- if or .Preview .NoIndex}}
   <meta name="robots" content="noindex">
   {{- else if .Canonical}}
   <link rel="canonical" href="{{.Canonical}}">

@@ -48,7 +48,7 @@ func (s *Server) serveSitemap(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, story := range stories {
-			if !components.IsPage(story.Content.Component) {
+			if !components.IsPage(story.Content.Component) || isReservedSlug(story.FullSlug) {
 				continue
 			}
 			u := sitemapURL{Loc: s.canonicalURL(story.FullSlug)}

@@ -14,7 +14,7 @@ import (
 const settingsSlug = "settings"
 
 // reservedSlugs hold site data, not pages. They only render in previews.
-var reservedSlugs = []string{settingsSlug}
+var reservedSlugs = []string{settingsSlug, notFoundSlug}
 
 func isReservedSlug(slug string) bool { return slices.Contains(reservedSlugs, slug) }
 
