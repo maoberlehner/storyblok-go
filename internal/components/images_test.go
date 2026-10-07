@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -17,7 +18,7 @@ func renderBase(t *testing.T, name string, data any) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rn := r.newRender()
+	rn := r.newRender(locale.Default)
 	defer r.renders.Put(rn)
 	html, err := rn.base(name, data)
 	if err != nil {

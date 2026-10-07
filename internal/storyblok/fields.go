@@ -12,12 +12,23 @@ import (
 )
 
 type Story[T any] struct {
-	ID          int64     `json:"id"`
-	UUID        string    `json:"uuid"`
-	Name        string    `json:"name"`
-	FullSlug    string    `json:"full_slug"`
-	PublishedAt time.Time `json:"published_at"`
-	Content     T         `json:"content"`
+	ID       int64  `json:"id"`
+	UUID     string `json:"uuid"`
+	Name     string `json:"name"`
+	FullSlug string `json:"full_slug"`
+	// DefaultFullSlug is the slug without the language prefix that field-level
+	// translations add to FullSlug.
+	DefaultFullSlug string    `json:"default_full_slug"`
+	PublishedAt     time.Time `json:"published_at"`
+	// Alternates are the stories sharing this story's group: its folder-level
+	// translations.
+	Alternates []Alternate `json:"alternates"`
+	Content    T           `json:"content"`
+}
+
+type Alternate struct {
+	FullSlug  string `json:"full_slug"`
+	Published bool   `json:"published"`
 }
 
 // Blok holds the fields every nestable or content type component shares.

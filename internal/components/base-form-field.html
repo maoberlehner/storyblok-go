@@ -14,7 +14,7 @@
   {{template "base-form-field-error" .}}
   {{- if eq .Control "textarea"}}
   <textarea class="base-form-field__control" id="{{.ID}}" name="{{.Name}}" rows="6"
-    {{- with .CharacterLimit}} data-character-limit="{{.}}"{{end}}{{template "base-form-field-attrs" .}}>{{.Value}}</textarea>
+    {{- with .CharacterLimit}} data-character-limit="{{.}}"{{end}}{{if .CharacterLimit}} data-count-remaining-one="{{.CountMessages.RemainingOne}}" data-count-remaining-other="{{.CountMessages.RemainingOther}}" data-count-over-one="{{.CountMessages.OverOne}}" data-count-over-other="{{.CountMessages.OverOther}}"{{end}}{{template "base-form-field-attrs" .}}>{{.Value}}</textarea>
   {{- else if eq .Control "select"}}
   <select class="base-form-field__control" id="{{.ID}}" name="{{.Name}}"{{template "base-form-field-attrs" .}}>
     {{- range .Options}}

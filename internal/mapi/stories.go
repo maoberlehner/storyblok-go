@@ -11,13 +11,15 @@ import (
 
 // Story is the writable part of a Management API story.
 type Story struct {
-	ID       int64          `json:"id,omitempty"`
-	Name     string         `json:"name"`
-	Slug     string         `json:"slug"`
-	FullSlug string         `json:"full_slug,omitempty"`
-	ParentID int64          `json:"parent_id"`
-	IsFolder bool           `json:"is_folder,omitempty"`
-	Content  map[string]any `json:"content,omitempty"`
+	ID       int64  `json:"id,omitempty"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	FullSlug string `json:"full_slug,omitempty"`
+	ParentID int64  `json:"parent_id"`
+	IsFolder bool   `json:"is_folder,omitempty"`
+	// GroupID links folder-level translations as alternates.
+	GroupID string         `json:"group_id,omitempty"`
+	Content map[string]any `json:"content,omitempty"`
 }
 
 // FindStory returns the story or folder at fullSlug, or nil if there is none.

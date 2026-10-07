@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -97,6 +98,10 @@ type Page struct {
 	Chrome *Chrome
 	// NoIndex keeps the page out of search indexes, e.g. error pages.
 	NoIndex bool
+	// Locale is the page's language; the zero value is the default locale.
+	Locale locale.Locale
+	// Alternates are hreflang links to the page in each language.
+	Alternates []Alternate
 
 	body             template.HTML
 	siteHeader       template.HTML
@@ -140,6 +145,14 @@ func (p Page) DevToolbar() *DevToolbar    { return p.devToolbar }
 const HTMXURL = "/assets/vendor/htmx-4.0.0.min.js"
 
 func (p Page) HTMXURL() string { return HTMXURL }
+
+// Alternate is the page in one language. OG is empty for x-default.
+type Alternate struct {
+	Lang, Href, OG string
+}
+
+func (p Page) Lang() string     { return cmp.Or(p.Locale.Code, locale.Default.Code) }
+func (p Page) OGLocale() string { return cmp.Or(p.Locale.OG, locale.Default.OG) }
 
 // FontURL is the self-hosted Inter variable font (Latin subset, all weights).
 const FontURL = "/assets/vendor/inter-4.1-latin.woff2"
@@ -251,7 +264,7 @@ func (r *Renderer) Script() []byte { return r.script }
 
 // Page renders a full HTML document.
 func (r *Renderer) Page(w io.Writer, page Page) error {
-	rn := r.newRender()
+	rn := r.newRender(page.Locale)
 	defer r.renders.Put(rn)
 	body, err := rn.block(page.Content)
 	if err != nil {
@@ -285,8 +298,8 @@ func (r *Renderer) Page(w io.Writer, page Page) error {
 }
 
 // Block renders a single block, such as a story's content type.
-func (r *Renderer) Block(w io.Writer, block Block) error {
-	rn := r.newRender()
+func (r *Renderer) Block(w io.Writer, block Block, loc locale.Locale) error {
+	rn := r.newRender(loc)
 	defer r.renders.Put(rn)
 	html, err := rn.block(block)
 	if err != nil {
@@ -300,12 +313,12 @@ func (r *Renderer) Block(w io.Writer, block Block) error {
 // the "<component>-fragment" template if the component defines one, else the
 // whole block. Fragments update components their page already rendered, so
 // their CSS is in place.
-func (r *Renderer) Fragment(w io.Writer, block Block) error {
+func (r *Renderer) Fragment(w io.Writer, block Block, loc locale.Locale) error {
 	name := block.Meta().Component + "-fragment"
 	if r.templates.Lookup(name) == nil {
-		return r.Block(w, block)
+		return r.Block(w, block, loc)
 	}
-	rn := r.newRender()
+	rn := r.newRender(loc)
 	defer r.renders.Put(rn)
 	html, err := rn.component(name, block.Meta().Component, block)
 	if err != nil {
@@ -327,10 +340,15 @@ type render struct {
 	// belong to the settings story, so the Visual Editor and dev toolbar must
 	// not treat them as the page's blocks.
 	chrome bool
+	locale locale.Locale
 }
 
-func (r *Renderer) newRender() *render {
+func (r *Renderer) newRender(loc locale.Locale) *render {
 	rn := r.renders.Get().(*render)
+	rn.locale = loc
+	if rn.locale.Code == "" {
+		rn.locale = locale.Default
+	}
 	rn.used = rn.used[:0]
 	rn.firstSection = false
 	rn.chrome = false
@@ -342,6 +360,7 @@ func (rn *render) funcs() template.FuncMap {
 		"render":    rn.block,
 		"renderAll": rn.blocks,
 		"markdown":  renderMarkdown,
+		"t":         func(key string, args ...any) string { return rn.locale.T(key, args...) },
 		"section": func(block Block) string {
 			rn.markUsed("base-section")
 			return sectionClass(block)

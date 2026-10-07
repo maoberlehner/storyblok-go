@@ -10,7 +10,7 @@
 {{define "block-section-contact-fragment" -}}
 {{if .State.Sent -}}
 <div class="block-section-contact__success" id="{{id .}}-form" tabindex="-1" autofocus>
-  <h3 class="block-section-contact__success-title">Message sent</h3>
+  <h3 class="block-section-contact__success-title">{{t "contact.sent"}}</h3>
   <p class="block-section-contact__success-text">{{.Success}}</p>
 </div>
 {{- else -}}

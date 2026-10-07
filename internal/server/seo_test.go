@@ -41,8 +41,8 @@ func TestSitemap(t *testing.T) {
 		t.Fatalf("status %d, Content-Type %q", res.status, res.header.Get("Content-Type"))
 	}
 	for _, want := range []string{
-		`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`,
-		"<url><loc>https://example.com/</loc><lastmod>2026-10-01T08:30:00Z</lastmod></url>",
+		`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">`,
+		"<url><loc>https://example.com/</loc><lastmod>2026-10-01T08:30:00Z</lastmod>",
 		"<url><loc>https://example.com/landing</loc>",
 	} {
 		if !strings.Contains(res.body, want) {

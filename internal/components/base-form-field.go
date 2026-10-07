@@ -31,6 +31,12 @@ type BaseFormField struct {
 	// CharacterLimit shows the remaining characters while typing, if
 	// JavaScript is available. The server still validates the limit.
 	CharacterLimit int
+	CountMessages  CountMessages
+}
+
+// CountMessages are the remaining-characters texts, with %s for the count.
+type CountMessages struct {
+	RemainingOne, RemainingOther, OverOne, OverOther string
 }
 
 type FormOption struct {

@@ -68,6 +68,7 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 		ContentType:     "page-article",
 		SortBy:          "first_published_at:desc",
 		ExcludingFields: []string{"sections"},
+		Language:        req.Locale.StoryLanguage(),
 		Page:            1,
 		PerPage:         page * articlesPerPage,
 	}

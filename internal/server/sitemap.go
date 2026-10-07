@@ -17,12 +17,20 @@ const sitemapPageSize = 100
 
 type sitemapURLSet struct {
 	XMLName xml.Name     `xml:"http://www.sitemaps.org/schemas/sitemap/0.9 urlset"`
+	XHTML   string       `xml:"xmlns:xhtml,attr"`
 	URLs    []sitemapURL `xml:"url"`
 }
 
 type sitemapURL struct {
-	Loc     string `xml:"loc"`
-	LastMod string `xml:"lastmod,omitempty"`
+	Loc        string        `xml:"loc"`
+	LastMod    string        `xml:"lastmod,omitempty"`
+	Alternates []sitemapLink `xml:"xhtml:link"`
+}
+
+type sitemapLink struct {
+	Rel      string `xml:"rel,attr"`
+	Hreflang string `xml:"hreflang,attr"`
+	Href     string `xml:"href,attr"`
 }
 
 // serveSitemap lists every published story with a page component. Search
@@ -51,11 +59,23 @@ func (s *Server) serveSitemap(w http.ResponseWriter, r *http.Request) {
 			if !components.IsPage(story.Content.Component) || isReservedSlug(story.FullSlug) {
 				continue
 			}
-			u := sitemapURL{Loc: s.canonicalURL(story.FullSlug)}
-			if !story.PublishedAt.IsZero() {
-				u.LastMod = story.PublishedAt.UTC().Format(time.RFC3339)
+			versions := versionsOf(story.FullSlug, publishedAlternates(story.Alternates, storyblok.Published))
+			var links []sitemapLink
+			for _, a := range s.alternates(versions) {
+				links = append(links, sitemapLink{Rel: "alternate", Hreflang: a.Lang, Href: a.Href})
 			}
-			urls = append(urls, u)
+			lastMod := ""
+			if !story.PublishedAt.IsZero() {
+				lastMod = story.PublishedAt.UTC().Format(time.RFC3339)
+			}
+			_, inFolder := folderLocale(story.FullSlug)
+			for _, v := range versions {
+				// Folder-level versions are listed with their own story.
+				own := v.path == storyPath(story.FullSlug)
+				if own || (!inFolder && v.fieldLevel) {
+					urls = append(urls, sitemapURL{Loc: s.siteURL + v.path, LastMod: lastMod, Alternates: links})
+				}
+			}
 		}
 		listed += len(stories)
 		if len(stories) == 0 || listed >= list.Total {
@@ -64,7 +84,7 @@ func (s *Server) serveSitemap(w http.ResponseWriter, r *http.Request) {
 	}
 	slices.SortFunc(urls, func(a, b sitemapURL) int { return strings.Compare(a.Loc, b.Loc) })
 
-	out, err := xml.Marshal(sitemapURLSet{URLs: urls})
+	out, err := xml.Marshal(sitemapURLSet{XHTML: "http://www.w3.org/1999/xhtml", URLs: urls})
 	if err != nil {
 		s.fail(w, r, err)
 		return

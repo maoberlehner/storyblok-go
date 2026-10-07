@@ -1,6 +1,6 @@
 {{define "layout" -}}
 <!doctype html>
-<html lang="en">
+<html lang="{{.Lang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,10 +12,17 @@
   {{- else if .Canonical}}
   <link rel="canonical" href="{{.Canonical}}">
   {{- end}}
+  {{- range .Alternates}}
+  <link rel="alternate" hreflang="{{.Lang}}" href="{{.Href}}">
+  {{- end}}
   {{- with .MetaDescription}}
   <meta name="description" content="{{.}}">
   {{- end}}
   <meta property="og:type" content="{{.OGType}}">
+  <meta property="og:locale" content="{{.OGLocale}}">
+  {{- range .Alternates}}{{if and .OG (ne .OG $.OGLocale)}}
+  <meta property="og:locale:alternate" content="{{.OG}}">
+  {{- end}}{{end}}
   <meta property="og:title" content="{{.ShareTitle}}">
   {{- with .ShareDescription}}
   <meta property="og:description" content="{{.}}">

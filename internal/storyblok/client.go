@@ -54,6 +54,9 @@ type StoryOptions struct {
 	// ResolveRelations lists relation fields as "component.field". Resolved
 	// stories replace the UUIDs in the returned content.
 	ResolveRelations []string
+	// Language selects a field-level translation, e.g. "de"; empty is the
+	// default language.
+	Language string
 }
 
 // Story returns the raw JSON of the story at slug.
@@ -61,6 +64,9 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	query := url.Values{}
 	if len(opts.ResolveRelations) > 0 {
 		query.Set("resolve_relations", strings.Join(opts.ResolveRelations, ","))
+	}
+	if opts.Language != "" {
+		query.Set("language", opts.Language)
 	}
 	var payload struct {
 		Story jsontext.Value   `json:"story"`
@@ -87,6 +93,9 @@ type StoriesOptions struct {
 	PerPage int
 	// ExcludingFields leaves out content fields a listing does not need.
 	ExcludingFields []string
+	// Language selects a field-level translation, e.g. "de"; empty is the
+	// default language.
+	Language string
 }
 
 // StoryList is one page of stories. Stories holds the raw JSON array.
@@ -104,6 +113,7 @@ func (c *Client) Stories(ctx context.Context, opts StoriesOptions) (StoryList, e
 		"content_type":     opts.ContentType,
 		"sort_by":          opts.SortBy,
 		"excluding_fields": strings.Join(opts.ExcludingFields, ","),
+		"language":         opts.Language,
 	} {
 		if value != "" {
 			query.Set(key, value)

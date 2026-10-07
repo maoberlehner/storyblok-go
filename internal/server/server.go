@@ -4,12 +4,12 @@ package server
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"errors"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"storyblok-go-website/internal/components"
+	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -54,7 +55,7 @@ type Server struct {
 	buildID      string
 	siteURL      string
 	recordVital  func(name string, value float64)
-	lastSettings atomic.Pointer[components.SiteSettings]
+	lastSettings map[string]*atomic.Pointer[components.SiteSettings]
 	formSecret   []byte
 	guard        components.FormGuard
 }
@@ -92,6 +93,10 @@ func New(content ContentSource, renderer *components.Renderer, assets fs.FS, inb
 	for _, opt := range opts {
 		opt(s)
 	}
+	s.lastSettings = map[string]*atomic.Pointer[components.SiteSettings]{}
+	for _, l := range locale.All {
+		s.lastSettings[l.Code] = new(atomic.Pointer[components.SiteSettings])
+	}
 	if len(s.formSecret) == 0 {
 		// Tokens from other processes fail with a random secret; production
 		// sets FORM_SECRET.
@@ -125,7 +130,8 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	if preview {
 		version = storyblok.Draft
 	}
-	req := s.componentRequest(r, version)
+	loc, _ := requestLocale(r, preview)
+	req := s.componentRequest(r, version, loc)
 	w.Header().Add("Vary", "HX-Request")
 
 	// Read before fetching: the story reflects at least this cv, so the ETag
@@ -139,7 +145,7 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	story, ok := s.story(w, r, version)
+	res, ok := s.story(w, r, version)
 	if !ok {
 		return
 	}
@@ -150,25 +156,30 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Enhanced requests addressed to a section only render its fragment.
-	if target, ok := components.FindSection(story.Content.Block, req.Query.Get(components.TargetParam)); ok && req.Enhanced {
+	if target, ok := components.FindSection(res.story.Content.Block, req.Query.Get(components.TargetParam)); ok && req.Enhanced {
 		if err := components.Load(r.Context(), s.content, target, req); err != nil {
 			s.fail(w, r, err)
 			return
 		}
 		// Reloading the page then shows the same state without JavaScript.
 		w.Header().Set("HX-Replace-Url", replaceURL(r, req, target))
-		s.writeFragment(w, r, http.StatusOK, target)
+		s.writeFragment(w, r, http.StatusOK, target, res.locale)
 		return
 	}
 
-	if err := components.LoadSections(r.Context(), s.content, story.Content.Block, req); err != nil {
+	if err := components.LoadSections(r.Context(), s.content, res.story.Content.Block, req); err != nil {
 		s.fail(w, r, err)
 		return
 	}
-	page := components.NewPage(story)
+	page := components.NewPage(res.story)
 	page.Preview = preview
-	page.Canonical = s.canonicalURL(story.FullSlug)
-	page.Chrome = s.chrome(r.Context(), version, r.URL.Path)
+	page.Locale = res.locale
+	page.Canonical = s.canonicalURL(res.story.FullSlug)
+	versions := res.versions(version)
+	if !preview {
+		page.Alternates = s.alternates(versions)
+	}
+	page.Chrome = s.chrome(r.Context(), version, res.locale, r.URL.Path, versions)
 	s.writePage(w, r, http.StatusOK, page)
 }
 
@@ -183,21 +194,21 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
-	story, ok := s.story(w, r, storyblok.Published)
+	res, ok := s.story(w, r, storyblok.Published)
 	if !ok {
 		return
 	}
-	section, _ := components.FindSection(story.Content.Block, r.PostForm.Get(components.TargetParam))
+	section, _ := components.FindSection(res.story.Content.Block, r.PostForm.Get(components.TargetParam))
 	form, ok := section.(components.FormHandler)
 	if !ok {
 		http.Error(w, "unknown form", http.StatusBadRequest)
 		return
 	}
 
-	req := s.componentRequest(r, storyblok.Published)
+	req := s.componentRequest(r, storyblok.Published, res.locale)
 	load := func() error { return components.Load(r.Context(), s.content, form, req) }
 	if !req.Enhanced {
-		load = func() error { return components.LoadSections(r.Context(), s.content, story.Content.Block, req) }
+		load = func() error { return components.LoadSections(r.Context(), s.content, res.story.Content.Block, req) }
 	}
 	if err := load(); err != nil {
 		s.fail(w, r, err)
@@ -210,7 +221,7 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 		form.Confirm()
 		valid = true
 	case components.TooFast:
-		form.Reject(r.PostForm, "Your message was sent faster than people usually type. Please send it again.")
+		form.Reject(r.PostForm, res.locale.T("form.too_fast"))
 	default:
 		var err error
 		if valid, err = form.Submit(r.Context(), s.inbox, r.PostForm); err != nil {
@@ -225,16 +236,19 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case req.Enhanced:
-		s.writeFragment(w, r, status, form)
+		s.writeFragment(w, r, status, form, res.locale)
 	case valid:
 		query := req.StateQuery()
 		query.Set(components.SentParam, components.ShortID(form))
 		http.Redirect(w, r, req.Path+"?"+query.Encode(), http.StatusSeeOther)
 	default:
-		page := components.NewPage(story)
-		page.Title = "Error: " + page.Title
-		page.Canonical = s.canonicalURL(story.FullSlug)
-		page.Chrome = s.chrome(r.Context(), storyblok.Published, r.URL.Path)
+		page := components.NewPage(res.story)
+		page.Title = res.locale.T("error.title_prefix", page.Title)
+		page.Locale = res.locale
+		page.Canonical = s.canonicalURL(res.story.FullSlug)
+		versions := res.versions(storyblok.Published)
+		page.Alternates = s.alternates(versions)
+		page.Chrome = s.chrome(r.Context(), storyblok.Published, res.locale, r.URL.Path, versions)
 		s.writePage(w, r, status, page)
 	}
 }
@@ -246,19 +260,27 @@ func (s *Server) previewStory(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid or expired preview token", http.StatusForbidden)
 		return
 	}
+	loc, _ := requestLocale(r, true)
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxPreviewBodyBytes))
+	if err == nil {
+		raw, err = localizeLinks(raw, loc)
+	}
 	var story storyblok.Story[components.AnyBlock]
-	if err := json.UnmarshalRead(http.MaxBytesReader(w, r.Body, maxPreviewBodyBytes), &story); err != nil {
+	if err == nil {
+		err = json.Unmarshal(raw, &story)
+	}
+	if err != nil {
 		http.Error(w, "invalid story: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	req := s.componentRequest(r, storyblok.Draft)
+	req := s.componentRequest(r, storyblok.Draft, loc)
 	if err := components.LoadSections(r.Context(), s.content, story.Content.Block, req); err != nil {
 		s.fail(w, r, err)
 		return
 	}
 
 	var buf bytes.Buffer
-	if err := s.renderer.Block(&buf, story.Content.Block); err != nil {
+	if err := s.renderer.Block(&buf, story.Content.Block, loc); err != nil {
 		s.fail(w, r, err)
 		return
 	}
@@ -267,31 +289,26 @@ func (s *Server) previewStory(w http.ResponseWriter, r *http.Request) {
 	_, _ = buf.WriteTo(w)
 }
 
-// story fetches the story at the request path. It responds with an error and
-// returns false if that fails.
-func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok.Version) (storyblok.Story[components.AnyBlock], bool) {
-	slug := cmp.Or(strings.Trim(r.PathValue("slug"), "/"), homeSlug)
-	var story storyblok.Story[components.AnyBlock]
-	if isReservedSlug(slug) && version != storyblok.Draft {
-		s.notFound(w, r, version)
-		return story, false
-	}
-	raw, err := s.content.Story(r.Context(), slug, storyblok.StoryOptions{
-		Version:          version,
-		ResolveRelations: components.ResolveRelations,
-	})
-	if err == nil {
-		err = json.Unmarshal(raw, &story)
-	}
+// story resolves the story at the request path. It responds and returns
+// false if there is none, it redirects, or fetching fails.
+func (s *Server) story(w http.ResponseWriter, r *http.Request, version storyblok.Version) (resolution, bool) {
+	loc, rest := requestLocale(r, version == storyblok.Draft)
+	res, err := s.resolve(r.Context(), loc, rest, version)
 	switch {
 	case errors.Is(err, storyblok.ErrNotFound):
-		s.notFound(w, r, version)
-		return story, false
+		s.notFound(w, r, version, loc)
+		return res, false
 	case err != nil:
 		s.fail(w, r, err)
-		return story, false
+		return res, false
+	case res.redirect != "" && r.Method == http.MethodGet:
+		http.Redirect(w, r, res.redirect, http.StatusMovedPermanently)
+		return res, false
+	case res.redirect != "":
+		s.notFound(w, r, version, loc)
+		return res, false
 	}
-	return story, true
+	return res, true
 }
 
 // canonicalURL is the story's URL without query parameters, which only hold
@@ -306,18 +323,22 @@ func (s *Server) canonicalURL(fullSlug string) string {
 func storyPath(fullSlug string) string {
 	slug := strings.Trim(fullSlug, "/")
 	if slug == homeSlug {
-		slug = ""
+		return "/"
+	}
+	if l, ok := folderLocale(slug); ok && (slug == l.Code || slug == l.Code+"/"+homeSlug) {
+		return "/" + l.Code
 	}
 	return "/" + slug
 }
 
-func (s *Server) componentRequest(r *http.Request, version storyblok.Version) components.Request {
+func (s *Server) componentRequest(r *http.Request, version storyblok.Version, loc locale.Locale) components.Request {
 	return components.Request{
 		Path:      r.URL.Path,
 		Query:     r.URL.Query(),
 		Version:   version,
 		Enhanced:  r.Header.Get("HX-Request") == "true",
 		FormToken: s.guard.Token(),
+		Locale:    loc,
 	}
 }
 
@@ -332,9 +353,9 @@ func (s *Server) writePage(w http.ResponseWriter, r *http.Request, status int, p
 	_, _ = buf.WriteTo(w)
 }
 
-func (s *Server) writeFragment(w http.ResponseWriter, r *http.Request, status int, block components.Block) {
+func (s *Server) writeFragment(w http.ResponseWriter, r *http.Request, status int, block components.Block, loc locale.Locale) {
 	var buf bytes.Buffer
-	if err := s.renderer.Fragment(&buf, block); err != nil {
+	if err := s.renderer.Fragment(&buf, block, loc); err != nil {
 		s.fail(w, r, err)
 		return
 	}

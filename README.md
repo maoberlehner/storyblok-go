@@ -73,6 +73,23 @@ errors.
 `make seed` also uploads generated placeholder images once, with their pixel
 size so asset URLs carry dimensions; later runs reuse them by file name.
 
+## Languages
+
+English is the default language at unprefixed URLs; German lives under `/de/`
+([ADR 0005](adr/0005-languages.md)). Both Storyblok translation modes work side
+by side:
+
+- Field-level: `/de/<path>` shows the German fields of the story `<path>`;
+  untranslated fields fall back to English. Demo: `/de/landing/launch`.
+- Folder-level: a story under the `de/` folder replaces the field-level version.
+  Linked as an alternate (same `group_id`), it may use another slug; the
+  field-level URL then redirects. Demo: `/de/landing/partner` (alternate of
+  `/landing/partners`) and the German-only `/de/aktion`.
+
+Pages link their versions with `hreflang`, the sitemap lists every version, and
+the header has a language switcher. `make seed` adds German to the space's
+languages if it is missing.
+
 ## Production-like stack
 
 ```sh

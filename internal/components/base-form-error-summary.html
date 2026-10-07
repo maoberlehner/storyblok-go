@@ -1,6 +1,6 @@
 {{define "base-form-error-summary" -}}
 <div class="base-form-error-summary" id="{{.ID}}" tabindex="-1" autofocus>
-  <h3 class="base-form-error-summary__title">There is a problem</h3>
+  <h3 class="base-form-error-summary__title">{{t "form.problem"}}</h3>
   {{- with .Message}}
   <p class="base-form-error-summary__message">{{.}}</p>
   {{- end}}

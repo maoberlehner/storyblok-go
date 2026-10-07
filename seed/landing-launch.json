@@ -5,13 +5,17 @@
     "component": "page-landing-page",
     "_uid": "aa1d50a4-295f-444c-b77a-c138a995fdbe",
     "title": "Ship content faster",
+    "title__i18n__de": "Inhalte schneller veröffentlichen",
     "description": "Compose pages from tested sections, preview every change, and publish without waiting on a release.",
+    "description__i18n__de": "Seiten aus getesteten Abschnitten zusammenstellen, jede Änderung in der Vorschau sehen und ohne Release veröffentlichen.",
     "seo_title": "Ship content faster | Acme Content",
+    "seo_title__i18n__de": "Inhalte schneller veröffentlichen | Acme Content",
     "sections": [
       {
         "component": "block-section-hero",
         "_uid": "97901354-174c-427b-a996-4c95b77d7620",
         "heading": "Ship content faster without waiting on developers",
+        "heading__i18n__de": "Inhalte schneller veröffentlichen, ohne auf Entwickler zu warten",
         "text": "Editors compose pages from tested sections. Developers own the components. Everyone stops blocking each other.",
         "link": {
           "linktype": "story",
@@ -20,6 +24,7 @@
           "fieldtype": "multilink"
         },
         "link_label": "Become a partner",
+        "link_label__i18n__de": "Partner werden",
         "media": [
           {
             "component": "block-media-image",
@@ -86,6 +91,7 @@
             "component": "block-content-headline",
             "_uid": "a04c7e5f-3b8d-4dae-9f60-b05b6c7d8e95",
             "text": "Built for teams that publish every day",
+            "text__i18n__de": "Für Teams, die täglich veröffentlichen",
             "level": "h2"
           },
           {
@@ -97,6 +103,7 @@
             "component": "block-content-cta",
             "_uid": "c26e9071-5daf-4fc0-9182-d27d8e9fa0b7",
             "label": "Talk to us",
+            "label__i18n__de": "Sprechen Sie mit uns",
             "variant": "secondary",
             "link": {
               "linktype": "story",

@@ -1,0 +1,29 @@
+{
+  "full_slug": "de/aktion",
+  "name": "Aktion",
+  "content": {
+    "component": "page-landing-page",
+    "_uid": "b15d8f60-c3e4-4f50-8b6c-7d8e9fa01b23",
+    "title": "Herbstaktion",
+    "description": "Ein Angebot nur für den deutschsprachigen Markt.",
+    "sections": [
+      {
+        "component": "block-section-content",
+        "_uid": "c26e9071-d4f5-4061-9c7d-8e9fa01b2c34",
+        "content": [
+          {
+            "component": "block-content-headline",
+            "_uid": "d37fa182-e506-4172-8d8e-9fa01b2c3d45",
+            "text": "Nur auf Deutsch",
+            "level": "h2"
+          },
+          {
+            "component": "block-content-text",
+            "_uid": "e480b293-f617-4283-9e9f-a01b2c3d4e56",
+            "text": "Diese Seite gibt es nur auf Deutsch. Der Sprachwechsler führt deshalb zur englischen Startseite."
+          }
+        ]
+      }
+    ]
+  }
+}

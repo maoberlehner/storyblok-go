@@ -10,11 +10,11 @@
 closes without JavaScript, and an inline list on wide screens. */}}
 {{define "site-header" -}}
 <header class="site-header">
-  <a class="site-header__skip" href="#main">Skip to content</a>
+  <a class="site-header__skip" href="#main">{{t "skip_to_content"}}</a>
   <div class="site-header__bar">
     <a class="site-header__home" href="{{.HomeHref}}">{{.Settings.SiteName}}</a>
-    <button class="site-header__toggle" type="button" popovertarget="site-nav">Menu</button>
-    <nav class="site-header__nav" id="site-nav" popover aria-label="Main">
+    <button class="site-header__toggle" type="button" popovertarget="site-nav">{{t "menu"}}</button>
+    <nav class="site-header__nav" id="site-nav" popover aria-label="{{t "nav.main"}}">
       <ul class="site-header__links">
         {{- range .NavLinks}}
         <li><a {{editable .Block}} class="site-header__link" href="{{.Href}}"{{if .Current}} aria-current="page"{{end}}>{{.Label}}</a></li>
@@ -24,7 +24,7 @@ closes without JavaScript, and an inline list on wide screens. */}}
       {{base "base-button" .}}
       {{- end}}
       {{- with .Languages}}
-      <ul class="site-header__languages">
+      <ul class="site-header__languages" aria-label="{{t "nav.languages"}}">
         {{- range .}}
         <li><a class="site-header__language" href="{{.Href}}" hreflang="{{.Lang}}" lang="{{.Lang}}"{{if .Current}} aria-current="true"{{end}}>{{.Label}}</a></li>
         {{- end}}

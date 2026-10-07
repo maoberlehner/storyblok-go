@@ -38,3 +38,5 @@ deliberate exceptions with reasons.
   1280 px widths); Firefox, Safari, zoom, and screen readers are unchecked. Live
   MAPI behavior still needs a smoke test against a development space; HTTP
   fixture tests cover the sync contract locally.
+- **Languages:** German URLs exist for every page outside `de/`, translated or
+  not (ADR 0005). Slugs are not translated for field-level pages.

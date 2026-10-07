@@ -16,3 +16,5 @@ otherwise have to repeat. Use the format of the existing records.
   a sitemap for discovery
 - [0004](0004-permissive-content-security-policy.md): A Content Security Policy
   that tolerates tag managers
+- [0005](0005-languages.md): Field-level and folder-level translations side by
+  side

@@ -2,12 +2,12 @@ package server
 
 import (
 	"context"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"slices"
 
 	"storyblok-go-website/internal/components"
+	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -18,34 +18,31 @@ var reservedSlugs = []string{settingsSlug, notFoundSlug}
 
 func isReservedSlug(slug string) bool { return slices.Contains(reservedSlugs, slug) }
 
-// settings returns the site settings. If Storyblok fails, pages keep the last
-// published settings; a missing settings story means no chrome.
-func (s *Server) settings(ctx context.Context, version storyblok.Version) *components.SiteSettings {
-	raw, err := s.content.Story(ctx, settingsSlug, storyblok.StoryOptions{Version: version})
+// settings returns the site settings in loc. If Storyblok fails, pages keep
+// the last published settings; a missing settings story means no chrome.
+func (s *Server) settings(ctx context.Context, version storyblok.Version, loc locale.Locale) *components.SiteSettings {
+	last := s.lastSettings[loc.Code]
+	story, err := s.fetch(ctx, settingsSlug, version, loc.StoryLanguage(), loc)
 	if errors.Is(err, storyblok.ErrNotFound) {
 		return nil
 	}
 	if err == nil {
-		var story storyblok.Story[components.AnyBlock]
-		if err = json.Unmarshal(raw, &story); err == nil {
-			if settings, ok := story.Content.Block.(*components.SiteSettings); ok {
-				if version != storyblok.Draft {
-					s.lastSettings.Store(settings)
-				}
-				return settings
+		if settings, ok := story.Content.Block.(*components.SiteSettings); ok {
+			if version != storyblok.Draft {
+				last.Store(settings)
 			}
-			err = fmt.Errorf("content type %s", story.Content.Block.Meta().Component)
+			return settings
 		}
+		err = fmt.Errorf("content type %s", story.Content.Block.Meta().Component)
 	}
-	s.logger.WarnContext(ctx, "site settings unavailable", "err", err)
-	return s.lastSettings.Load()
+	s.logger.WarnContext(ctx, "site settings unavailable", "locale", loc.Code, "err", err)
+	return last.Load()
 }
 
-// chrome returns the header and footer for a page at path.
-func (s *Server) chrome(ctx context.Context, version storyblok.Version, path string) *components.Chrome {
-	settings := s.settings(ctx, version)
+func (s *Server) chrome(ctx context.Context, version storyblok.Version, loc locale.Locale, path string, versions []langVersion) *components.Chrome {
+	settings := s.settings(ctx, version, loc)
 	if settings == nil {
 		return nil
 	}
-	return &components.Chrome{Settings: settings, HomeHref: "/", CurrentPath: path}
+	return &components.Chrome{Settings: settings, HomeHref: loc.HomePath(), CurrentPath: path, Languages: languageLinks(loc, versions)}
 }

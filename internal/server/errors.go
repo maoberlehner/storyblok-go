@@ -2,25 +2,15 @@ package server
 
 import (
 	"bytes"
-	"encoding/json/v2"
 	"errors"
 	"net/http"
 
 	"storyblok-go-website/internal/components"
+	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
 const notFoundSlug = "error-404"
-
-type errorText struct{ heading, text string }
-
-var errorTexts = map[int]errorText{
-	http.StatusNotFound:            {"Page not found", "The page you are looking for doesn't exist or has moved."},
-	http.StatusInternalServerError: {"Something went wrong", "Please try again in a moment."},
-	http.StatusServiceUnavailable:  {"Something went wrong", "Please try again in a moment."},
-}
-
-const homeLabel = "Go to the home page"
 
 // plainErrors reports whether the client expects a fragment or data, not a
 // document: htmx requests and Visual Editor preview renders.
@@ -28,31 +18,36 @@ func plainErrors(r *http.Request) bool {
 	return r.Header.Get("HX-Request") == "true" || r.Method == http.MethodPut
 }
 
-// notFound renders the "error-404" story, or a built-in page if it is missing.
-func (s *Server) notFound(w http.ResponseWriter, r *http.Request, version storyblok.Version) {
+// errorPage is a built-in page for errors, in loc.
+func errorPage(loc locale.Locale, heading, text string) components.Page {
+	page := components.NewPage(storyblok.Story[components.AnyBlock]{Content: components.AnyBlock{
+		Block: components.NewErrorContent(heading, text, loc.HomePath(), loc.T("error.home")),
+	}})
+	page.Locale = loc
+	page.NoIndex = true
+	return page
+}
+
+// notFound renders the "error-404" story in loc, or a built-in page if it is
+// missing.
+func (s *Server) notFound(w http.ResponseWriter, r *http.Request, version storyblok.Version, loc locale.Locale) {
 	if plainErrors(r) {
 		http.NotFound(w, r)
 		return
 	}
 	var page components.Page
-	raw, err := s.content.Story(r.Context(), notFoundSlug, storyblok.StoryOptions{Version: version, ResolveRelations: components.ResolveRelations})
-	var story storyblok.Story[components.AnyBlock]
-	if err == nil {
-		err = json.Unmarshal(raw, &story)
-	}
+	story, err := s.fetch(r.Context(), notFoundSlug, version, loc.StoryLanguage(), loc)
 	if err == nil && components.IsPage(story.Content.Block.Meta().Component) {
 		page = components.NewPage(story)
+		page.Locale = loc
+		page.NoIndex = true
 	} else {
 		if err != nil && !errors.Is(err, storyblok.ErrNotFound) {
 			s.logger.WarnContext(r.Context(), "404 page unavailable", "err", err)
 		}
-		text := errorTexts[http.StatusNotFound]
-		page = components.NewPage(storyblok.Story[components.AnyBlock]{Content: components.AnyBlock{
-			Block: components.NewErrorContent(text.heading, text.text, "/", homeLabel),
-		}})
+		page = errorPage(loc, loc.T("error.not_found"), loc.T("error.not_found_text"))
 	}
-	page.NoIndex = true
-	page.Chrome = s.chrome(r.Context(), version, r.URL.Path)
+	page.Chrome = s.chrome(r.Context(), version, loc, r.URL.Path, nil)
 	s.writePage(w, r, http.StatusNotFound, page)
 }
 
@@ -68,13 +63,11 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 		http.Error(w, http.StatusText(status), status)
 		return
 	}
-	text := errorTexts[status]
-	page := components.NewPage(storyblok.Story[components.AnyBlock]{Content: components.AnyBlock{
-		Block: components.NewErrorContent(text.heading, text.text, "/", homeLabel),
-	}})
-	page.NoIndex = true
-	if settings := s.lastSettings.Load(); settings != nil {
-		page.Chrome = &components.Chrome{Settings: settings, HomeHref: "/", CurrentPath: r.URL.Path}
+	loc, _ := locale.FromPath(r.URL.Path)
+	page := errorPage(loc, loc.T("error.server"), loc.T("error.server_text"))
+	if settings := s.lastSettings[loc.Code].Load(); settings != nil {
+		page.Chrome = &components.Chrome{Settings: settings, HomeHref: loc.HomePath(), CurrentPath: r.URL.Path,
+			Languages: languageLinks(loc, nil)}
 	}
 	var buf bytes.Buffer
 	if renderErr := s.renderer.Page(&buf, page); renderErr != nil {

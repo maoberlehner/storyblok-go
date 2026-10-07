@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"path"
@@ -14,17 +15,32 @@ import (
 
 // fakeSpace keeps stories by full slug, like the Management API.
 type fakeSpace struct {
-	mu      sync.Mutex
-	stories map[string]map[string]any
-	nextID  int64
-	writes  []string
-	assets  map[string]map[string]any
-	uploads int
+	mu        sync.Mutex
+	stories   map[string]map[string]any
+	nextID    int64
+	writes    []string
+	assets    map[string]map[string]any
+	uploads   int
+	languages []any
 }
 
 func (f *fakeSpace) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if r.URL.Path == "/spaces/1" {
+		if r.Method == http.MethodPut {
+			var body struct {
+				Space struct {
+					Languages []any `json:"languages"`
+				} `json:"space"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			f.languages = body.Space.Languages
+			f.writes = append(f.writes, "PUT space")
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"space": map[string]any{"languages": f.languages}})
+		return
+	}
 	if strings.Contains(r.URL.Path, "/assets") || r.URL.Path == "/upload" {
 		f.serveAssets(w, r)
 		return
@@ -53,6 +69,9 @@ func (f *fakeSpace) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		f.nextID++
 		story["id"] = float64(f.nextID)
+		if story["group_id"] == nil {
+			story["group_id"] = fmt.Sprintf("g%d", f.nextID)
+		}
 	} else {
 		id, _ := strconv.ParseFloat(path.Base(r.URL.Path), 64)
 		story["id"] = id
@@ -107,7 +126,8 @@ func seedImagesUsed(t *testing.T) map[string]bool {
 }
 
 func TestSeedingTwiceUpdatesTheSameStories(t *testing.T) {
-	space := &fakeSpace{stories: map[string]map[string]any{}, assets: map[string]map[string]any{}}
+	space := &fakeSpace{stories: map[string]map[string]any{}, assets: map[string]map[string]any{},
+		languages: []any{map[string]any{"code": "fr", "name": "French"}}}
 	api := httptest.NewServer(space)
 	defer api.Close()
 	env := func(key string) string {
@@ -133,6 +153,13 @@ func TestSeedingTwiceUpdatesTheSameStories(t *testing.T) {
 	hero, _ := json.Marshal(space.stories["landing/launch"]["content"])
 	if !strings.Contains(string(hero), "/2400x1600/abc/seed-launch-hero.jpg") {
 		t.Error("landing page does not reference the uploaded hero image with its size")
+	}
+	languages, _ := json.Marshal(space.languages)
+	if string(languages) != `[{"code":"fr","name":"French"},{"code":"de","name":"German"}]` {
+		t.Errorf("languages = %s", languages)
+	}
+	if partner, original := space.stories["de/landing/partner"], space.stories["landing/partners"]; partner == nil || partner["group_id"] != original["group_id"] {
+		t.Errorf("folder-level translation is not an alternate: %v", partner)
 	}
 	if len(space.stories) != created {
 		t.Errorf("second run changed the number of stories from %d to %d", created, len(space.stories))

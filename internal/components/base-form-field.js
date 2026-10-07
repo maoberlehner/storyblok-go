@@ -6,14 +6,16 @@ const SELECTOR = "textarea[data-character-limit]";
 const ANNOUNCE_DELAY_MS = 1000;
 const numberFormat = new Intl.NumberFormat(document.documentElement.lang);
 const announceTimers = new WeakMap();
+const pluralRules = new Intl.PluralRules(document.documentElement.lang);
 
 function message(field) {
   const remaining = Number(field.dataset.characterLimit) - field.value.length;
   const count = numberFormat.format(Math.abs(remaining));
-  const characters = Math.abs(remaining) === 1 ? "character" : "characters";
-  return remaining < 0
-    ? { text: `${count} ${characters} too many`, over: true }
-    : { text: `${count} ${characters} remaining`, over: false };
+  const form =
+    pluralRules.select(Math.abs(remaining)) === "one" ? "One" : "Other";
+  const over = remaining < 0;
+  const template = field.dataset[`count${over ? "Over" : "Remaining"}${form}`];
+  return { text: template.replace("%s", count), over };
 }
 
 function elementsFor(field) {

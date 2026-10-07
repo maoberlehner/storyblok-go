@@ -1,0 +1,26 @@
+{
+  "full_slug": "de/landing/partner",
+  "name": "Partner",
+  "alternate_of": "landing/partners",
+  "content": {
+    "component": "page-landing-page",
+    "_uid": "9f3b6d4e-a1c2-4d3e-8f4a-5b6c7d8e9f01",
+    "title": "Partner werden",
+    "description": "Gemeinsam mit uns Kunden gewinnen: als Agentur, Technologie- oder Lösungspartner.",
+    "sections": [
+      {
+        "component": "block-section-hero",
+        "_uid": "a04c7e5f-b2d3-4e4f-9a5b-6c7d8e9fa012",
+        "heading": "Wachsen Sie mit unserem Partnerprogramm",
+        "text": "Diese Seite ist eine Übersetzung auf Ordnerebene: eigene Story, eigener Slug, eigene Abschnitte.",
+        "link": {
+          "linktype": "story",
+          "cached_url": "landing/launch",
+          "url": "",
+          "fieldtype": "multilink"
+        },
+        "link_label": "Zum Launch"
+      }
+    ]
+  }
+}

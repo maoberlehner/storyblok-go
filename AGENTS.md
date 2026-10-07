@@ -44,6 +44,8 @@ measurements or research.
     content type of the `settings` story), `site-link`, `site-link-group`. Pages
     render inside the site chrome (header, footer) from the `settings` story;
     pages render without it if the story is missing.
+- UI strings live in `internal/locale`; components use the `t` template function
+  or `Locale.T`, never literal UI text.
 - Scope component styles to their component. Keep base components independent of
   page/block implementations. Preserve existing Storyblok identifiers until an
   explicit mapping or content migration is in place.

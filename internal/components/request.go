@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -24,6 +25,7 @@ type Request struct {
 	Enhanced bool
 	// FormToken is the guard token forms rendered for this request carry.
 	FormToken string
+	Locale    locale.Locale
 }
 
 // TargetParam names the request parameter that holds the short ID of the

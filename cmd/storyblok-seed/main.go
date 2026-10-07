@@ -29,6 +29,8 @@ type seedStory struct {
 	FullSlug string         `json:"full_slug"`
 	Name     string         `json:"name"`
 	Content  map[string]any `json:"content"`
+	// AlternateOf names the story this one translates at folder level.
+	AlternateOf string `json:"alternate_of"`
 }
 
 func main() {
@@ -61,8 +63,15 @@ func run(ctx context.Context, args []string, env func(string) string, stdout io.
 	if err != nil {
 		return err
 	}
+	if err := ensureLanguage(ctx, client, "de", "German", stdout); err != nil {
+		return err
+	}
 	// Articles go first, so the landing pages list them right away.
+	// Alternates go last, after the stories they translate.
 	stories := append(articles(), files...)
+	slices.SortStableFunc(stories, func(a, b seedStory) int {
+		return cmp.Compare(boolInt(a.AlternateOf != ""), boolInt(b.AlternateOf != ""))
+	})
 	folders := map[string]int64{"": 0}
 	uploaded := map[string]mapi.Asset{}
 	for _, story := range stories {
@@ -74,12 +83,24 @@ func run(ctx context.Context, args []string, env func(string) string, stdout io.
 		if err != nil {
 			return err
 		}
+		groupID := ""
+		if story.AlternateOf != "" {
+			original, err := client.FindStory(ctx, story.AlternateOf)
+			if err != nil {
+				return err
+			}
+			if original == nil {
+				return fmt.Errorf("%s: alternate_of %s does not exist", story.FullSlug, story.AlternateOf)
+			}
+			groupID = original.GroupID
+		}
 		if err := saveStory(ctx, client, mapi.Story{
 			Name:     story.Name,
 			Slug:     path.Base(story.FullSlug),
 			FullSlug: story.FullSlug,
 			ParentID: parentID,
 			Content:  content.(map[string]any),
+			GroupID:  groupID,
 		}, stdout); err != nil {
 			return err
 		}
@@ -163,4 +184,28 @@ func saveStory(ctx context.Context, client *mapi.Client, story mapi.Story, stdou
 	}
 	fmt.Fprintf(stdout, "%s %s\n", action, story.FullSlug)
 	return nil
+}
+
+// ensureLanguage adds the language to the space unless it has it, keeping
+// the others.
+func ensureLanguage(ctx context.Context, client *mapi.Client, code, name string, stdout io.Writer) error {
+	languages, err := client.Languages(ctx)
+	if err != nil {
+		return err
+	}
+	if slices.ContainsFunc(languages, func(l mapi.Language) bool { return l.Code == code }) {
+		return nil
+	}
+	if err := client.SetLanguages(ctx, append(languages, mapi.Language{Code: code, Name: name})); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "added language %s\n", code)
+	return nil
+}
+
+func boolInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

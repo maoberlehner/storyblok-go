@@ -85,11 +85,15 @@ func (f *fakeContent) Stories(_ context.Context, opts storyblok.StoriesOptions) 
 		raw, err := json.Marshal(stories)
 		return storyblok.StoryList{Stories: raw, Total: len(stories)}, err
 	}
+	langPrefix := ""
+	if opts.Language != "" {
+		langPrefix = opts.Language + "/"
+	}
 	first := (opts.Page-1)*opts.PerPage + 1
 	for n := first; n < first+opts.PerPage && n <= totalArticles; n++ {
 		id := totalArticles + 1 - n
 		stories = append(stories, map[string]any{
-			"full_slug": fmt.Sprintf("%sarticle-%d", opts.StartsWith, id),
+			"full_slug": fmt.Sprintf("%s%sarticle-%d", langPrefix, opts.StartsWith, id),
 			"content":   map[string]any{"component": "page-article", "title": fmt.Sprintf("Article %d", id), "description": "Teaser"},
 		})
 	}
@@ -111,6 +115,12 @@ func (f *fakeContent) Story(_ context.Context, slug string, opts storyblok.Story
 	var tree map[string]any
 	if err := json.Unmarshal([]byte(story), &tree); err != nil {
 		return nil, err
+	}
+	if opts.Language != "" {
+		translate(tree, opts.Language)
+		tree["default_full_slug"] = slug
+		slug = opts.Language + "/" + slug
+		prefixStoryLinks(tree, opts.Language)
 	}
 	tree["full_slug"] = slug
 	if opts.Version != storyblok.Draft {
@@ -354,4 +364,52 @@ const formSecret = "form-secret"
 // pass the time trap.
 func validFormToken() string {
 	return components.NewFormGuard([]byte(formSecret), func() time.Time { return time.Now().Add(-time.Minute) }).Token()
+}
+
+// translate applies field-level translations ("<field>__i18n__<lang>") like
+// the Content Delivery API: translated values replace defaults, untranslated
+// fields keep them.
+func translate(node any, lang string) {
+	switch n := node.(type) {
+	case map[string]any:
+		suffix := "__i18n__" + lang
+		for key, value := range n {
+			if field, ok := strings.CutSuffix(key, suffix); ok {
+				if s, isString := value.(string); !isString || s != "" {
+					n[field] = value
+				}
+			}
+		}
+		for key := range n {
+			if strings.Contains(key, "__i18n__") {
+				delete(n, key)
+			}
+		}
+		for _, child := range n {
+			translate(child, lang)
+		}
+	case []any:
+		for _, child := range n {
+			translate(child, lang)
+		}
+	}
+}
+
+// prefixStoryLinks mirrors the API prefixing story links with the language.
+func prefixStoryLinks(node any, lang string) {
+	switch n := node.(type) {
+	case map[string]any:
+		if n["linktype"] == "story" {
+			if url, ok := n["cached_url"].(string); ok {
+				n["cached_url"] = lang + "/" + url
+			}
+		}
+		for _, child := range n {
+			prefixStoryLinks(child, lang)
+		}
+	case []any:
+		for _, child := range n {
+			prefixStoryLinks(child, lang)
+		}
+	}
 }

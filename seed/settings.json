@@ -21,6 +21,7 @@
         "component": "site-link",
         "_uid": "f591c3a4-80d2-4cf3-84b5-05a0b1c2d3ea",
         "label": "Partners",
+        "label__i18n__de": "Partner",
         "link": {
           "linktype": "story",
           "cached_url": "landing/partners",
@@ -30,6 +31,7 @@
       }
     ],
     "cta_label": "Contact us",
+    "cta_label__i18n__de": "Kontakt",
     "cta_link": {
       "linktype": "story",
       "cached_url": "landing/launch",
@@ -42,6 +44,7 @@
         "component": "site-link-group",
         "_uid": "06a2d4b5-91e3-4d04-95c6-16b1c2d3e4fb",
         "heading": "Product",
+        "heading__i18n__de": "Produkt",
         "links": [
           {
             "component": "site-link",
@@ -73,6 +76,7 @@
         "component": "site-link",
         "_uid": "39d507e8-c416-4037-88f9-49e4f506172e",
         "label": "Privacy",
+        "label__i18n__de": "Datenschutz",
         "link": {
           "linktype": "url",
           "url": "https://example.com/privacy",
@@ -84,6 +88,7 @@
         "component": "site-link",
         "_uid": "4ae618f9-d527-4148-99fa-5af50617283f",
         "label": "Imprint",
+        "label__i18n__de": "Impressum",
         "link": {
           "linktype": "url",
           "url": "https://example.com/imprint",
@@ -93,6 +98,7 @@
       }
     ],
     "copyright": "© 2026 Acme Content. Demo content.",
+    "copyright__i18n__de": "© 2026 Acme Content. Demo-Inhalte.",
     "default_og_image": {
       "seed_image": "launch-hero",
       "alt": "Abstract blue gradient"

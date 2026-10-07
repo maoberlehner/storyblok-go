@@ -109,3 +109,32 @@ func TestClientStories(t *testing.T) {
 		t.Errorf("list = %+v, stories = %+v", list, stories)
 	}
 }
+
+func TestClientRequestsFieldLevelTranslations(t *testing.T) {
+	var languages []string
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		languages = append(languages, r.URL.Query().Get("language"))
+		if r.URL.Path == "/stories" {
+			w.Header().Set("Total", "0")
+			w.Write([]byte(`{"stories": []}`))
+			return
+		}
+		w.Write([]byte(`{"story": {"name": "Home", "content": {}}}`))
+	}))
+	defer api.Close()
+	client := storyblok.NewClient(api.URL, "secret")
+	opts := storyblok.StoryOptions{Version: storyblok.Draft}
+	if _, err := client.Story(t.Context(), "home", opts); err != nil {
+		t.Fatal(err)
+	}
+	opts.Language = "de"
+	if _, err := client.Story(t.Context(), "home", opts); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Stories(t.Context(), storyblok.StoriesOptions{Version: storyblok.Draft, Language: "de"}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(languages, ",") != ",de,de" {
+		t.Errorf("language parameters = %q", languages)
+	}
+}

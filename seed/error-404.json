@@ -5,7 +5,9 @@
     "component": "page-landing-page",
     "_uid": "5bf7290a-e638-4259-aa0b-6b0617283940",
     "title": "Page not found",
+    "title__i18n__de": "Seite nicht gefunden",
     "description": "The page you are looking for doesn't exist or has moved.",
+    "description__i18n__de": "Die gesuchte Seite gibt es nicht oder sie wurde verschoben.",
     "sections": [
       {
         "component": "block-section-content",
@@ -14,12 +16,14 @@
           {
             "component": "block-content-text",
             "_uid": "7d194b2c-085a-447b-8c2d-8d28394a5b62",
-            "text": "The link may be outdated, or the page has moved. Start over from the home page or one of these pages."
+            "text": "The link may be outdated, or the page has moved. Start over from the home page or one of these pages.",
+            "text__i18n__de": "Der Link ist vielleicht veraltet oder die Seite wurde verschoben. Beginnen Sie auf der Startseite oder einer dieser Seiten."
           },
           {
             "component": "block-content-cta",
             "_uid": "8e2a5c3d-196b-458c-9d3e-9e394a5b6c73",
             "label": "Go to the launch page",
+            "label__i18n__de": "Zur Launch-Seite",
             "variant": "primary",
             "link": {
               "linktype": "story",
