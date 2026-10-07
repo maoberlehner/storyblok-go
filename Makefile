@@ -1,4 +1,4 @@
-.PHONY: run test fmt schema-validate certs
+.PHONY: run test fmt schema-validate certs skills
 
 CERT := .certs/localhost.pem
 KEY := .certs/localhost-key.pem
@@ -20,3 +20,9 @@ schema-validate:
 certs $(CERT):
 	mkdir -p .certs
 	mkcert -cert-file $(CERT) -key-file $(KEY) localhost 127.0.0.1 ::1
+
+# Links the skill shipped with the globally installed CLI, so it stays on the
+# installed version. The global path is machine-specific, hence not committed.
+skills:
+	mkdir -p .agents/skills
+	ln -sfn "$$(npm root -g)/@markus/storyblok-agent/skills/storyblok-content-ops" .agents/skills/storyblok-content-ops
