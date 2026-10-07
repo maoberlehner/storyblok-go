@@ -58,22 +58,34 @@ func articleTitles(body string) []string {
 	return titles
 }
 
+// sectionHTML returns the markup of the section with the given element ID.
+func sectionHTML(t *testing.T, body, id string) string {
+	t.Helper()
+	_, section, ok := strings.Cut(body, `id="`+id+`"`)
+	if !ok {
+		t.Fatalf("no section %s", id)
+	}
+	section, _, _ = strings.Cut(section, "</section>")
+	return section
+}
+
 func TestLoadMore(t *testing.T) {
 	ts := newServer(t)
 
 	t.Run("shows the first page with a form for the next one", func(t *testing.T) {
 		res := request(t, http.MethodGet, ts.URL+"/landing", nil, nil)
-		if got := strings.Join(articleTitles(res.body), ","); got != "14,13,12,11,10,9" {
+		section := sectionHTML(t, res.body, "b-arts")
+		if got := strings.Join(articleTitles(section), ","); got != "14,13,12,11,10,9" {
 			t.Errorf("articles = %s", got)
 		}
 		for _, want := range []string{
 			"Showing 6 of 14 articles",
 			`action="/landing"`,
-			`name="_block" value="arts"`,
-			`name="page" value="2"`,
+			`name="page-arts" value="2"`,
+			`hx-vals='{"_block": "arts"}'`,
 		} {
-			if !strings.Contains(res.body, want) {
-				t.Errorf("body does not contain %q", want)
+			if !strings.Contains(section, want) {
+				t.Errorf("section does not contain %q", want)
 			}
 		}
 		if strings.Contains(res.body, "autofocus") {
@@ -82,36 +94,58 @@ func TestLoadMore(t *testing.T) {
 	})
 
 	t.Run("renders all loaded pages without JavaScript and focuses the first new article", func(t *testing.T) {
-		res := request(t, http.MethodGet, ts.URL+"/landing?_block=arts&page=2", nil, nil)
-		if got := len(articleTitles(res.body)); got != 12 {
+		res := request(t, http.MethodGet, ts.URL+"/landing?page-arts=2", nil, nil)
+		section := sectionHTML(t, res.body, "b-arts")
+		if got := len(articleTitles(section)); got != 12 {
 			t.Errorf("got %d articles, want 12", got)
 		}
-		if !strings.Contains(res.body, `id="b-arts-item-7"`) || !strings.Contains(res.body, `href="/articles/article-8" autofocus>`) {
+		if !strings.Contains(section, `id="b-arts-item-7"`) || !strings.Contains(section, `href="/articles/article-8" autofocus>`) {
 			t.Error("first new article is not anchored and focused")
 		}
-		if !strings.Contains(res.body, `name="page" value="3"`) {
+		if !strings.Contains(section, `name="page-arts" value="3"`) {
 			t.Error("missing form for the third page")
 		}
 	})
 
+	t.Run("keeps the state of every listing without JavaScript", func(t *testing.T) {
+		res := request(t, http.MethodGet, ts.URL+"/landing?page-arts=2&page-more=3", nil, nil)
+		if got := len(articleTitles(sectionHTML(t, res.body, "b-arts"))); got != 12 {
+			t.Errorf("first listing has %d articles, want 12", got)
+		}
+		other := sectionHTML(t, res.body, "b-more")
+		if got := len(articleTitles(other)); got != 14 {
+			t.Errorf("second listing has %d articles, want 14", got)
+		}
+		first := sectionHTML(t, res.body, "b-arts")
+		if !strings.Contains(first, `<input type="hidden" name="page-more" value="3">`) {
+			t.Error("first listing's form drops the second listing's state")
+		}
+	})
+
 	t.Run("returns only the requested page as a fragment to htmx", func(t *testing.T) {
-		res := request(t, http.MethodGet, ts.URL+"/landing?_block=arts&page=2", nil, enhanced)
+		res := request(t, http.MethodGet, ts.URL+"/landing?page-arts=2&_block=arts", nil, enhanced)
 		if got := strings.Join(articleTitles(res.body), ","); got != "8,7,6,5,4,3" {
 			t.Errorf("articles = %s", got)
 		}
 		if strings.Contains(res.body, "<html") || !strings.Contains(res.body, `<hx-partial hx-target="#b-arts-more" hx-swap="outerHTML">`) {
 			t.Errorf("body is not the fragment:\n%s", res.body)
 		}
-		if got := res.header.Get("HX-Replace-Url"); got != "/landing?_block=arts&page=2" {
-			t.Errorf("HX-Replace-Url = %q", got)
-		}
 		if !strings.Contains(strings.Join(res.header.Values("Vary"), ","), "HX-Request") {
 			t.Error("response does not vary by HX-Request")
 		}
 	})
 
+	t.Run("updates only the requested listing in the browser URL", func(t *testing.T) {
+		// The form still carries page-more=1 from its first render.
+		header := map[string]string{"HX-Request": "true", "HX-Current-URL": ts.URL + "/landing?page-more=3&page-arts=1&sent=contact"}
+		res := request(t, http.MethodGet, ts.URL+"/landing?page-more=1&page-arts=2&_block=arts", nil, header)
+		if got := res.header.Get("HX-Replace-Url"); got != "/landing?page-arts=2&page-more=3" {
+			t.Errorf("HX-Replace-Url = %q", got)
+		}
+	})
+
 	t.Run("removes the form after the last page", func(t *testing.T) {
-		res := request(t, http.MethodGet, ts.URL+"/landing?_block=arts&page=3", nil, enhanced)
+		res := request(t, http.MethodGet, ts.URL+"/landing?page-arts=3&_block=arts", nil, enhanced)
 		if got := strings.Join(articleTitles(res.body), ","); got != "2,1" {
 			t.Errorf("articles = %s", got)
 		}
@@ -166,9 +200,19 @@ func TestContactForm(t *testing.T) {
 		}
 	})
 
+	t.Run("keeps listing state when the form re-renders without JavaScript", func(t *testing.T) {
+		res := request(t, http.MethodPost, ts.URL+"/landing?page-arts=2", invalid, nil)
+		if got := len(articleTitles(sectionHTML(t, res.body, "b-arts"))); got != 12 {
+			t.Errorf("listing has %d articles, want 12", got)
+		}
+		if !strings.Contains(res.body, `action="/landing?page-arts=2"`) {
+			t.Error("form action drops the listing state")
+		}
+	})
+
 	t.Run("redirects to a confirmation after a valid submission without JavaScript", func(t *testing.T) {
-		res := request(t, http.MethodPost, ts.URL+"/landing", validContact(), nil)
-		if res.status != http.StatusSeeOther || res.header.Get("Location") != "/landing?sent=contact" {
+		res := request(t, http.MethodPost, ts.URL+"/landing?page-arts=2", validContact(), nil)
+		if res.status != http.StatusSeeOther || res.header.Get("Location") != "/landing?page-arts=2&sent=contact" {
 			t.Fatalf("status = %d, location = %q", res.status, res.header.Get("Location"))
 		}
 		if len(inbox.submissions) != 1 || inbox.submissions[0].Fields[3].Value != "Hello\nthere" {
@@ -230,13 +274,14 @@ func TestAssetDelivery(t *testing.T) {
 	cardRule := ".base-card {"
 	for _, tt := range []struct {
 		mode components.AssetDelivery
-		// cardRules counts the base card rule in the page. Six cards render.
+		// cardRules counts the base card rule in the page. Two listings render
+		// six cards each.
 		cardRules int
 		bundled   bool
 	}{
 		{components.DeliverBundle, 0, true},
 		{components.DeliverHead, 1, false},
-		{components.DeliverInline, 6, false},
+		{components.DeliverInline, 12, false},
 	} {
 		t.Run(string(tt.mode), func(t *testing.T) {
 			ts := newServer(t, components.WithAssetDelivery(tt.mode))
@@ -253,7 +298,7 @@ func TestAssetDelivery(t *testing.T) {
 					t.Error("head does not hold exactly the used component styles")
 				}
 			}
-			fragment := request(t, http.MethodGet, ts.URL+"/landing?_block=arts&page=2", nil, enhanced).body
+			fragment := request(t, http.MethodGet, ts.URL+"/landing?page-arts=2&_block=arts", nil, enhanced).body
 			if tt.mode != components.DeliverInline && strings.Contains(fragment, "<style>") {
 				t.Error("fragment repeats styles the page already has")
 			}

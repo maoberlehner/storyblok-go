@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json/v2"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -15,8 +17,6 @@ const (
 	// Without JavaScript, every loaded page is rendered again from a single
 	// request, and the Content Delivery API returns at most 100 stories.
 	maxArticlePages = 100 / articlesPerPage
-	// PageParam holds the number of pages a "load more" listing shows.
-	PageParam = "page"
 )
 
 // BlockSectionArticles lists the articles in a folder, newest first, with a
@@ -36,6 +36,10 @@ type ArticleListing struct {
 	Page  int
 	Total int
 	Path  string
+	// Param holds the number of pages to show.
+	Param string
+	// State carries the other blocks' state through the form.
+	State []FormValue
 }
 
 func (l ArticleListing) Shown() int    { return min(l.Page*articlesPerPage, l.Total) }
@@ -47,12 +51,15 @@ type articleSummary struct {
 	Description string `json:"description"`
 }
 
+// StateParams names the parameter for the number of pages, which is unique
+// per listing, so several listings on a page keep their state.
+func (b *BlockSectionArticles) StateParams() []string { return []string{"page-" + b.UID} }
+
 func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Request) error {
+	param := b.StateParams()[0]
 	page := 1
-	if req.Targets(b) {
-		if n, err := strconv.Atoi(req.Query.Get(PageParam)); err == nil {
-			page = min(max(n, 1), maxArticlePages)
-		}
+	if n, err := strconv.Atoi(req.Query.Get(param)); err == nil {
+		page = min(max(n, 1), maxArticlePages)
 	}
 	opts := storyblok.StoriesOptions{
 		Version:         req.Version,
@@ -77,7 +84,15 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 		return fmt.Errorf("decoding articles: %w", err)
 	}
 
-	b.Listing = ArticleListing{Page: page, Total: list.Total, Path: req.Path}
+	b.Listing = ArticleListing{Page: page, Total: list.Total, Path: req.Path, Param: param}
+	state := req.StateQuery()
+	for _, key := range slices.Sorted(maps.Keys(state)) {
+		for _, value := range state[key] {
+			if key != param {
+				b.Listing.State = append(b.Listing.State, FormValue{Name: key, Value: value})
+			}
+		}
+	}
 	firstNew := (page-1)*articlesPerPage + 1
 	for i, story := range stories {
 		position := firstPosition + i

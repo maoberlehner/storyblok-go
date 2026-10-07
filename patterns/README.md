@@ -9,9 +9,13 @@ files; copy the approach, not necessarily the code.
 
 Both share these conventions:
 
-- Forms address a page section by its UID in the `_block` parameter
-  (`components.TargetParam`). The page URL handles the request, so the
-  no-JavaScript response is the same page in a new state.
+- Requests address a page section by its UID in the `_block` parameter
+  (`components.TargetParam`): forms as a hidden field, htmx GET requests with
+  `hx-vals`. The page URL handles the request, so the no-JavaScript response is
+  the same page in a new state.
+- Page state lives in the query string, one parameter set per block
+  (`StateParams()`). Forms and redirects carry the state of the other blocks
+  over (`Request.StateQuery`).
 - htmx requests (`HX-Request: true`) to a section render only its fragment: the
   `<component>-fragment` template if the component defines one. Responses vary
   by `HX-Request`.

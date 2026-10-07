@@ -124,7 +124,7 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Reloading the page then shows the same state without JavaScript.
-		w.Header().Set("HX-Replace-Url", r.URL.RequestURI())
+		w.Header().Set("HX-Replace-Url", replaceURL(r, req, target))
 		s.writeFragment(w, r, http.StatusOK, target)
 		return
 	}
@@ -184,7 +184,8 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 	case req.Enhanced:
 		s.writeFragment(w, r, status, form)
 	case valid:
-		query := url.Values{components.SentParam: {uid}}
+		query := req.StateQuery()
+		query.Set(components.SentParam, uid)
 		http.Redirect(w, r, req.Path+"?"+query.Encode(), http.StatusSeeOther)
 	default:
 		page := components.NewPage(story)
@@ -302,6 +303,25 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 		status = http.StatusServiceUnavailable
 	}
 	http.Error(w, http.StatusText(status), status)
+}
+
+// replaceURL returns the browser URL after an enhanced request to target: the
+// current URL with target's state from the request. Other blocks' values in
+// the request may predate earlier enhanced requests, so they are ignored.
+func replaceURL(r *http.Request, req components.Request, target components.Block) string {
+	state := url.Values{}
+	if current, err := url.Parse(r.Header.Get("HX-Current-URL")); err == nil {
+		state = current.Query()
+		// A confirmation shown before should not reappear on reload.
+		state.Del(components.SentParam)
+	}
+	for _, param := range components.StateParams(target) {
+		state.Set(param, req.Query.Get(param))
+	}
+	if len(state) == 0 {
+		return req.Path
+	}
+	return req.Path + "?" + state.Encode()
 }
 
 // pageETag identifies a published page by the code that renders it, the
