@@ -111,6 +111,14 @@ func (c *Client) Story(ctx context.Context, slug string, opts StoryOptions) (jso
 	return inlineRelations(payload.Story, payload.Rels, opts.ResolveRelations)
 }
 
+// CacheVersion returns the cv published stories are currently fetched with.
+// Every story fetched before reflects at most this version. confirmed is false
+// when the next published request discovers the current cv first, because a
+// newer one may exist.
+func (c *Client) CacheVersion() (cv int64, confirmed bool) {
+	return c.versions.current()
+}
+
 func (c *Client) get(ctx context.Context, endpoint string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {

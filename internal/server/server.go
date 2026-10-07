@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,10 +24,17 @@ const (
 	homeSlug = "home"
 	// maxPreviewBodyBytes bounds the story JSON the Visual Editor sends.
 	maxPreviewBodyBytes = 10 << 20
+
+	// Browsers revalidate published pages on every view; the ETag keeps that
+	// cheap. Not all browsers limit stale-while-revalidate to subresources, so
+	// it is only granted to the shared cache in front (RFC 9213).
+	pageCacheControl    = "no-cache"
+	pageCDNCacheControl = "max-age=10, stale-while-revalidate=86400, stale-if-error=86400"
 )
 
 type ContentSource interface {
 	Story(ctx context.Context, slug string, opts storyblok.StoryOptions) (jsontext.Value, error)
+	CacheVersion() (cv int64, confirmed bool)
 }
 
 type Server struct {
@@ -36,10 +44,19 @@ type Server struct {
 	previewToken string
 	logger       *slog.Logger
 	now          func() time.Time
+	buildID      string
 }
 
-func New(content ContentSource, renderer *components.Renderer, assets fs.FS, previewToken string, logger *slog.Logger) *Server {
-	return &Server{
+type Option func(*Server)
+
+// WithBuildID enables ETags for published pages. The ID must change whenever
+// the same content renders differently, e.g. on every deploy.
+func WithBuildID(id string) Option {
+	return func(s *Server) { s.buildID = id }
+}
+
+func New(content ContentSource, renderer *components.Renderer, assets fs.FS, previewToken string, logger *slog.Logger, opts ...Option) *Server {
+	s := &Server{
 		content:      content,
 		renderer:     renderer,
 		assets:       assets,
@@ -47,6 +64,10 @@ func New(content ContentSource, renderer *components.Renderer, assets fs.FS, pre
 		logger:       logger,
 		now:          time.Now,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 func (s *Server) Handler() http.Handler {
@@ -67,6 +88,17 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	}
 	if preview {
 		opts.Version = storyblok.Draft
+	}
+
+	// Read before fetching: the story reflects at least this cv, so the ETag
+	// can only understate it, which costs a render but never serves stale
+	// content.
+	cv, confirmed := s.content.CacheVersion()
+	etag := s.pageETag(cv)
+	if !preview && confirmed && etag != "" && etagMatches(r.Header.Get("If-None-Match"), etag) {
+		setPageCaching(w.Header(), etag)
+		w.WriteHeader(http.StatusNotModified)
+		return
 	}
 
 	var story storyblok.Story[components.AnyBlock]
@@ -92,8 +124,38 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if preview {
 		w.Header().Set("Cache-Control", "no-store")
+	} else {
+		setPageCaching(w.Header(), etag)
 	}
 	_, _ = buf.WriteTo(w)
+}
+
+// pageETag identifies a published page by the code that renders it and the
+// content version it reflects.
+func (s *Server) pageETag(cv int64) string {
+	if s.buildID == "" || cv == 0 {
+		return ""
+	}
+	return `"` + s.buildID + "-" + strconv.FormatInt(cv, 10) + `"`
+}
+
+func setPageCaching(h http.Header, etag string) {
+	h.Set("Cache-Control", pageCacheControl)
+	h.Set("CDN-Cache-Control", pageCDNCacheControl)
+	if etag != "" {
+		h.Set("ETag", etag)
+	}
+}
+
+// etagMatches compares weakly, as If-None-Match requires; compressing proxies
+// weaken the ETags they pass on.
+func etagMatches(ifNoneMatch, etag string) bool {
+	for candidate := range strings.SplitSeq(ifNoneMatch, ",") {
+		if strings.TrimPrefix(strings.TrimSpace(candidate), "W/") == etag {
+			return true
+		}
+	}
+	return false
 }
 
 // previewStory renders a story sent by the Visual Editor bridge and returns

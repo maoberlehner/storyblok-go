@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -36,10 +38,18 @@ const (
 
 // fakeContent mirrors the Content Delivery API, which only includes editable
 // markers in draft content.
-type fakeContent map[string]string
+type fakeContent struct {
+	stories   map[string]string
+	cv        atomic.Int64
+	confirmed atomic.Bool
+	fetches   atomic.Int64
+}
 
-func (f fakeContent) Story(_ context.Context, slug string, opts storyblok.StoryOptions) (jsontext.Value, error) {
-	story, ok := f[slug]
+func (f *fakeContent) CacheVersion() (int64, bool) { return f.cv.Load(), f.confirmed.Load() }
+
+func (f *fakeContent) Story(_ context.Context, slug string, opts storyblok.StoryOptions) (jsontext.Value, error) {
+	f.fetches.Add(1)
+	story, ok := f.stories[slug]
 	if !ok {
 		return nil, storyblok.ErrNotFound
 	}
@@ -73,15 +83,21 @@ func removeEditable(node any) {
 
 func newServer(t *testing.T, opts ...components.RendererOption) *httptest.Server {
 	t.Helper()
+	ts, _ := newServerWithContent(t, nil, opts...)
+	return ts
+}
+
+func newServerWithContent(t *testing.T, serverOpts []server.Option, opts ...components.RendererOption) (*httptest.Server, *fakeContent) {
+	t.Helper()
 	renderer, err := components.NewRenderer(opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	content := fakeContent{"home": homeStory, "busy": rateLimited}
-	srv := server.New(content, renderer, fstest.MapFS{}, previewToken, slog.New(slog.DiscardHandler))
+	content := &fakeContent{stories: map[string]string{"home": homeStory, "busy": rateLimited}}
+	srv := server.New(content, renderer, fstest.MapFS{}, previewToken, slog.New(slog.DiscardHandler), serverOpts...)
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
-	return ts
+	return ts, content
 }
 
 func previewQuery() string {
@@ -140,6 +156,84 @@ func TestShowStory(t *testing.T) {
 	t.Run("responds 503 when the Storyblok client is rate limited", func(t *testing.T) {
 		if status, _ := do(t, http.MethodGet, ts.URL+"/busy", ""); status != http.StatusServiceUnavailable {
 			t.Errorf("status = %d, want 503", status)
+		}
+	})
+}
+
+func get(t *testing.T, url string, header http.Header) *http.Response {
+	t.Helper()
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	maps.Copy(req.Header, header)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	return res
+}
+
+func TestPageCaching(t *testing.T) {
+	ts, content := newServerWithContent(t, []server.Option{server.WithBuildID("b1")})
+	content.cv.Store(100)
+	content.confirmed.Store(true)
+
+	t.Run("lets browsers revalidate and the shared cache serve stale pages", func(t *testing.T) {
+		res := get(t, ts.URL+"/", nil)
+		if got := res.Header.Get("ETag"); got != `"b1-100"` {
+			t.Errorf("ETag = %q", got)
+		}
+		if got := res.Header.Get("Cache-Control"); got != "no-cache" {
+			t.Errorf("Cache-Control = %q", got)
+		}
+		if got := res.Header.Get("CDN-Cache-Control"); !strings.Contains(got, "stale-while-revalidate=") || !strings.Contains(got, "stale-if-error=") {
+			t.Errorf("CDN-Cache-Control = %q", got)
+		}
+	})
+
+	t.Run("answers a current ETag with 304 without fetching content", func(t *testing.T) {
+		before := content.fetches.Load()
+		for _, etag := range []string{`"b1-100"`, `W/"b1-100"`, `"other", W/"b1-100"`} {
+			res := get(t, ts.URL+"/", http.Header{"If-None-Match": {etag}})
+			if res.StatusCode != http.StatusNotModified || res.Header.Get("ETag") != `"b1-100"` {
+				t.Errorf("If-None-Match %s: status %d, ETag %q", etag, res.StatusCode, res.Header.Get("ETag"))
+			}
+		}
+		if fetched := content.fetches.Load() - before; fetched != 0 {
+			t.Errorf("fetched content %d times", fetched)
+		}
+	})
+
+	t.Run("renders the page for an ETag of an older content version", func(t *testing.T) {
+		content.cv.Store(101)
+		t.Cleanup(func() { content.cv.Store(100) })
+		res := get(t, ts.URL+"/", http.Header{"If-None-Match": {`"b1-100"`}})
+		if res.StatusCode != http.StatusOK || res.Header.Get("ETag") != `"b1-101"` {
+			t.Errorf("status %d, ETag %q", res.StatusCode, res.Header.Get("ETag"))
+		}
+	})
+
+	t.Run("renders the page while the content version is unconfirmed", func(t *testing.T) {
+		content.confirmed.Store(false)
+		t.Cleanup(func() { content.confirmed.Store(true) })
+		if res := get(t, ts.URL+"/", http.Header{"If-None-Match": {`"b1-100"`}}); res.StatusCode != http.StatusOK {
+			t.Errorf("status = %d, want 200", res.StatusCode)
+		}
+	})
+
+	t.Run("never caches previews", func(t *testing.T) {
+		res := get(t, ts.URL+"/"+previewQuery(), http.Header{"If-None-Match": {`"b1-100"`}})
+		if res.StatusCode != http.StatusOK || res.Header.Get("Cache-Control") != "no-store" || res.Header.Get("ETag") != "" || res.Header.Get("CDN-Cache-Control") != "" {
+			t.Errorf("status %d, headers %v", res.StatusCode, res.Header)
+		}
+	})
+
+	t.Run("does not mark missing pages cacheable", func(t *testing.T) {
+		res := get(t, ts.URL+"/missing", nil)
+		if res.StatusCode != http.StatusNotFound || res.Header.Get("CDN-Cache-Control") != "" {
+			t.Errorf("status %d, headers %v", res.StatusCode, res.Header)
 		}
 	})
 }

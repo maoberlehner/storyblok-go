@@ -13,7 +13,10 @@ package main
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -47,8 +50,14 @@ func run(logger *slog.Logger) error {
 	certFile, keyFile := os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE")
 
 	client := storyblok.NewClient(apiURL, previewToken)
+	buildID, err := executableHash()
+	if err != nil {
+		return err
+	}
 	var rendererOpts []components.RendererOption
 	if os.Getenv("DEV_TOOLBAR") == "1" {
+		// The toolbar changes page markup without changing the build.
+		buildID += "-dev"
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		spaceID, err := client.SpaceID(ctx)
 		cancel()
@@ -61,7 +70,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	srv := server.New(client, renderer, static.FS, previewToken, logger)
+	srv := server.New(client, renderer, static.FS, previewToken, logger, server.WithBuildID(buildID))
 	httpServer := &http.Server{
 		Addr:              addr,
 		Handler:           srv.Handler(),
@@ -90,4 +99,22 @@ func run(logger *slog.Logger) error {
 		defer cancel()
 		return httpServer.Shutdown(shutdownCtx)
 	}
+}
+
+// executableHash identifies the build, which embeds all templates and assets.
+func executableHash() (string, error) {
+	path, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)[:8]), nil
 }
