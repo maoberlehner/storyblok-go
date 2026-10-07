@@ -1,5 +1,7 @@
 package components
 
+import "strings"
+
 // Chrome is the site-wide header and footer around a page.
 type Chrome struct {
 	Settings *SiteSettings
@@ -31,7 +33,19 @@ func (c Chrome) NavLinks() []NavLink {
 			continue
 		}
 		href := link.Link.Href()
-		links = append(links, NavLink{Block: link, Href: href, Label: link.Label, Current: href == c.CurrentPath})
+		links = append(links, NavLink{Block: link, Href: href, Label: link.Label, Current: samePath(href, c.CurrentPath)})
 	}
 	return links
+}
+
+// samePath compares URL paths, ignoring a trailing slash, which resolves to the
+// same page.
+func samePath(a, b string) bool {
+	trim := func(p string) string {
+		if p != "/" {
+			return strings.TrimSuffix(p, "/")
+		}
+		return p
+	}
+	return trim(a) == trim(b)
 }

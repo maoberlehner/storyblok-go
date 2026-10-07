@@ -68,3 +68,10 @@ func TestManifestUsesTheSiteName(t *testing.T) {
 		t.Errorf("manifest: %s", body)
 	}
 }
+
+func TestCurrentNavigationLinkIgnoresTrailingSlash(t *testing.T) {
+	_, body := do(t, http.MethodGet, newServer(t).URL+"/landing/", "")
+	if !strings.Contains(body, `href="/landing" aria-current="page">Landing</a>`) {
+		t.Error("navigation link not marked current")
+	}
+}
