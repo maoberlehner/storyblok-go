@@ -52,7 +52,7 @@ func NewClient(baseURL, space, token string) (*Client, error) {
 		return nil, fmt.Errorf("space must be a positive numeric ID")
 	}
 	if token == "" {
-		return nil, fmt.Errorf("STORYBLOK_MANAGEMENT_TOKEN is required")
+		return nil, fmt.Errorf("STORYBLOK_TOKEN is required")
 	}
 	// A burst of one keeps the client below the limit in any one-second window.
 	pacer := apihttp.NewTier(apihttp.TierConfig{Base: requestRate, MaxBurst: 1})

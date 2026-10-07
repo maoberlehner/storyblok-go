@@ -41,7 +41,7 @@ func run(ctx context.Context, args []string, env func(string) string, stdout, st
 	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	space := flags.String("space", env("STORYBLOK_SPACE_ID"), "target space ID")
+	space := flags.String("space", env("STORYBLOK_SPACE"), "target space ID")
 	apiURL := flags.String("api-url", cmp.Or(env("STORYBLOK_MAPI_URL"), mapi.DefaultURL), "regional Management API base URL")
 	out := flags.String("out", "", "output file (validate: stdout; plan: schema-plan.json)")
 	planFile := flags.String("plan", "", "reviewed plan to apply")
@@ -69,7 +69,7 @@ func run(ctx context.Context, args []string, env func(string) string, stdout, st
 		fmt.Fprintf(stderr, "Validated %d CMS component schemas.\n", len(desired))
 		return writeJSON(*out, desired, stdout)
 	}
-	client, err := mapi.NewClient(*apiURL, *space, env("STORYBLOK_MANAGEMENT_TOKEN"))
+	client, err := mapi.NewClient(*apiURL, *space, env("STORYBLOK_TOKEN"))
 	if err != nil {
 		return err
 	}
