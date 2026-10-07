@@ -89,6 +89,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /assets/app.js", s.serveBundle("text/javascript; charset=utf-8", s.renderer.Script))
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", s.serveAsset(http.FileServerFS(s.assets))))
 	mux.HandleFunc("GET /healthz", s.serveHealthz)
+	mux.HandleFunc("GET /favicon.ico", s.serveIcon("favicon.ico"))
+	mux.HandleFunc("GET /apple-touch-icon.png", s.serveIcon("apple-touch-icon.png"))
+	mux.HandleFunc("GET /manifest.webmanifest", s.serveManifest)
 	mux.HandleFunc("POST /vitals", s.receiveVital)
 	mux.HandleFunc("GET /sitemap.xml", s.serveSitemap)
 	mux.HandleFunc("GET /robots.txt", s.serveRobots)
@@ -320,6 +323,9 @@ func (s *Server) serveAsset(files http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix("/assets/"+r.URL.Path, vendorAssetsPrefix) {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		}
+		if strings.HasPrefix(r.URL.Path, "icons/") {
+			w.Header().Set("Cache-Control", iconCacheControl)
 		}
 		files.ServeHTTP(w, r)
 	})

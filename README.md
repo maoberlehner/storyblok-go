@@ -29,6 +29,10 @@ as loaded "load more" pages. `/sitemap.xml` lists every published story with a
 page component, and `/robots.txt` points to it. Previews are marked `noindex`.
 `make run` and `make up` default `SITE_URL` to their local origins.
 
+The icons in `static/icons/` are a placeholder mark. Replace `icon.svg` and the
+PNG/ICO renderings together; `/favicon.ico`, `/apple-touch-icon.png`, and
+`/manifest.webmanifest` are served at the root.
+
 Component CSS is inlined in `<head>`, once per used component, and component
 scripts are bundled into one `app.js` (see
 [ADR 0001](adr/0001-inline-component-css-in-head.md)). htmx is self-hosted under

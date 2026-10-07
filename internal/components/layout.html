@@ -12,8 +12,10 @@
   {{- else if .Canonical}}
   <link rel="canonical" href="{{.Canonical}}">
   {{- end}}
-  {{- /* Keeps browsers from requesting /favicon.ico, which would be looked up as a story. */}}
-  <link rel="icon" href="data:,">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   {{- with .Description}}
   <meta name="description" content="{{.}}">
   {{- end}}
