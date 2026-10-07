@@ -100,4 +100,11 @@ Target WCAG 2.2 AA. For UI changes, check relevant pages at narrow/wide widths,
 keyboard operation, zoom, reduced motion, focus/error handling after htmx
 updates, and behavior with JavaScript disabled.
 
-Run `make test` for Go/rendering changes.
+Run `make test` for Go/rendering changes. Run `make fmt` before committing.
+
+## Git
+
+Plain imperative subjects (e.g. `Add newsletter section`); no Conventional
+Commits prefixes.
+
+No merge commits: rebase onto `main` and fast-forward merge only.
