@@ -49,7 +49,7 @@ func TestPlanIsReadOnlyAndShowsMigrationWarnings(t *testing.T) {
 	var out, log bytes.Buffer
 	path := filepath.Join(t.TempDir(), "plan.json")
 	err := run(t.Context(), []string{"plan", "--space", "123", "--api-url", ts.URL, "--out", path}, func(key string) string {
-		if key == "STORYBLOK_MANAGEMENT_TOKEN" {
+		if key == "STORYBLOK_TOKEN" {
 			return "token"
 		}
 		return ""

@@ -111,10 +111,9 @@ go run ./cmd/storyblok-schema validate --out schemas.json
 
 ## Schema sync
 
-Set `STORYBLOK_MANAGEMENT_TOKEN` to a personal Management API token in your
-shell. It is separate from the Content Delivery preview token. Set
-`STORYBLOK_SPACE_ID` or pass `--space`. For non-EU spaces set
-`STORYBLOK_MAPI_URL` or `--api-url` to the
+Set `STORYBLOK_TOKEN` to a personal Management API token in your shell. It is
+separate from the Content Delivery preview token. Set `STORYBLOK_SPACE` or pass
+`--space`. For non-EU spaces set `STORYBLOK_MAPI_URL` or `--api-url` to the
 [regional Management API base URL](https://www.storyblok.com/docs/api/management).
 
 ```sh
