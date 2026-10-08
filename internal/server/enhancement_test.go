@@ -77,7 +77,7 @@ func sectionHTML(t *testing.T, body, id string) string {
 func TestLoadMore(t *testing.T) {
 	ts := newServer(t)
 
-	t.Run("shows the first page with a form for the next one", func(t *testing.T) {
+	t.Run("shows the first page with a link to the next one", func(t *testing.T) {
 		res := request(t, http.MethodGet, ts.URL+"/landing", nil, nil)
 		section := sectionHTML(t, res.body, "b-arts")
 		if got := strings.Join(articleTitles(section), ","); got != "14,13,12,11,10,9" {
@@ -85,9 +85,10 @@ func TestLoadMore(t *testing.T) {
 		}
 		for _, want := range []string{
 			"Showing 6 of 14 articles",
-			`action="/landing"`,
-			`name="page-arts" value="2"`,
+			`href="/landing?page-arts=2"`,
+			`hx-get="/landing?page-arts=2"`,
 			`hx-vals='{"_block": "arts"}'`,
+			`hx-sync="this:drop"`,
 		} {
 			if !strings.Contains(section, want) {
 				t.Errorf("section does not contain %q", want)
@@ -107,8 +108,8 @@ func TestLoadMore(t *testing.T) {
 		if !strings.Contains(section, `id="b-arts-item-7"`) || !strings.Contains(section, `href="/articles/article-8" autofocus>`) {
 			t.Error("first new article is not anchored and focused")
 		}
-		if !strings.Contains(section, `name="page-arts" value="3"`) {
-			t.Error("missing form for the third page")
+		if !strings.Contains(section, `href="/landing?page-arts=3"`) {
+			t.Error("missing link to the third page")
 		}
 	})
 
@@ -122,8 +123,8 @@ func TestLoadMore(t *testing.T) {
 			t.Errorf("second listing has %d articles, want 14", got)
 		}
 		first := sectionHTML(t, res.body, "b-arts")
-		if !strings.Contains(first, `<input type="hidden" name="page-more" value="3">`) {
-			t.Error("first listing's form drops the second listing's state")
+		if !strings.Contains(first, `href="/landing?page-arts=3&amp;page-more=3"`) {
+			t.Error("first listing's link drops the second listing's state")
 		}
 	})
 
@@ -141,7 +142,7 @@ func TestLoadMore(t *testing.T) {
 	})
 
 	t.Run("updates only the requested listing in the browser URL", func(t *testing.T) {
-		// The form still carries page-more=1 from its first render.
+		// The link still carries page-more=1 from its first render.
 		header := map[string]string{"HX-Request": "true", "HX-Current-URL": ts.URL + "/landing?page-more=3&page-arts=1&sent=contact"}
 		res := request(t, http.MethodGet, ts.URL+"/landing?page-more=1&page-arts=2&_block=arts", nil, header)
 		if got := res.header.Get("HX-Replace-Url"); got != "/landing?page-arts=2&page-more=3" {
@@ -149,12 +150,12 @@ func TestLoadMore(t *testing.T) {
 		}
 	})
 
-	t.Run("removes the form after the last page", func(t *testing.T) {
+	t.Run("removes the link after the last page", func(t *testing.T) {
 		res := request(t, http.MethodGet, ts.URL+"/landing?page-arts=3&_block=arts", nil, enhanced)
 		if got := strings.Join(articleTitles(res.body), ","); got != "2,1" {
 			t.Errorf("articles = %s", got)
 		}
-		if !strings.Contains(res.body, "Showing 14 of 14 articles") || strings.Contains(res.body, "<form") {
+		if !strings.Contains(res.body, "Showing 14 of 14 articles") || strings.Contains(res.body, "hx-get") {
 			t.Errorf("unexpected more region:\n%s", res.body)
 		}
 	})

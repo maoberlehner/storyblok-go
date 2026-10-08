@@ -86,9 +86,11 @@ go in `.env` (see `.env.template`).
   unless a case-specific exception is documented with its reason and fallback.
 - Use native forms with real `action`, `method`, named controls, and server-side
   validation. Use GET for reads and POST for changes.
-- Single server actions, including “load more,” are forms with one submit button
-  (plus state fields as needed). Navigation uses links; local controls such as
-  popover toggles use native controls.
+- Links move between views that have their own URL and need no user input:
+  navigation, pagination, “load more,” and filter or tab choices. GET forms
+  collect input that composes a view, such as a search term or several filters.
+  Changes are POST forms with one submit button (plus state fields as needed).
+  Local controls such as popover toggles use native controls.
 - Keep component JS alongside its HTML; use global files for global behavior and
   import shared helpers from `utils/<name>.js`.
 - Preserve labels, keyboard access, focus, and understandable errors with and

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json/v2"
 	"fmt"
-	"maps"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -20,7 +18,7 @@ const (
 )
 
 // BlockSectionArticles lists the articles in a folder, newest first, with a
-// "load more" button.
+// "load more" link.
 type BlockSectionArticles struct {
 	storyblok.Blok
 	SectionStyle
@@ -36,16 +34,12 @@ type ArticleListing struct {
 	Cards []BaseCard
 	Page  int
 	Total int
-	Path  string
-	// Param holds the number of pages to show.
-	Param string
-	// State carries the other blocks' state through the form.
-	State []FormValue
+	// More shows one more page and keeps the other blocks' state; nil after
+	// the last page.
+	More *BaseButton
 }
 
-func (l ArticleListing) Shown() int    { return min(l.Page*articlesPerPage, l.Total) }
-func (l ArticleListing) HasMore() bool { return l.Shown() < l.Total }
-func (l ArticleListing) NextPage() int { return l.Page + 1 }
+func (l ArticleListing) Shown() int { return min(l.Page*articlesPerPage, l.Total) }
 
 type articleSummary struct {
 	Title       string `json:"title"`
@@ -90,13 +84,14 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 		return fmt.Errorf("decoding articles: %w", err)
 	}
 
-	b.Listing = ArticleListing{Page: page, Total: list.Total, Path: req.Path, Param: param}
-	state := req.StateQuery()
-	for _, key := range slices.Sorted(maps.Keys(state)) {
-		for _, value := range state[key] {
-			if key != param {
-				b.Listing.State = append(b.Listing.State, FormValue{Name: key, Value: value})
-			}
+	b.Listing = ArticleListing{Page: page, Total: list.Total}
+	if b.Listing.Shown() < b.Listing.Total {
+		next := req.StateQuery()
+		next.Set(param, strconv.Itoa(page+1))
+		b.Listing.More = &BaseButton{
+			Href:    req.Path + "?" + next.Encode(),
+			Label:   req.Locale.T("articles.load_more"),
+			Enhance: &ButtonEnhancement{Block: ShortID(b), Target: "#" + ElementID(b) + "-list", Swap: "beforeend"},
 		}
 	}
 	firstNew := (page-1)*articlesPerPage + 1

@@ -7,4 +7,19 @@ type BaseButton struct {
 	// Variant is "secondary" for a less prominent button; anything else is
 	// primary.
 	Variant string
+	// Enhance loads Href with htmx instead of navigating; nil keeps a plain
+	// link.
+	Enhance *ButtonEnhancement
+}
+
+// ButtonEnhancement swaps the response to an enhanced request for Href into
+// the page. The button shows a progress indicator during the request and
+// ignores clicks until it finishes.
+type ButtonEnhancement struct {
+	// Block is the short ID of the block that renders the response.
+	Block string
+	// Target is the CSS selector of the element to swap.
+	Target string
+	// Swap is the htmx swap style, such as "beforeend".
+	Swap string
 }

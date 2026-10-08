@@ -18,21 +18,14 @@
   {{- end}}
 {{- end}}
 
-{{/* Without JavaScript, the form reloads the page with one more page of
+{{/* Without JavaScript, the link reloads the page with one more page of
 articles. The first new one takes focus, which also scrolls it into view. A
 URL fragment would keep browsers from applying autofocus. */}}
 {{define "block-section-articles-more" -}}
 <div class="block-section-articles__more" id="{{id .}}-more">
   <p class="block-section-articles__count">{{t "articles.count" (number .Listing.Shown) (number .Listing.Total)}}</p>
-  {{- if .Listing.HasMore}}
-  <form method="get" action="{{.Listing.Path}}"
-    hx-get="{{.Listing.Path}}" hx-vals='{"_block": "{{shortID .}}"}' hx-target="#{{id .}}-list" hx-swap="beforeend" hx-disable="find button">
-    {{- range .Listing.State}}
-    <input type="hidden" name="{{.Name}}" value="{{.Value}}">
-    {{- end}}
-    <input type="hidden" name="{{.Listing.Param}}" value="{{.Listing.NextPage}}">
-    {{base "base-form-button" (t "articles.load_more")}}
-  </form>
+  {{- with .Listing.More}}
+  {{base "base-button" .}}
   {{- end}}
 </div>
 {{- end}}
