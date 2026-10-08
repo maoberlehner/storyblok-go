@@ -7,6 +7,7 @@ templ pageArticle(p *PageArticle) {
 			if p.Description != "" {
 				<p class="page-article__description">{ p.Description }</p>
 			}
+			@baseCopyLink()
 		</header>
 		@renderSections(p.Sections)
 	</article>

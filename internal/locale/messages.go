@@ -45,6 +45,10 @@ var english = map[string]string{
 	"contact.error.message_long":    "Message must be %s characters or fewer",
 	"contact.error.consent":         "Agree to the privacy policy to send your message",
 
+	"copy_link.label":  "Copy link",
+	"copy_link.copied": "Link copied",
+	"copy_link.failed": "Couldn't copy the link. Copy it from the address bar instead.",
+
 	"articles.load_more": "Load more articles",
 	"articles.count":     "Showing %s of %s articles",
 	"articles.empty":     "No articles yet.",
@@ -94,6 +98,10 @@ var german = map[string]string{
 	"contact.error.message_missing": "Geben Sie Ihre Nachricht ein",
 	"contact.error.message_long":    "Die Nachricht darf höchstens %s Zeichen lang sein",
 	"contact.error.consent":         "Stimmen Sie der Datenschutzerklärung zu, um Ihre Nachricht zu senden",
+
+	"copy_link.label":  "Link kopieren",
+	"copy_link.copied": "Link kopiert",
+	"copy_link.failed": "Der Link konnte nicht kopiert werden. Kopieren Sie ihn aus der Adressleiste.",
 
 	"articles.load_more": "Weitere Artikel laden",
 	"articles.count":     "%s von %s Artikeln",

@@ -50,17 +50,6 @@ The success message replaces the form, has `tabindex="-1"` and `autofocus`, and
 starts with a heading. The redirect after a submission without JavaScript has no
 URL fragment, because browsers skip autofocus on URLs with one.
 
-## Component JavaScript
-
-`base-form-field.js` (character count) shows the conventions for scripts that
-must survive repeated instances and htmx swaps. Scripts run once, from the
-bundle, in their own scope.
-
-- Delegate events to `document`, so swapped-in fields work without setup.
-- Render state that is needed before the first interaction on load and on
-  `htmx:after:swap`.
-- The page works without the script; it only adds the count.
-
 ## Spam protection and attribution
 
 Every `BaseForm` renders a honeypot input (`hp_leave_empty`, a name autofill

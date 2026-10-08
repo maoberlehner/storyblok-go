@@ -21,8 +21,9 @@ deliberate exceptions with reasons.
   protection is a honeypot and time trap; there is no rate limiting. Attribution
   across pages requires JavaScript (`sessionStorage`). Preview and dev tooling
   deliberately require JS because their purpose is live editing/debugging;
-  published content renders without them. Web vitals reporting requires
-  JavaScript by nature.
+  published content renders without them. Web vitals reporting and the articles'
+  copy-link control (hidden without the Clipboard API) require JavaScript by
+  nature.
 - **Legacy tooling CSS:** `static/dev-toolbar.css` still uses pixel values,
   off-scale spacing, and literal colors. Public component CSS now uses relative
   units and global color properties.

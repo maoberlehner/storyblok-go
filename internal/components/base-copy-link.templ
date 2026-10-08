@@ -1,0 +1,17 @@
+package components
+
+// baseCopyLink copies the page's canonical URL. It needs the Clipboard API,
+// so it renders hidden and its script reveals it.
+templ baseCopyLink() {
+	@styled("base-copy-link") {
+		<div class="base-copy-link" data-base-copy-link hidden>
+			<button
+				class="base-copy-link__button"
+				type="button"
+				data-copied={ t(ctx, "copy_link.copied") }
+				data-failed={ t(ctx, "copy_link.failed") }
+			>{ t(ctx, "copy_link.label") }</button>
+			<span class="base-copy-link__status" role="status"></span>
+		</div>
+	}
+}

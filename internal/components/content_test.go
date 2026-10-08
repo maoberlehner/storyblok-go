@@ -115,3 +115,38 @@ func TestArticleCountUsesTheLocalesNumberFormat(t *testing.T) {
 		t.Error("count not formatted for German")
 	}
 }
+
+// The copy-link control needs JavaScript, so pages without it never show it.
+func TestArticlesOfferToCopyTheirLinkOnlyWithJavaScript(t *testing.T) {
+	var story storyblok.Story[AnyBlock]
+	if err := json.Unmarshal([]byte(`{"name":"A","content":{"component":"page-article","title":"T","description":"D"}}`), &story); err != nil {
+		t.Fatal(err)
+	}
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, loc := range []locale.Locale{locale.English, locale.German} {
+		page := NewPage(story)
+		page.Locale = loc
+		var out bytes.Buffer
+		if err := r.Page(&out, page); err != nil {
+			t.Fatal(err)
+		}
+		_, control, ok := strings.Cut(out.String(), "<div class=\"base-copy-link\"")
+		if !ok {
+			t.Fatalf("%s: no copy-link control", loc.Code)
+		}
+		control, _, _ = strings.Cut(control, "</div>")
+		for _, want := range []string{
+			" hidden>",
+			`data-copied="` + loc.T("copy_link.copied") + `"`,
+			">" + loc.T("copy_link.label") + "</button>",
+			`role="status"`,
+		} {
+			if !strings.Contains(control, want) {
+				t.Errorf("%s: control lacks %q:\n%s", loc.Code, want, control)
+			}
+		}
+	}
+}

@@ -6,6 +6,8 @@ files; copy the approach, not necessarily the code.
 - [Load more](load-more.md): append the next page of a listing.
 - [Form](form.md): server-validated form with error summary, inline errors, and
   inline success.
+- [Component JavaScript](#component-javascript): scripts that survive repeated
+  instances and htmx swaps.
 
 Both share these conventions:
 
@@ -30,3 +32,15 @@ Both share these conventions:
   `Load` leaves the block unchanged and returns a view that embeds it and holds
   the request's data (`articlesView`, `contactView`); the view renders in the
   block's place. Form views implement `components.FormHandler`.
+
+## Component JavaScript
+
+`base-copy-link.js` (copy the page link, on articles) shows the conventions for
+component scripts. Scripts run once, from the bundle, in their own scope.
+
+- Delegate events to `document`, so swapped-in elements work without setup.
+- Render state that is needed before the first interaction on load and on
+  `htmx:after:swap`.
+- Controls that only work with JavaScript render with `hidden`; the script
+  reveals them where the browser supports what they need. Without the script the
+  page loses only that control.

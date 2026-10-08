@@ -96,6 +96,8 @@ go in `.env` (see `.env.template`).
   Local controls such as popover toggles use native controls.
 - Keep component JS alongside its HTML; use global files for global behavior and
   import shared helpers from `utils/<name>.js`.
+- Controls that only work with JavaScript (such as copying a link) render with
+  `hidden`, and their script reveals them, also after htmx swaps.
 - Preserve labels, keyboard access, focus, and understandable errors with and
   without enhancement. Initialization must tolerate repeated component instances
   and HTML replacement.
@@ -107,8 +109,10 @@ interactions; follow them for similar features and add new ones there:
 
 - [Load more](patterns/load-more.md): paginated listings and other "fetch the
   next part" actions.
-- [Form](patterns/form.md): server validation, error summary, inline errors,
-  inline success, and component JavaScript conventions.
+- [Form](patterns/form.md): server validation, error summary, inline errors, and
+  inline success.
+- [Component JavaScript](patterns/README.md#component-javascript): delegated
+  events, htmx swaps, and controls that need JavaScript.
 
 ## Asset delivery
 

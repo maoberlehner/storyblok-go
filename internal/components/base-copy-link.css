@@ -1,0 +1,26 @@
+.base-copy-link:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.base-copy-link__button {
+  min-block-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 0.125rem solid var(--color-accent);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.base-copy-link__button:hover {
+  background: color-mix(in srgb, var(--color-accent), transparent 90%);
+}
+
+.base-copy-link__status {
+  color: var(--color-muted);
+}
