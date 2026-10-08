@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -40,17 +41,36 @@ import (
 	"storyblok-go-website/static"
 )
 
-const shutdownTimeout = 10 * time.Second
+const (
+	// readHeaderTimeout and readTimeout bound how long a client may take to
+	// send a request, so slow clients cannot hold connections.
+	readHeaderTimeout = 5 * time.Second
+	readTimeout       = 30 * time.Second
+	// writeTimeout bounds handling and writing a response. It exceeds the
+	// Storyblok client's 10-second operation timeout, so a stalled API call
+	// ends in an error page instead of a dropped connection.
+	writeTimeout = 30 * time.Second
+	// idleTimeout closes keep-alive connections without requests.
+	idleTimeout = 2 * time.Minute
+	// shutdownTimeout bounds waiting for running requests on shutdown.
+	shutdownTimeout = 10 * time.Second
+)
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	if err := run(logger); err != nil {
-		logger.Error("server stopped", "err", err)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// A second signal ends the process without waiting for the shutdown.
+	context.AfterFunc(ctx, stop)
+	err := run(ctx, logger)
+	stop()
+	if err != nil {
+		logger.Error("exiting", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(logger *slog.Logger) error {
+// run serves the site until ctx ends, then shuts down.
+func run(ctx context.Context, logger *slog.Logger) error {
 	previewToken := os.Getenv("STORYBLOK_PREVIEW_TOKEN")
 	if previewToken == "" {
 		return errors.New("STORYBLOK_PREVIEW_TOKEN is required")
@@ -65,22 +85,23 @@ func run(logger *slog.Logger) error {
 	}
 	apiURL := cmp.Or(os.Getenv("STORYBLOK_API_URL"), storyblok.DefaultBaseURL)
 	addr := cmp.Or(os.Getenv("ADDR"), ":8080")
+	metricsAddr := cmp.Or(os.Getenv("METRICS_ADDR"), ":9090")
 	certFile, keyFile := os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE")
 
 	client := storyblok.NewClient(apiURL, previewToken)
 	buildID, err := executableHash()
-	// Canonical URLs change page markup without changing the build.
-	siteHash := sha256.Sum256([]byte(siteURL))
-	buildID += "-" + hex.EncodeToString(siteHash[:4])
 	if err != nil {
 		return err
 	}
+	// Canonical URLs change page markup without changing the build.
+	siteHash := sha256.Sum256([]byte(siteURL))
+	buildID += "-" + hex.EncodeToString(siteHash[:4])
 	var rendererOpts []components.RendererOption
 	if os.Getenv("DEV_TOOLBAR") == "1" {
 		// The toolbar changes page markup without changing the build.
 		buildID += "-dev"
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		spaceID, err := client.SpaceID(ctx)
+		spaceCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		spaceID, err := client.SpaceID(spaceCtx)
 		cancel()
 		if err != nil {
 			return err
@@ -94,45 +115,72 @@ func run(logger *slog.Logger) error {
 	m := metrics.New()
 	srv := server.New(m.Content(client), renderer, static.FS, server.LogInbox{Logger: logger}, previewToken, logger,
 		server.WithBuildID(buildID), server.WithSiteURL(siteURL), server.WithVitals(m.RecordVital), server.WithFormSecret([]byte(formSecret)))
-	httpServer := &http.Server{
-		Addr:              addr,
-		Handler:           m.Middleware(srv.Handler()),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
+	httpServer := newHTTPServer(m.Middleware(srv.Handler()))
+	metricsServer := newHTTPServer(m.Handler())
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	metricsLn, err := net.Listen("tcp", metricsAddr)
+	if err != nil {
+		ln.Close()
+		return err
+	}
+	scheme := "http"
+	if certFile != "" {
+		scheme = "https"
+	}
+	logger.Info("listening", "addr", ln.Addr().String(), "url", localURL(scheme, ln.Addr()), "metrics", metricsLn.Addr().String())
 
 	errs := make(chan error, 2)
-	metricsServer := &http.Server{
-		Addr:              cmp.Or(os.Getenv("METRICS_ADDR"), ":9090"),
-		Handler:           m.Handler(),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
 	go func() {
-		if err := metricsServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := metricsServer.Serve(metricsLn); !errors.Is(err, http.ErrServerClosed) {
 			errs <- err
 		}
 	}()
 	go func() {
+		var err error
 		if certFile != "" {
-			logger.Info("listening", "url", "https://localhost"+addr)
-			errs <- httpServer.ListenAndServeTLS(certFile, keyFile)
-			return
+			err = httpServer.ServeTLS(ln, certFile, keyFile)
+		} else {
+			err = httpServer.Serve(ln)
 		}
-		logger.Info("listening", "url", "http://localhost"+addr)
-		errs <- httpServer.ListenAndServe()
+		if !errors.Is(err, http.ErrServerClosed) {
+			errs <- err
+		}
 	}()
 
 	select {
 	case err := <-errs:
+		_ = metricsServer.Close()
+		_ = httpServer.Close()
 		return err
 	case <-ctx.Done():
+		logger.Info("shutting down")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 		_ = metricsServer.Shutdown(shutdownCtx)
 		return httpServer.Shutdown(shutdownCtx)
 	}
+}
+
+func newHTTPServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+	}
+}
+
+// localURL is the address to open in a browser on this machine.
+func localURL(scheme string, addr net.Addr) string {
+	if tcp, ok := addr.(*net.TCPAddr); ok {
+		return fmt.Sprintf("%s://localhost:%d", scheme, tcp.Port)
+	}
+	return scheme + "://" + addr.String()
 }
 
 // parseSiteURL validates the public origin: an absolute HTTP(S) URL without
