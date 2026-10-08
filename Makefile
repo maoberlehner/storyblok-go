@@ -1,4 +1,4 @@
-.PHONY: run up generate test fmt schema-validate seed certs skills
+.PHONY: run up generate test lint fmt schema-validate seed certs skills
 
 CERT := .certs/localhost.pem
 KEY := .certs/localhost-key.pem
@@ -17,6 +17,10 @@ generate:
 
 test: generate
 	go test ./...
+
+lint: generate
+	go vet ./...
+	go tool staticcheck ./...
 
 fmt:
 	go tool templ fmt internal

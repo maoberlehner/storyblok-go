@@ -196,6 +196,14 @@ immediately.
 make test
 ```
 
+## Lint
+
+```sh
+make lint
+```
+
+Runs `go vet` and [staticcheck](https://staticcheck.dev).
+
 ## Format
 
 ```sh

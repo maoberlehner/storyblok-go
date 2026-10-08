@@ -93,7 +93,7 @@ func TestRedirectDoesNotForwardToken(t *testing.T) {
 	received := false
 	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { received = true }))
 	defer target.Close()
-	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, target.URL, 302) }))
+	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, target.URL, http.StatusFound) }))
 	defer source.Close()
 	c, _ := NewClient(source.URL, "123", "token")
 	if _, err := c.List(t.Context()); err == nil {
