@@ -5,9 +5,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/sha256"
-	"crypto/sha512"
 	"embed"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -20,7 +18,6 @@ import (
 
 	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
-	"storyblok-go-website/static"
 )
 
 //go:embed *.css *.js
@@ -133,24 +130,13 @@ func NewPage(story storyblok.Story[AnyBlock]) Page {
 	return page
 }
 
-// htmxFile is the self-hosted htmx build in static.FS. The version in the
-// file name makes it cacheable forever.
-const htmxFile = "vendor/htmx-4.0.0.min.js"
+// HTMXURL is the self-hosted htmx build. The version in the file name makes
+// it cacheable forever.
+const HTMXURL = "/assets/vendor/htmx-4.0.0.min.js"
 
-const HTMXURL = "/assets/" + htmxFile
-
-// HTMXIntegrity is the subresource integrity hash of the embedded htmx build,
-// so browsers refuse a copy altered on the way, such as by a cache.
-var HTMXIntegrity = subresourceIntegrity(static.FS, htmxFile)
-
-func subresourceIntegrity(fsys fs.FS, name string) string {
-	b, err := fs.ReadFile(fsys, name)
-	if err != nil {
-		panic(err)
-	}
-	sum := sha512.Sum384(b)
-	return "sha384-" + base64.StdEncoding.EncodeToString(sum[:])
-}
+// HTMXIntegrity is the subresource integrity hash of the upstream htmx
+// build, so browsers refuse a modified copy.
+const HTMXIntegrity = "sha384-BvJpBiO8Kh31EqtJe5DRIeWrHWnCGkwytKs9NKFi86Hhw96dEqdEMzZDeK9iEGTc"
 
 // Alternate is the page in one language. OG is empty for x-default.
 type Alternate struct {
