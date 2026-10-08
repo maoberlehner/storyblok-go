@@ -13,7 +13,6 @@ import (
 	"path"
 	"slices"
 	"strings"
-	"sync"
 
 	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
@@ -175,8 +174,15 @@ type Renderer struct {
 	script     []byte
 	scriptHash string
 	devSpaceID int64
-	renders    sync.Pool
+	// idleRenders holds finished renders for reuse. Unlike a sync.Pool, it
+	// keeps them across garbage collections, which run about once per page
+	// under load, so each template clone escapes its templates only once.
+	idleRenders chan *render
 }
+
+// maxIdleRenders bounds the template clones kept for reuse; renders beyond it
+// clone the templates again.
+const maxIdleRenders = 64
 
 type RendererOption func(*Renderer)
 
@@ -194,19 +200,13 @@ func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 	for _, opt := range opts {
 		opt(r)
 	}
-	// Pooled renders replace the functions with ones bound to their state.
+	// Each render replaces the functions with ones bound to its state.
 	templates, err := template.New("").Funcs((&render{}).funcs()).ParseFS(templateFS, "*.html")
 	if err != nil {
 		return nil, err
 	}
 	r.templates = templates
-	r.renders.New = func() any {
-		rn := &render{Renderer: r}
-		// Each pooled clone binds the template functions to its own state.
-		// Reusing clones keeps html/template from escaping every request.
-		rn.templates = template.Must(r.templates.Clone()).Funcs(rn.funcs())
-		return rn
-	}
+	r.idleRenders = make(chan *render, maxIdleRenders)
 	for name := range registry {
 		if templates.Lookup(name) == nil {
 			return nil, fmt.Errorf("%s: missing named HTML template", name)
@@ -265,7 +265,7 @@ func (r *Renderer) Script() []byte { return r.script }
 // Page renders a full HTML document.
 func (r *Renderer) Page(w io.Writer, page Page) error {
 	rn := r.newRender(page.Locale)
-	defer r.renders.Put(rn)
+	defer r.releaseRender(rn)
 	body, err := rn.block(page.Content)
 	if err != nil {
 		return err
@@ -300,7 +300,7 @@ func (r *Renderer) Page(w io.Writer, page Page) error {
 // Block renders a single block, such as a story's content type.
 func (r *Renderer) Block(w io.Writer, block Block, loc locale.Locale) error {
 	rn := r.newRender(loc)
-	defer r.renders.Put(rn)
+	defer r.releaseRender(rn)
 	html, err := rn.block(block)
 	if err != nil {
 		return err
@@ -319,7 +319,7 @@ func (r *Renderer) Fragment(w io.Writer, block Block, loc locale.Locale) error {
 		return r.Block(w, block, loc)
 	}
 	rn := r.newRender(loc)
-	defer r.renders.Put(rn)
+	defer r.releaseRender(rn)
 	html, err := rn.component(name, block.Meta().Component, block)
 	if err != nil {
 		return err
@@ -344,7 +344,15 @@ type render struct {
 }
 
 func (r *Renderer) newRender(loc locale.Locale) *render {
-	rn := r.renders.Get().(*render)
+	var rn *render
+	select {
+	case rn = <-r.idleRenders:
+	default:
+		rn = &render{Renderer: r}
+		// Each clone binds the template functions to its own render. Reusing
+		// clones keeps html/template from escaping templates every request.
+		rn.templates = template.Must(r.templates.Clone()).Funcs(rn.funcs())
+	}
 	rn.locale = loc
 	if rn.locale.Code == "" {
 		rn.locale = locale.Default
@@ -353,6 +361,13 @@ func (r *Renderer) newRender(loc locale.Locale) *render {
 	rn.firstSection = false
 	rn.chrome = false
 	return rn
+}
+
+func (r *Renderer) releaseRender(rn *render) {
+	select {
+	case r.idleRenders <- rn:
+	default:
+	}
 }
 
 func (rn *render) funcs() template.FuncMap {
