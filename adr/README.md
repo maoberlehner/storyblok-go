@@ -18,3 +18,5 @@ otherwise have to repeat. Use the format of the existing records.
   that tolerates tag managers
 - [0005](0005-languages.md): Field-level and folder-level translations side by
   side
+- [0006](0006-storyblok-responses-in-memory.md): Keep published Storyblok
+  responses in memory, keyed by `cv`

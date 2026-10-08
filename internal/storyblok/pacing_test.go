@@ -48,6 +48,8 @@ func newFakeCDNClient(cacheHeader string) (*Client, *fakeCDN) {
 	cdn := &fakeCDN{cacheHeader: cacheHeader, status: map[string]int{}}
 	client := NewClient(DefaultBaseURL, "secret")
 	client.api.HTTPClient.Transport = roundTripFunc(cdn.roundTrip)
+	// Pacing applies to the requests that reach the API.
+	client.responses = nil
 	return client, cdn
 }
 

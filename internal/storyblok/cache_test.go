@@ -68,6 +68,8 @@ func TestClientRefreshesCacheVersion(t *testing.T) {
 func TestClientDiscoversCacheVersionOnceForConcurrentRequests(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		client := NewClient(DefaultBaseURL, "secret")
+		// Requests during the refresh must reach the API to show their cv.
+		client.responses = nil
 		var withoutCV, withStaleCV atomic.Int32
 		cv := atomic.Int64{}
 		cv.Store(100)

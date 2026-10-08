@@ -152,6 +152,12 @@ omits `cv` to discover the current one while concurrent requests keep using the
 known value. `space.version` is not used because it differs from `cv` for tokens
 with a minimum cache TTL. Drafts never send or change `cv`.
 
+Responses to published requests with a `cv` stay in memory, keyed by request
+URL, up to 64 MiB; the least recently used leave first. Content published later
+has a new `cv`, so entries never go stale and need no invalidation. Pages
+therefore wait for Storyblok only on the first request per `cv` and during `cv`
+discovery ([ADR 0006](adr/0006-storyblok-responses-in-memory.md)).
+
 Management API:
 
 - Requests are paced at 6/s, the limit of paid plans, with a burst of one. 429s

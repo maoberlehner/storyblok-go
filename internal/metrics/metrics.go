@@ -38,7 +38,7 @@ func New() *Metrics {
 			Buckets: prometheus.DefBuckets,
 		}, []string{"pattern"}),
 		storyblok: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "storyblok_requests_total", Help: "Content Delivery API calls by operation and outcome.",
+			Name: "storyblok_requests_total", Help: "Content requests by operation and outcome, including those served from memory.",
 		}, []string{"operation", "outcome"}),
 		vitals: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name: "web_vitals_milliseconds", Help: "Timing web vitals reported by browsers.",

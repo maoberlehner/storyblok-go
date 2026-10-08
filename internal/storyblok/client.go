@@ -35,6 +35,8 @@ type Client struct {
 	api      *apihttp.Client
 	pacer    *cdnPacer
 	versions cacheVersionTracker
+	// responses is nil when every request goes to the API.
+	responses *responseCache
 }
 
 func NewClient(baseURL, token string) *Client {
@@ -43,8 +45,9 @@ func NewClient(baseURL, token string) *Client {
 		baseURL: strings.TrimSuffix(baseURL, "/"),
 		token:   token,
 		// Storyblok redirects published requests without a current cv.
-		api:   apihttp.NewClient(apihttp.Config{Pacer: pacer, AttemptTimeout: attemptTimeout, FollowRedirects: true}),
-		pacer: pacer,
+		api:       apihttp.NewClient(apihttp.Config{Pacer: pacer, AttemptTimeout: attemptTimeout, FollowRedirects: true}),
+		pacer:     pacer,
+		responses: newResponseCache(responseCacheBytes),
 	}
 }
 
@@ -160,7 +163,16 @@ func (c *Client) fetch(ctx context.Context, path string, version Version, query 
 		defer func() { c.recordCacheVersion(reportedCV, discover) }()
 	}
 
-	res, err := c.get(ctx, c.baseURL+path+"?"+query.Encode())
+	endpoint := c.baseURL + path + "?" + query.Encode()
+	// Responses to requests with a cv never change.
+	cacheable := query.Has("cv")
+	if cacheable {
+		if cached, ok := c.responses.get(endpoint); ok {
+			return cached.header, decodeResponse(cached.body, out)
+		}
+	}
+
+	res, err := c.get(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -189,10 +201,20 @@ func (c *Client) fetch(ctx context.Context, path string, version Version, query 
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 	reportedCV = meta.CV
-	if err := json.Unmarshal(body, out); err != nil {
-		return nil, fmt.Errorf("decoding response: %w", err)
+	if err := decodeResponse(body, out); err != nil {
+		return nil, err
+	}
+	if cacheable {
+		c.responses.add(endpoint, cachedResponse{header: res.Header, body: body})
 	}
 	return res.Header, nil
+}
+
+func decodeResponse(body []byte, out any) error {
+	if err := json.Unmarshal(body, out); err != nil {
+		return fmt.Errorf("decoding response: %w", err)
+	}
+	return nil
 }
 
 // CacheVersion returns the cv published stories are currently fetched with.
