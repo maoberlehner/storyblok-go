@@ -33,26 +33,23 @@ type BaseFormField struct {
 	// Options lists select choices. An option with an empty value prompts
 	// for a choice.
 	Options []FormOption
-	// CharacterLimit shows the remaining characters while typing, if
-	// JavaScript is available. The server still validates the limit.
+	// CharacterLimit is stated below the hint. Only the server validates
+	// it, because maxlength cuts off input without explanation.
 	CharacterLimit int
-	CountMessages  CountMessages
-}
-
-// CountMessages are the remaining-characters texts, with %s for the count.
-type CountMessages struct {
-	RemainingOne, RemainingOther, OverOne, OverOther string
 }
 
 type FormOption struct {
 	Value, Label string
 }
 
-// DescribedBy lists the IDs of the hint and error.
+// DescribedBy lists the IDs of the hint, character limit, and error.
 func (f BaseFormField) DescribedBy() string {
 	var ids []string
 	if f.Hint != "" {
 		ids = append(ids, f.HintID())
+	}
+	if f.CharacterLimit > 0 {
+		ids = append(ids, f.LimitID())
 	}
 	if f.Error != "" {
 		ids = append(ids, f.ErrorID())
@@ -62,6 +59,7 @@ func (f BaseFormField) DescribedBy() string {
 
 func (f BaseFormField) HintID() string  { return f.ID + "-hint" }
 func (f BaseFormField) ErrorID() string { return f.ID + "-error" }
+func (f BaseFormField) LimitID() string { return f.ID + "-limit" }
 
 func (f BaseFormField) InputType() string { return cmp.Or(f.Type, "text") }
 

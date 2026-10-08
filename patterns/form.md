@@ -41,8 +41,9 @@ Follows the GOV.UK Design System guidance on
 - Submitted values are kept. Line breaks are normalized from CRLF, so length
   limits count like the browser does.
 - Don't use `maxlength`: browsers truncate silently. Validate the limit on the
-  server and show a character count instead (`CharacterLimit` on
-  `BaseFormField`).
+  server and state it below the hint (`CharacterLimit` on `BaseFormField`). A
+  live count isn't worth a script for generous limits: a message over the limit
+  fails with an error and keeps its text.
 
 ## Success
 

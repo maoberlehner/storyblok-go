@@ -71,22 +71,3 @@ textarea.base-form-field__control {
   margin: 0;
   accent-color: var(--color-accent);
 }
-
-.base-form-field__count {
-  margin: 0;
-  color: var(--color-muted);
-}
-
-.base-form-field__count--over {
-  color: var(--color-error);
-  font-weight: 600;
-}
-
-.base-form-field__announcer {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}

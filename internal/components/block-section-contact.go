@@ -181,12 +181,7 @@ func (b *contactView) BaseForm() BaseForm {
 			{ID: id + "-topic", Name: "topic", Label: loc.T("contact.topic"), Value: v.Topic, Error: errs["topic"],
 				Control: ControlSelect, Options: contactTopics(loc), Required: true},
 			{ID: id + "-message", Name: "message", Label: loc.T("contact.message"), Value: v.Message, Error: errs["message"],
-				Hint:    loc.T("contact.message_hint", loc.FormatNumber(contactMessageLimit)),
-				Control: ControlTextarea, Required: true, CharacterLimit: contactMessageLimit,
-				CountMessages: CountMessages{
-					RemainingOne: loc.T("form.count_remaining_one"), RemainingOther: loc.T("form.count_remaining_other"),
-					OverOne: loc.T("form.count_over_one"), OverOther: loc.T("form.count_over_other"),
-				}},
+				Control: ControlTextarea, Required: true, CharacterLimit: contactMessageLimit},
 			{ID: id + "-consent", Name: "consent", Label: loc.T("contact.consent"),
 				Value: consent, Error: errs["consent"], Control: ControlCheckbox, Required: true},
 		},

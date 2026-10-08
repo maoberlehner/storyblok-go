@@ -293,6 +293,33 @@ func TestMessageLengthCountsLineBreaksOnce(t *testing.T) {
 	}
 }
 
+var messageTextarea = regexp.MustCompile(`<textarea[^>]*id="b-contact-message"[^>]*>`)
+
+// The limit is stated up front because only the server enforces it.
+func TestMessageLimitIsStatedWithoutJavaScript(t *testing.T) {
+	ts := newServer(t)
+	for path, want := range map[string]string{
+		"/landing":    "You can enter up to 2,000 characters.",
+		"/de/landing": "Sie können bis zu 2.000 Zeichen eingeben.",
+	} {
+		body := request(t, http.MethodGet, ts.URL+path, nil, nil).body
+		textarea := messageTextarea.FindString(body)
+		if !strings.Contains(textarea, `aria-describedby="b-contact-message-limit"`) || strings.Contains(textarea, "maxlength") {
+			t.Errorf("%s: textarea %s", path, textarea)
+		}
+		if !strings.Contains(body, `id="b-contact-message-limit">`+want+"</p>") {
+			t.Errorf("%s: limit not stated as %q", path, want)
+		}
+	}
+
+	form := validContact()
+	form.Set("message", strings.Repeat("a", 2001))
+	textarea := messageTextarea.FindString(request(t, http.MethodPost, ts.URL+"/landing", form, nil).body)
+	if !strings.Contains(textarea, `aria-invalid="true"`) || !strings.Contains(textarea, "b-contact-message-limit b-contact-message-error") {
+		t.Errorf("message over the limit: %s", textarea)
+	}
+}
+
 func TestComponentAssets(t *testing.T) {
 	ts := newServer(t)
 	body := request(t, http.MethodGet, ts.URL+"/landing", nil, nil).body
@@ -318,7 +345,7 @@ func TestComponentAssets(t *testing.T) {
 		}
 		version, _, _ := strings.Cut(src, `"`)
 		js := request(t, http.MethodGet, ts.URL+"/assets/app.js?v="+version, nil, nil)
-		if !strings.Contains(js.body, "data-character-limit") || !strings.Contains(js.header.Get("Cache-Control"), "immutable") {
+		if !strings.Contains(js.body, "data-base-copy-link") || !strings.Contains(js.header.Get("Cache-Control"), "immutable") {
 			t.Errorf("script bundle: %d %v", js.status, js.header)
 		}
 	})
