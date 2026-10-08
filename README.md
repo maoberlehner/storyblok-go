@@ -45,9 +45,10 @@ PNG/ICO renderings together; `/favicon.ico`, `/apple-touch-icon.png`, and
 
 Component CSS is inlined in `<head>`, once per used component, and component
 scripts are bundled into one `app.js` (see
-[ADR 0001](adr/0001-inline-component-css-in-head.md)). htmx is self-hosted under
-`/assets/vendor/` as the unmodified upstream build, loaded with its pinned
-Subresource Integrity hash; `make fmt` leaves `static/vendor/` alone.
+[ADR 0001](adr/0001-inline-component-css-in-head.md)). htmx and the preview's
+idiomorph are self-hosted under `/assets/vendor/` as unmodified upstream builds,
+loaded with pinned Subresource Integrity hashes; `make fmt` leaves
+`static/vendor/` alone.
 
 ## Demo content
 

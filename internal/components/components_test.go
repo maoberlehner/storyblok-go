@@ -132,7 +132,7 @@ func TestPagesPreloadTheFontAndPreconnectToImages(t *testing.T) {
 	}
 }
 
-func TestPagesLoadHTMXOnlyIfItMatchesTheServedFile(t *testing.T) {
+func TestPagesLoadVendoredScriptsOnlyIfTheyMatchTheServedFiles(t *testing.T) {
 	var story storyblok.Story[AnyBlock]
 	if err := json.Unmarshal([]byte(`{"name":"P","content":{"component":"page-landing-page","title":"T","description":"D"}}`), &story); err != nil {
 		t.Fatal(err)
@@ -141,20 +141,24 @@ func TestPagesLoadHTMXOnlyIfItMatchesTheServedFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	page := NewPage(story)
+	page.Preview = true
 	var out bytes.Buffer
-	if err := r.Page(&out, NewPage(story)); err != nil {
+	if err := r.Page(&out, page); err != nil {
 		t.Fatal(err)
 	}
-	m := regexp.MustCompile(`<script src="/assets/([^"]*htmx[^"]*)" integrity="sha384-([^"]+)"`).FindStringSubmatch(out.String())
-	if m == nil {
-		t.Fatal("htmx script without integrity")
+	scripts := regexp.MustCompile(`<script src="/assets/([^"]*(?:htmx|idiomorph)[^"]*)" integrity="sha384-([^"]+)"`).FindAllStringSubmatch(out.String(), -1)
+	if len(scripts) != 2 {
+		t.Fatalf("want htmx and idiomorph with integrity, got %d scripts", len(scripts))
 	}
-	served, err := fs.ReadFile(static.FS, m[1])
-	if err != nil {
-		t.Fatal(err)
-	}
-	sum := sha512.Sum384(served)
-	if got := base64.StdEncoding.EncodeToString(sum[:]); got != m[2] {
-		t.Errorf("integrity sha384-%s does not match the served file (sha384-%s)", m[2], got)
+	for _, m := range scripts {
+		served, err := fs.ReadFile(static.FS, m[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha512.Sum384(served)
+		if got := base64.StdEncoding.EncodeToString(sum[:]); got != m[2] {
+			t.Errorf("%s: integrity sha384-%s does not match the served file (sha384-%s)", m[1], m[2], got)
+		}
 	}
 }

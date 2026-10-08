@@ -138,6 +138,14 @@ const HTMXURL = "/assets/vendor/htmx-4.0.0.min.js"
 // build, so browsers refuse a modified copy.
 const HTMXIntegrity = "sha384-BvJpBiO8Kh31EqtJe5DRIeWrHWnCGkwytKs9NKFi86Hhw96dEqdEMzZDeK9iEGTc"
 
+// IdiomorphURL is the self-hosted idiomorph build that the Visual Editor
+// preview uses to morph re-rendered content.
+const IdiomorphURL = "/assets/vendor/idiomorph-0.8.0.min.js"
+
+// IdiomorphIntegrity is the subresource integrity hash of the upstream
+// idiomorph build (npm idiomorph@0.8.0, dist/idiomorph.min.js).
+const IdiomorphIntegrity = "sha384-e8O/d5cD6uoo78UI/d99hf1dEsbvkgBZNIetwKEi79V9qexl0Bdc2wxEqLEaj58U"
+
 // Alternate is the page in one language. OG is empty for x-default.
 type Alternate struct {
 	Lang, Href, OG string

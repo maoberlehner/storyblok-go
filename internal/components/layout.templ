@@ -71,7 +71,7 @@ templ layout(p Page) {
 			}
 			if p.Preview {
 				<script src="https://app.storyblok.com/f/storyblok-v2-latest.js" defer></script>
-				<script src="https://unpkg.com/idiomorph@0.8.0/dist/idiomorph.min.js" defer></script>
+				<script src={ IdiomorphURL } integrity={ IdiomorphIntegrity } defer></script>
 				<script src="/assets/preview.js" data-resolve-relations={ strings.Join(ResolveRelations, ",") } defer></script>
 			}
 		</head>
