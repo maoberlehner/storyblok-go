@@ -2,13 +2,18 @@ package components
 
 import (
 	"bytes"
+	"crypto/sha512"
+	"encoding/base64"
 	"encoding/json/v2"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	"storyblok-go-website/internal/storyblok"
+	"storyblok-go-website/static"
 )
 
 func TestEveryCMSComponentHasCompanionFiles(t *testing.T) {
@@ -124,5 +129,32 @@ func TestPagesPreloadTheFontAndPreconnectToImages(t *testing.T) {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("missing %s", want)
 		}
+	}
+}
+
+func TestPagesLoadHTMXOnlyIfItMatchesTheServedFile(t *testing.T) {
+	var story storyblok.Story[AnyBlock]
+	if err := json.Unmarshal([]byte(`{"name":"P","content":{"component":"page-landing-page","title":"T","description":"D"}}`), &story); err != nil {
+		t.Fatal(err)
+	}
+	r, err := NewRenderer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := r.Page(&out, NewPage(story)); err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`<script src="/assets/([^"]*htmx[^"]*)" integrity="sha384-([^"]+)"`).FindStringSubmatch(out.String())
+	if m == nil {
+		t.Fatal("htmx script without integrity")
+	}
+	served, err := fs.ReadFile(static.FS, m[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha512.Sum384(served)
+	if got := base64.StdEncoding.EncodeToString(sum[:]); got != m[2] {
+		t.Errorf("integrity sha384-%s does not match the served file (sha384-%s)", m[2], got)
 	}
 }

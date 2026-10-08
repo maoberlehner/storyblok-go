@@ -56,7 +56,7 @@ templ layout(p Page) {
 			<link rel="manifest" href="/manifest.webmanifest"/>
 			@templ.Raw("<style>" + p.css + "</style>")
 			<meta name="htmx-config" content={ `{"includeIndicatorCSS": false}` }/>
-			<script src={ HTMXURL } defer></script>
+			<script src={ HTMXURL } integrity={ HTMXIntegrity } defer></script>
 			if p.scriptURL != "" {
 				<script src={ p.scriptURL } defer></script>
 			}
