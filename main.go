@@ -14,6 +14,8 @@
 //	                         value (required)
 //	METRICS_ADDR             listen address for Prometheus metrics, never
 //	                         proxied (default: :9090)
+//	LOG_LEVEL                debug, info (default), warn, or error; form
+//	                         submissions and web vitals log at info
 package main
 
 import (
@@ -57,11 +59,16 @@ const (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	level, err := parseLogLevel(os.Getenv("LOG_LEVEL"))
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	if err != nil {
+		logger.Error("invalid configuration; exiting", "err", err)
+		os.Exit(1)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	// A second signal ends the process without waiting for the shutdown.
 	context.AfterFunc(ctx, stop)
-	err := run(ctx, logger)
+	err = run(ctx, logger)
 	stop()
 	if err != nil {
 		logger.Error("exiting", "err", err)
@@ -181,6 +188,18 @@ func localURL(scheme string, addr net.Addr) string {
 		return fmt.Sprintf("%s://localhost:%d", scheme, tcp.Port)
 	}
 	return scheme + "://" + addr.String()
+}
+
+// parseLogLevel reads a level name; empty means info.
+func parseLogLevel(raw string) (slog.Level, error) {
+	var level slog.Level
+	if raw == "" {
+		return level, nil
+	}
+	if err := level.UnmarshalText([]byte(raw)); err != nil {
+		return slog.LevelInfo, fmt.Errorf("LOG_LEVEL must be debug, info, warn, or error, got %q", raw)
+	}
+	return level, nil
 }
 
 // parseSiteURL validates the public origin: an absolute HTTP(S) URL without

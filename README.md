@@ -186,6 +186,9 @@ immediately.
 - Prometheus metrics are served on `METRICS_ADDR` (default `:9090`), a separate
   listener the proxy never exposes: responses by route pattern and status,
   response times, Content Delivery API calls by outcome, and web vitals.
+- `LOG_LEVEL` is `debug`, `info` (default), `warn`, or `error`. `info` logs
+  every reported web vital and form submission; submissions are only logged
+  (`server.LogInbox`), so higher levels drop them.
 - Published pages report LCP, INP, CLS, FCP, and TTFB with the self-hosted
   [web-vitals](https://github.com/GoogleChrome/web-vitals) library to
   `POST /vitals`. This needs JavaScript by nature; previews don't report.

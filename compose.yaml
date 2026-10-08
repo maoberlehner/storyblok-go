@@ -8,6 +8,7 @@ services:
       STORYBLOK_API_URL: ${STORYBLOK_API_URL:-}
       SITE_URL: ${SITE_URL:-https://localhost:8443}
       FORM_SECRET: ${FORM_SECRET:-dev-form-secret}
+      LOG_LEVEL: ${LOG_LEVEL:-}
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]

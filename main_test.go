@@ -76,6 +76,17 @@ func setRunEnv(t *testing.T, overrides map[string]string) {
 	}
 }
 
+func TestParseLogLevel(t *testing.T) {
+	for raw, want := range map[string]slog.Level{"": slog.LevelInfo, "warn": slog.LevelWarn, "DEBUG": slog.LevelDebug, "error": slog.LevelError} {
+		if got, err := parseLogLevel(raw); err != nil || got != want {
+			t.Errorf("parseLogLevel(%q) = %v, %v; want %v", raw, got, err, want)
+		}
+	}
+	if _, err := parseLogLevel("loud"); err == nil {
+		t.Error("accepted LOG_LEVEL=loud")
+	}
+}
+
 func TestRunReportsATakenAddressWithoutListening(t *testing.T) {
 	taken, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
