@@ -78,6 +78,17 @@ func TestEnhancedRequestsGetPlainErrors(t *testing.T) {
 	}
 }
 
+// htmx swaps a history restore response into the body, so it must be a page.
+func TestHistoryRestoresGetErrorPages(t *testing.T) {
+	ts := newServer(t)
+	for path, status := range map[string]int{"/busy": http.StatusServiceUnavailable, "/missing": http.StatusNotFound} {
+		res := request(t, http.MethodGet, ts.URL+path, nil, historyRestore)
+		if res.status != status || !strings.Contains(res.body, "<html") {
+			t.Errorf("%s: status %d, body %q", path, res.status, res.body)
+		}
+	}
+}
+
 func TestSitemapSkipsReservedStories(t *testing.T) {
 	ts, content := newServerWithContent(t, &recordingInbox{}, nil)
 	content.stories["error-404"] = notFoundStory

@@ -59,8 +59,8 @@ forms on the page, such as the contact form, also carry the query over
   link shows its progress indicator.
 - The first new item has `autofocus`, so focus moves to it after the swap.
   Screen readers announce the link, and keyboard users continue from there.
-- Responses vary by `HX-Request`; the proxy includes it in its cache key, so
-  fragments are cached like pages.
+- Responses vary by `HX-Request` and `HX-History-Restore-Request`; the proxy
+  includes both in its cache key, so fragments are cached like pages.
 
 ## Search engines
 

@@ -14,7 +14,14 @@ const notFoundSlug = "error-404"
 // plainErrors reports whether the client expects a fragment or data, not a
 // document: htmx requests and Visual Editor preview renders.
 func plainErrors(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true" || r.Method == http.MethodPut
+	return isHTMX(r) || r.Method == http.MethodPut
+}
+
+// isHTMX reports whether r is an htmx request for a fragment. htmx restores
+// history entries by swapping the response into the body, so those requests
+// get whole pages.
+func isHTMX(r *http.Request) bool {
+	return r.Header.Get("HX-Request") == "true" && r.Header.Get("HX-History-Restore-Request") != "true"
 }
 
 // errorPage is a built-in page for errors, in loc.

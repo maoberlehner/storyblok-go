@@ -53,6 +53,10 @@ func request(t *testing.T, method, target string, form url.Values, header map[st
 
 var enhanced = map[string]string{"HX-Request": "true"}
 
+// historyRestore is what htmx sends when going back to an entry it replaced
+// or pushed: it swaps the response into the body.
+var historyRestore = map[string]string{"HX-Request": "true", "HX-History-Restore-Request": "true"}
+
 var articleTitle = regexp.MustCompile(`>Article (\d+)</a>`)
 
 func articleTitles(body string) []string {
@@ -147,6 +151,19 @@ func TestLoadMore(t *testing.T) {
 		res := request(t, http.MethodGet, ts.URL+"/landing?page-more=1&page-arts=2&_block=arts", nil, header)
 		if got := res.header.Get("HX-Replace-Url"); got != "/landing?page-arts=2&page-more=3" {
 			t.Errorf("HX-Replace-Url = %q", got)
+		}
+	})
+
+	t.Run("restores history entries with the whole page", func(t *testing.T) {
+		res := request(t, http.MethodGet, ts.URL+"/landing?page-arts=2&_block=arts", nil, historyRestore)
+		if !strings.Contains(res.body, "<html") || len(articleTitles(sectionHTML(t, res.body, "b-arts"))) != 12 {
+			t.Errorf("body is not the page with both pages loaded:\n%s", res.body)
+		}
+		if res.header.Get("HX-Replace-Url") != "" {
+			t.Error("restore replaces the URL")
+		}
+		if !strings.Contains(strings.Join(res.header.Values("Vary"), ","), "HX-History-Restore-Request") {
+			t.Error("response does not vary by HX-History-Restore-Request")
 		}
 	})
 

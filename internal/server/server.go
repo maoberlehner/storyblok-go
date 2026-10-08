@@ -135,6 +135,7 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 	loc, _ := requestLocale(r, preview)
 	req := s.componentRequest(r, version, loc)
 	w.Header().Add("Vary", "HX-Request")
+	w.Header().Add("Vary", "HX-History-Restore-Request")
 
 	// Read before fetching: the story reflects at least this cv, so the ETag
 	// can only understate it, which costs a render but never serves stale
@@ -359,7 +360,7 @@ func (s *Server) componentRequest(r *http.Request, version storyblok.Version, lo
 		Path:      r.URL.Path,
 		Query:     r.URL.Query(),
 		Version:   version,
-		Enhanced:  r.Header.Get("HX-Request") == "true",
+		Enhanced:  isHTMX(r),
 		FormToken: s.guard.Token(),
 		Locale:    loc,
 	}
