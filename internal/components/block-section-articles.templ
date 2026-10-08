@@ -1,0 +1,44 @@
+package components
+
+templ blockSectionArticles(b *articlesView) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) } id={ ElementID(b) } aria-labelledby={ ElementID(b) + "-heading" }>
+		<h2 class="block-section-articles__heading" id={ ElementID(b) + "-heading" }>{ b.Heading }</h2>
+		if len(b.Listing.Cards) > 0 {
+			<ul class="block-section-articles__list" id={ ElementID(b) + "-list" }>
+				@blockSectionArticlesItems(b)
+			</ul>
+			@blockSectionArticlesMore(b)
+		} else {
+			<p>{ t(ctx, "articles.empty") }</p>
+		}
+	</section>
+}
+
+templ blockSectionArticlesItems(b *articlesView) {
+	for _, card := range b.Listing.Cards {
+		<li class="block-section-articles__item">
+			@baseCard(card)
+		</li>
+	}
+}
+
+// Without JavaScript, the link reloads the page with one more page of
+// articles. The first new one takes focus, which also scrolls it into view. A
+// URL fragment would keep browsers from applying autofocus.
+templ blockSectionArticlesMore(b *articlesView) {
+	<div class="block-section-articles__more" id={ ElementID(b) + "-more" }>
+		<p class="block-section-articles__count">{ t(ctx, "articles.count", number(ctx, b.Listing.Shown()), number(ctx, b.Listing.Total)) }</p>
+		if b.Listing.More != nil {
+			@baseButton(*b.Listing.More)
+		}
+	</div>
+}
+
+// Enhanced requests append the new items to the list and replace the button
+// region, which disappears after the last page.
+templ blockSectionArticlesFragment(b *articlesView) {
+	@blockSectionArticlesItems(b)
+	<hx-partial hx-target={ "#" + ElementID(b) + "-more" } hx-swap="outerHTML">
+		@blockSectionArticlesMore(b)
+	</hx-partial>
+}

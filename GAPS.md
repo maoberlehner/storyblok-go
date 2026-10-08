@@ -30,8 +30,9 @@ deliberate exceptions with reasons.
   statuses, so 422 form responses are sent uncompressed (about 4 KB fragment, 17
   KB page).
 - **CI:** There is no CI. Tests, offline schema validation, and schema
-  plan/apply run locally. A pipeline for pull request checks and reviewed schema
-  syncs per space is pending.
+  plan/apply run locally. A pipeline for pull request checks (including
+  `templ generate` without a diff) and reviewed schema syncs per space is
+  pending.
 - **Verification:** The browser support matrix and WCAG 2.2 AA target have not
   had a full audit. The patterns were checked in Chrome with and without
   JavaScript (keyboard, focus after swaps and reloads, reduced motion, 375 and

@@ -1,5 +1,0 @@
-{{define "base-button" -}}
-<a class="base-button{{if eq .Variant "secondary"}} base-button--secondary{{end}}" href="{{.Href}}"
-{{- with .Enhance}} hx-get="{{$.Href}}" hx-vals='{"_block": "{{.Block}}"}' hx-target="{{.Target}}" hx-swap="{{.Swap}}" hx-sync="this:drop"{{end}}>
-{{- .Label}}{{if .Enhance}}<span class="base-button__indicator" aria-hidden="true"></span>{{end}}</a>
-{{- end}}

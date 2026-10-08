@@ -14,5 +14,5 @@ func init() {
 			}},
 			{Name: "caption", Type: "text", Label: "Caption"},
 		},
-	})
+	}, blockMediaImage)
 }

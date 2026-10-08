@@ -11,5 +11,5 @@ func init() {
 			{Name: "variant", Type: "option", Label: "Variant", Default: "primary",
 				Options: []schema.Option{{Value: "primary", Label: "Primary"}, {Value: "secondary", Label: "Secondary"}}},
 		},
-	})
+	}, blockContentCta)
 }

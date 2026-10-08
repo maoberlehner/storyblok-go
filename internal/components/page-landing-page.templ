@@ -1,0 +1,8 @@
+package components
+
+templ pageLandingPage(p *PageLandingPage) {
+	<div { editable(ctx, p)... } class="page-landing-page">
+		<h1 class="page-landing-page__title">{ p.Title }</h1>
+		@renderSections(p.Sections)
+	</div>
+}

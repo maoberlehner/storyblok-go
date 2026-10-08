@@ -1,0 +1,26 @@
+package components
+
+templ baseButton(b BaseButton) {
+	@styled("base-button") {
+		<a
+			class={ "base-button", templ.KV("base-button--secondary", b.Variant == "secondary") }
+			href={ b.Href }
+			if b.Enhance != nil {
+				hx-get={ b.Href }
+				hx-vals={ b.Enhance.vals() }
+				hx-target={ b.Enhance.Target }
+				hx-swap={ b.Enhance.Swap }
+				hx-sync="this:drop"
+			}
+		>
+			{ b.Label }
+			@baseButtonIndicator(b.Enhance != nil)
+		</a>
+	}
+}
+
+templ baseButtonIndicator(enhanced bool) {
+	if enhanced {
+		<span class="base-button__indicator" aria-hidden="true"></span>
+	}
+}

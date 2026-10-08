@@ -1,9 +1,0 @@
-{{define "page-article" -}}
-<article {{editable .}} class="page-article">
-  <header class="page-article__header">
-    <h1 class="page-article__title">{{.Title}}</h1>
-    {{with .Description}}<p class="page-article__description">{{.}}</p>{{end}}
-  </header>
-  {{renderSections .Sections}}
-</article>
-{{- end}}

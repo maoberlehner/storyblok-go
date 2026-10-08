@@ -1,0 +1,12 @@
+package components
+
+templ blockContentHeadline(h *BlockContentHeadline) {
+	switch h.Level {
+		case "h3":
+			<h3 { editable(ctx, h)... } class="block-content-headline">{ h.Text }</h3>
+		case "h4":
+			<h4 { editable(ctx, h)... } class="block-content-headline">{ h.Text }</h4>
+		default:
+			<h2 { editable(ctx, h)... } class="block-content-headline">{ h.Text }</h2>
+	}
+}

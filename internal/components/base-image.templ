@@ -1,0 +1,29 @@
+package components
+
+templ baseImage(i BaseImage) {
+	@styled("base-image") {
+		if i.IsSVG() {
+			<img class="base-image" src={ i.Asset.Filename } alt={ i.Asset.Alt } { i.attrs()... }/>
+		} else {
+			<picture class="base-image">
+				<source
+					type="image/avif"
+					srcset={ i.AVIFSrcSet() }
+					if i.Sizes != "" {
+						sizes={ i.Sizes }
+					}
+				/>
+				<img
+					class="base-image__img"
+					src={ i.Src() }
+					srcset={ i.SrcSet() }
+					if i.Sizes != "" {
+						sizes={ i.Sizes }
+					}
+					alt={ i.Asset.Alt }
+					{ i.attrs()... }
+				/>
+			</picture>
+		}
+	}
+}

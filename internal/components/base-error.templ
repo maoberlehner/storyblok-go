@@ -1,0 +1,9 @@
+package components
+
+templ baseError(e *ErrorContent) {
+	<div class="base-error">
+		<h1 class="base-error__heading">{ e.Heading }</h1>
+		<p class="base-error__text">{ e.Text }</p>
+		@baseButton(e.Button())
+	</div>
+}

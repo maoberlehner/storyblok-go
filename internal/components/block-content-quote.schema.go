@@ -10,5 +10,5 @@ func init() {
 			{Name: "name", Type: "text", Label: "Name", Required: true},
 			{Name: "role", Type: "text", Label: "Role and company"},
 		},
-	})
+	}, blockContentQuote)
 }

@@ -1,9 +1,0 @@
-{{define "block-content-quote" -}}
-<figure {{editable .}} class="block-content-quote">
-  <blockquote class="block-content-quote__quote"><p>{{.Quote}}</p></blockquote>
-  <figcaption class="block-content-quote__author">
-    <span class="block-content-quote__name">{{.Name}}</span>
-    {{- with .Role}}<span class="block-content-quote__role">{{.}}</span>{{end}}
-  </figcaption>
-</figure>
-{{- end}}

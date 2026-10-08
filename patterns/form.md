@@ -1,7 +1,7 @@
 # Form
 
 A server-validated POST form with an error summary, inline errors, and an inline
-success message. Reference: `block-section-contact.{go,html,css}` and the base
+success message. Reference: `block-section-contact.{go,templ,css}` and the base
 components `base-form`, `base-form-field`, `base-form-error-summary`, and
 `base-form-button` in `internal/components/`.
 
@@ -91,6 +91,6 @@ Without JavaScript, attribution carries the current URL's UTM parameters.
    normalize values, validate into a field → message map, deliver valid
    submissions to the `Inbox` with `AttributionFrom(values)`. Implement
    `Confirm` and `Reject` there as well.
-3. Render `{{base "base-form" .BaseForm}}` in the section's `-fragment`
-   template, or the success message once it is sent.
+3. Render `@baseForm(b.BaseForm())`, or the success message once it is sent, in
+   the templ component the view's `Fragment()` method returns.
 4. Test both paths (see `TestContactForm` in `internal/server`).

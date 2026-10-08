@@ -9,5 +9,5 @@ func init() {
 			{Name: "label", Type: "text", Label: "Label", Required: true},
 			{Name: "link", Type: "multilink", Label: "Link", Required: true},
 		},
-	})
+	}, siteLink)
 }

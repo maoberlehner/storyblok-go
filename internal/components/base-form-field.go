@@ -1,6 +1,11 @@
 package components
 
-import "strings"
+import (
+	"cmp"
+	"strings"
+
+	"github.com/a-h/templ"
+)
 
 // FormControl selects how a BaseFormField renders its control.
 type FormControl string
@@ -57,3 +62,18 @@ func (f BaseFormField) DescribedBy() string {
 
 func (f BaseFormField) HintID() string  { return f.ID + "-hint" }
 func (f BaseFormField) ErrorID() string { return f.ID + "-error" }
+
+func (f BaseFormField) InputType() string { return cmp.Or(f.Type, "text") }
+
+// controlAttrs are the validation and description attributes every control
+// carries.
+func (f BaseFormField) controlAttrs() templ.OrderedAttributes {
+	attrs := templ.OrderedAttributes{{Key: "required", Value: f.Required}}
+	if describedBy := f.DescribedBy(); describedBy != "" {
+		attrs = append(attrs, templ.KeyValue[string, any]{Key: "aria-describedby", Value: describedBy})
+	}
+	if f.Error != "" {
+		attrs = append(attrs, templ.KeyValue[string, any]{Key: "aria-invalid", Value: "true"})
+	}
+	return attrs
+}

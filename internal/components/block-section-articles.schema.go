@@ -10,5 +10,5 @@ func init() {
 			{Name: "folder", Type: "text", Label: "Folder", Description: "Full slug of the folder that holds the articles, e.g. articles.", Required: true},
 			sectionBackgroundField("default"),
 		},
-	})
+	}, blockSectionArticles)
 }

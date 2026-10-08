@@ -1,0 +1,11 @@
+package components
+
+// A submit button. Its form shows the progress indicator during enhanced
+// requests.
+templ baseFormButton(label string) {
+	@styled("base-form-button") {
+		<button class="base-form-button" type="submit">
+			{ label }<span class="base-form-button__indicator" aria-hidden="true"></span>
+		</button>
+	}
+}

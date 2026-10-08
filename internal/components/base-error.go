@@ -17,3 +17,5 @@ func NewErrorContent(heading, text, homeHref, homeLabel string) *ErrorContent {
 func (e *ErrorContent) Metadata() Metadata { return Metadata{Title: e.Heading} }
 
 func (e *ErrorContent) Button() BaseButton { return BaseButton{Href: e.HomeHref, Label: e.HomeLabel} }
+
+func init() { registerView("base-error", baseError) }

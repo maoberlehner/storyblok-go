@@ -1,0 +1,19 @@
+package components
+
+templ baseFormErrorSummary(s BaseFormErrorSummary) {
+	@styled("base-form-error-summary") {
+		<div class="base-form-error-summary" id={ s.ID } tabindex="-1" autofocus>
+			<h3 class="base-form-error-summary__title">{ t(ctx, "form.problem") }</h3>
+			if s.Message != "" {
+				<p class="base-form-error-summary__message">{ s.Message }</p>
+			}
+			if len(s.Fields) > 0 {
+				<ul class="base-form-error-summary__list">
+					for _, field := range s.Fields {
+						<li><a href={ "#" + field.ID }>{ field.Error }</a></li>
+					}
+				</ul>
+			}
+		</div>
+	}
+}

@@ -1,0 +1,14 @@
+package components
+
+templ siteLinkGroup(g *SiteLinkGroup) {
+	<div { editable(ctx, g)... } class="site-link-group">
+		<h2 class="site-link-group__heading">{ g.Heading }</h2>
+		<ul class="site-link-group__links">
+			for _, link := range g.Links {
+				<li>
+					@renderBlock(link)
+				</li>
+			}
+		</ul>
+	</div>
+}

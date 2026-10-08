@@ -1,9 +1,0 @@
-{{define "block-content-headline" -}}
-{{if eq .Level "h3" -}}
-<h3 {{editable .}} class="block-content-headline">{{.Text}}</h3>
-{{- else if eq .Level "h4" -}}
-<h4 {{editable .}} class="block-content-headline">{{.Text}}</h4>
-{{- else -}}
-<h2 {{editable .}} class="block-content-headline">{{.Text}}</h2>
-{{- end}}
-{{- end}}

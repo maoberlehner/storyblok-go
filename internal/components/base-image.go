@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/a-h/templ"
+
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -109,5 +111,18 @@ func (i BaseImage) dimensions() (width, height int) {
 	return w, w * i.Ratio.H / i.Ratio.W
 }
 
-func (i BaseImage) Width() int  { w, _ := i.dimensions(); return w }
-func (i BaseImage) Height() int { _, h := i.dimensions(); return h }
+// attrs reserve the image's space and set its loading priority.
+func (i BaseImage) attrs() templ.OrderedAttributes {
+	var attrs templ.OrderedAttributes
+	width, height := i.dimensions()
+	if width > 0 {
+		attrs = append(attrs, templ.KeyValue[string, any]{Key: "width", Value: width})
+	}
+	if height > 0 {
+		attrs = append(attrs, templ.KeyValue[string, any]{Key: "height", Value: height})
+	}
+	if i.Priority {
+		return append(attrs, templ.KeyValue[string, any]{Key: "loading", Value: "eager"}, templ.KeyValue[string, any]{Key: "fetchpriority", Value: "high"})
+	}
+	return append(attrs, templ.KeyValue[string, any]{Key: "loading", Value: "lazy"}, templ.KeyValue[string, any]{Key: "decoding", Value: "async"})
+}

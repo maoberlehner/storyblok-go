@@ -1,0 +1,13 @@
+package components
+
+templ blockSectionFaq(b *BlockSectionFaq) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) } aria-labelledby={ ElementID(b) + "-heading" }>
+		<h2 class="block-section-faq__heading" id={ ElementID(b) + "-heading" }>{ b.Heading }</h2>
+		<div class="block-section-faq__items">
+			@renderBlocks(b.Items)
+		</div>
+		if data := b.StructuredData(); data != nil {
+			@templ.JSONScript("", data).WithType("application/ld+json")
+		}
+	</section>
+}

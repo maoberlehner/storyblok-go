@@ -1,0 +1,10 @@
+package components
+
+templ blockContentFeature(f *BlockContentFeature) {
+	<div { editable(ctx, f)... } class="block-content-feature">
+		<h3 class="block-content-feature__title">{ f.Title }</h3>
+		if f.Text != "" {
+			<p class="block-content-feature__text">{ f.Text }</p>
+		}
+	</div>
+}

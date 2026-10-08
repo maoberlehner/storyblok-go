@@ -1,0 +1,14 @@
+package components
+
+// Missing or broken components are only surfaced to editors.
+templ unknownBlock(u *Unknown) {
+	if u.Editable != "" {
+		<div { editable(ctx, u)... } class="unknown-block">
+			if u.Err != nil {
+				Could not render <code>{ u.Component }</code>: { u.Err.Error() }
+			} else {
+				No component for <code>{ u.Component }</code>
+			}
+		</div>
+	}
+}

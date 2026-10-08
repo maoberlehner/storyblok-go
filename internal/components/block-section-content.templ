@@ -1,0 +1,20 @@
+package components
+
+templ blockSectionContent(b *BlockSectionContent) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) }>
+		<div
+			class={ "block-section-content__layout",
+				templ.KV("block-section-content__layout--media", len(b.Media) > 0),
+				templ.KV("block-section-content__layout--media-start", len(b.Media) > 0 && b.MediaFirst()) }
+		>
+			<div class="block-section-content__content">
+				@renderBlocks(b.Content)
+			</div>
+			if len(b.Media) > 0 {
+				<div class="block-section-content__media">
+					@renderBlocks(b.Media)
+				</div>
+			}
+		</div>
+	</section>
+}

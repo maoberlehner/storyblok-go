@@ -1,0 +1,15 @@
+package components
+
+templ blockSectionFeatures(b *BlockSectionFeatures) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) } aria-labelledby={ ElementID(b) + "-heading" }>
+		<header class="block-section-features__header">
+			<h2 class="block-section-features__heading" id={ ElementID(b) + "-heading" }>{ b.Heading }</h2>
+			if b.Text != "" {
+				<p class="block-section-features__text">{ b.Text }</p>
+			}
+		</header>
+		<div class="block-section-features__items">
+			@renderBlocks(b.Items)
+		</div>
+	</section>
+}

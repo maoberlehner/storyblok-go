@@ -10,5 +10,5 @@ func init() {
 			{Name: "text", Type: "textarea", Label: "Text"},
 			sectionBackgroundField("default"),
 		},
-	})
+	}, blockSectionIntro)
 }

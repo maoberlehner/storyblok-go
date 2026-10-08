@@ -1,0 +1,74 @@
+package components
+
+templ baseFormField(f BaseFormField) {
+	@styled("base-form-field") {
+		<div class={ "base-form-field", "base-form-field--" + string(f.Control), templ.KV("base-form-field--invalid", f.Error != "") }>
+			switch f.Control {
+				case ControlCheckbox:
+					@baseFormFieldError(f)
+					<div class="base-form-field__choice">
+						<input class="base-form-field__checkbox" type="checkbox" id={ f.ID } name={ f.Name } value="yes" checked?={ f.Value != "" } { f.controlAttrs()... }/>
+						<label class="base-form-field__label" for={ f.ID }>{ f.Label }</label>
+					</div>
+					@baseFormFieldHint(f)
+				case ControlTextarea:
+					@baseFormFieldLabel(f)
+					<textarea
+						class="base-form-field__control"
+						id={ f.ID }
+						name={ f.Name }
+						rows="6"
+						if f.CharacterLimit > 0 {
+							data-character-limit={ f.CharacterLimit }
+							data-count-remaining-one={ f.CountMessages.RemainingOne }
+							data-count-remaining-other={ f.CountMessages.RemainingOther }
+							data-count-over-one={ f.CountMessages.OverOne }
+							data-count-over-other={ f.CountMessages.OverOther }
+						}
+						{ f.controlAttrs()... }
+					>{ f.Value }</textarea>
+				case ControlSelect:
+					@baseFormFieldLabel(f)
+					<select class="base-form-field__control" id={ f.ID } name={ f.Name } { f.controlAttrs()... }>
+						for _, option := range f.Options {
+							<option value={ option.Value } selected?={ option.Value == f.Value }>{ option.Label }</option>
+						}
+					</select>
+				default:
+					@baseFormFieldLabel(f)
+					<input
+						class="base-form-field__control"
+						id={ f.ID }
+						name={ f.Name }
+						type={ f.InputType() }
+						value={ f.Value }
+						if f.Autocomplete != "" {
+							autocomplete={ f.Autocomplete }
+						}
+						if f.Type == "email" {
+							spellcheck="false"
+						}
+						{ f.controlAttrs()... }
+					/>
+			}
+		</div>
+	}
+}
+
+templ baseFormFieldLabel(f BaseFormField) {
+	<label class="base-form-field__label" for={ f.ID }>{ f.Label }</label>
+	@baseFormFieldHint(f)
+	@baseFormFieldError(f)
+}
+
+templ baseFormFieldHint(f BaseFormField) {
+	if f.Hint != "" {
+		<p class="base-form-field__hint" id={ f.HintID() }>{ f.Hint }</p>
+	}
+}
+
+templ baseFormFieldError(f BaseFormField) {
+	if f.Error != "" {
+		<p class="base-form-field__error" id={ f.ErrorID() }><span class="base-form-field__error-prefix">Error: </span>{ f.Error }</p>
+	}
+}

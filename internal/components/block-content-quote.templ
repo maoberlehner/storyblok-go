@@ -1,0 +1,13 @@
+package components
+
+templ blockContentQuote(q *BlockContentQuote) {
+	<figure { editable(ctx, q)... } class="block-content-quote">
+		<blockquote class="block-content-quote__quote"><p>{ q.Quote }</p></blockquote>
+		<figcaption class="block-content-quote__author">
+			<span class="block-content-quote__name">{ q.Name }</span>
+			if q.Role != "" {
+				<span class="block-content-quote__role">{ q.Role }</span>
+			}
+		</figcaption>
+	</figure>
+}

@@ -1,0 +1,23 @@
+package components
+
+templ blockSectionContact(b *contactView) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) } id={ ElementID(b) } aria-labelledby={ ElementID(b) + "-heading" }>
+		<h2 class="block-section-contact__heading" id={ ElementID(b) + "-heading" }>{ b.Heading }</h2>
+		if b.Text != "" {
+			<p class="block-section-contact__text">{ b.Text }</p>
+		}
+		@blockSectionContactFragment(b)
+	</section>
+}
+
+// The form, or the success message that replaces it and takes focus.
+templ blockSectionContactFragment(b *contactView) {
+	if b.State.Sent {
+		<div class="block-section-contact__success" id={ ElementID(b) + "-form" } tabindex="-1" autofocus>
+			<h3 class="block-section-contact__success-title">{ t(ctx, "contact.sent") }</h3>
+			<p class="block-section-contact__success-text">{ b.Success() }</p>
+		</div>
+	} else {
+		@baseForm(b.BaseForm())
+	}
+}

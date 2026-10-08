@@ -9,5 +9,5 @@ func init() {
 			{Name: "title", Type: "text", Label: "Title", Required: true},
 			{Name: "text", Type: "textarea", Label: "Text"},
 		},
-	})
+	}, blockContentFeature)
 }

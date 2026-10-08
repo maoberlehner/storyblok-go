@@ -1,0 +1,9 @@
+package components
+
+// Native disclosure: keyboard and screen reader support without JavaScript.
+templ blockContentQuestion(q *BlockContentQuestion) {
+	<details { editable(ctx, q)... } class="block-content-question">
+		<summary class="block-content-question__question">{ q.Question }</summary>
+		<p class="block-content-question__answer">{ q.Answer }</p>
+	</details>
+}

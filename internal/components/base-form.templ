@@ -1,0 +1,41 @@
+package components
+
+// novalidate leaves validation to the server, which shows all errors
+// consistently.
+templ baseForm(f BaseForm) {
+	@styled("base-form") {
+		<form
+			class="base-form"
+			id={ f.ID }
+			method="post"
+			action={ f.Action }
+			novalidate
+			hx-post={ f.Action }
+			hx-target="this"
+			hx-swap="outerHTML"
+			hx-disable="find button"
+		>
+			if summary := f.ErrorSummary(); summary != nil {
+				@baseFormErrorSummary(*summary)
+			}
+			for _, hidden := range f.Hidden {
+				<input type="hidden" name={ hidden.Name } value={ hidden.Value }/>
+			}
+			// People never see or reach the trap; bots that fill in every field do.
+			<div class="base-form__trap" aria-hidden="true">
+				<label for={ f.ID + "-trap" }>{ t(ctx, "form.trap_label") }</label>
+				<input id={ f.ID + "-trap" } type="text" name={ HoneypotField } tabindex="-1" autocomplete="off"/>
+			</div>
+			<input type="hidden" name={ StartedField } value={ f.Guard.Token }/>
+			for _, field := range f.Guard.Attribution {
+				<input type="hidden" name={ field.Name } value={ field.Value } data-attribution/>
+			}
+			for _, field := range f.Fields {
+				@baseFormField(field)
+			}
+			<div class="base-form__actions">
+				@baseFormButton(f.Submit)
+			</div>
+		</form>
+	}
+}

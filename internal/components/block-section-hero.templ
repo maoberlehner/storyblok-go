@@ -1,0 +1,22 @@
+package components
+
+templ blockSectionHero(b *BlockSectionHero) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) }>
+		<div class={ "block-section-hero__layout", templ.KV("block-section-hero__layout--media", len(b.Media) > 0) }>
+			<div class="block-section-hero__content">
+				<h2 class="block-section-hero__heading">{ b.Heading }</h2>
+				if b.Text != "" {
+					<p class="block-section-hero__text">{ b.Text }</p>
+				}
+				if button := b.Button(); button != nil {
+					@baseButton(*button)
+				}
+			</div>
+			if len(b.Media) > 0 {
+				<div class="block-section-hero__media">
+					@renderBlocks(b.Media)
+				</div>
+			}
+		</div>
+	</section>
+}

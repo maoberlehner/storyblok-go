@@ -1,0 +1,17 @@
+package components
+
+templ baseCard(c BaseCard) {
+	@styled("base-card") {
+		<article
+			if c.ID != "" {
+				id={ c.ID }
+			}
+			class="base-card"
+		>
+			<h3 class="base-card__title"><a class="base-card__link" href={ c.Href } autofocus?={ c.Autofocus }>{ c.Title }</a></h3>
+			if c.Text != "" {
+				<p class="base-card__text">{ c.Text }</p>
+			}
+		</article>
+	}
+}

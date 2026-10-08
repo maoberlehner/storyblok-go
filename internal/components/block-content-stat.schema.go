@@ -9,5 +9,5 @@ func init() {
 			{Name: "value", Type: "text", Label: "Value", Description: "A short figure, e.g. 40%.", Required: true},
 			{Name: "label", Type: "text", Label: "Label", Required: true},
 		},
-	})
+	}, blockContentStat)
 }

@@ -1,9 +1,0 @@
-{{define "block-section-faq" -}}
-<section {{editable .}} class="{{section .}}" aria-labelledby="{{id .}}-heading">
-  <h2 class="block-section-faq__heading" id="{{id .}}-heading">{{.Heading}}</h2>
-  <div class="block-section-faq__items">{{renderAll .Items}}</div>
-  {{- with .StructuredData}}
-  <script type="application/ld+json">{{.}}</script>
-  {{- end}}
-</section>
-{{- end}}

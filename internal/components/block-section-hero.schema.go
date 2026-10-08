@@ -13,5 +13,5 @@ func init() {
 			{Name: "media", Type: "bloks", Label: "Media", Allow: schema.Media, Max: 1},
 			sectionBackgroundField("default"),
 		},
-	})
+	}, blockSectionHero)
 }

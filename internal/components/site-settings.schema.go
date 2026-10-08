@@ -25,5 +25,5 @@ func init() {
 					Description: "Used for link previews of pages without their own image. Shown at 1200×630."},
 			}},
 		},
-	})
+	}, siteSettings)
 }

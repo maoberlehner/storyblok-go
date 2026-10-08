@@ -1,0 +1,9 @@
+package components
+
+templ blockContentCta(c *BlockContentCta) {
+	if button := c.Button(); button != nil {
+		<div { editable(ctx, c)... } class="block-content-cta">
+			@baseButton(*button)
+		</div>
+	}
+}

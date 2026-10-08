@@ -1,0 +1,12 @@
+package components
+
+templ blockMediaImage(b *BlockMediaImage) {
+	if !b.Image.IsZero() {
+		<figure { editable(ctx, b)... } class="block-media-image">
+			@baseImage(b.BaseImage(isFirstSection(ctx)))
+			if b.Caption != "" {
+				<figcaption class="block-media-image__caption">{ b.Caption }</figcaption>
+			}
+		</figure>
+	}
+}

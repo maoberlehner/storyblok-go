@@ -1,0 +1,12 @@
+package components
+
+templ blockSectionIntro(b *BlockSectionIntro) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) }>
+		if b.Heading != "" {
+			<h2 class="block-section-intro__heading">{ b.Heading }</h2>
+		}
+		if b.Text != "" {
+			<p class="block-section-intro__text">{ b.Text }</p>
+		}
+	</section>
+}

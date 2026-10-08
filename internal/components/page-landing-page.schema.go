@@ -10,5 +10,5 @@ func init() {
 			{Name: "description", Type: "textarea", Label: "Description", Description: "Shown in search results and link previews.", Required: true},
 			{Name: "sections", Type: "bloks", Label: "Sections", Allow: schema.Section},
 		}, schema.PageMetaGroups()...),
-	})
+	}, pageLandingPage)
 }

@@ -1,7 +1,7 @@
 # Storyblok Go Website
 
-Render Storyblok sites with Go and `html/template`, using htmx v4 for
-progressive enhancement and plain modern CSS.
+Render Storyblok sites with Go and [templ](https://templ.guide), using htmx v4
+for progressive enhancement and plain modern CSS.
 
 These are target practices; we do not follow all of them yet, but strive to.
 Follow them for new work and improve touched code incrementally.
@@ -15,7 +15,7 @@ measurements or research.
 
 ## Components
 
-- Structure HTML into components; keep their `.go`, `.html`, `.css`, and
+- Structure HTML into components; keep their `.go`, `.templ`, `.css`, and
   optional `.js` files alongside each other.
 - Every CMS rendering component must have a sibling `.schema.go` definition,
   validated against its Go content fields. Base components have no CMS schema.
@@ -44,8 +44,8 @@ measurements or research.
     content type of the `settings` story), `site-link`, `site-link-group`. Pages
     render inside the site chrome (header, footer) from the `settings` story;
     pages render without it if the story is missing.
-- UI strings live in `internal/locale`; components use the `t` template function
-  or `Locale.T`, never literal UI text.
+- UI strings live in `internal/locale`; components use the `t` view helper or
+  `Locale.T`, never literal UI text.
 - Scope component styles to their component. Keep base components independent of
   page/block implementations. Preserve existing Storyblok identifiers until an
   explicit mapping or content migration is in place.

@@ -6,35 +6,34 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/a-h/templ"
+
 	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
 const photo = "https://a.storyblok.com/f/1/1000x500/abc/photo.jpg"
 
-func renderBase(t *testing.T, name string, data any) string {
+func renderBase(t *testing.T, component templ.Component) string {
 	t.Helper()
 	r, err := NewRenderer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	rn := r.newRender(locale.Default, nil)
-	defer r.releaseRender(rn)
-	html, err := rn.base(name, data)
-	if err != nil {
+	_, ctx := r.newRender(locale.Default, nil)
+	var out strings.Builder
+	if err := component.Render(ctx, &out); err != nil {
 		t.Fatal(err)
 	}
-	return string(html)
+	return out.String()
 }
 
 func TestBaseImageRendersAVIFAndWebPCandidates(t *testing.T) {
-	// html/template percent-encodes parentheses in srcset; the image service
-	// decodes them.
-	out := renderBase(t, "base-image", BaseImage{
+	out := renderBase(t, baseImage(BaseImage{
 		Asset: storyblok.Asset{Filename: photo, Alt: "A <photo>"}, Sizes: "100vw",
-	})
+	}))
 	for _, want := range []string{
-		`<source type="image/avif" srcset="` + photo + `/m/320x0/filters:format%28avif%29 320w, ` + photo + `/m/480x0/filters:format%28avif%29 480w, ` + photo + `/m/640x0/filters:format%28avif%29 640w, ` + photo + `/m/800x0/filters:format%28avif%29 800w" sizes="100vw">`,
+		`<source type="image/avif" srcset="` + photo + `/m/320x0/filters:format(avif) 320w, ` + photo + `/m/480x0/filters:format(avif) 480w, ` + photo + `/m/640x0/filters:format(avif) 640w, ` + photo + `/m/800x0/filters:format(avif) 800w" sizes="100vw">`,
 		`src="` + photo + `/m/800x0"`,
 		`srcset="` + photo + `/m/320x0 320w, ` + photo + `/m/480x0 480w, ` + photo + `/m/640x0 640w, ` + photo + `/m/800x0 800w"`,
 		`alt="A &lt;photo&gt;"`, `width="1000"`, `height="500"`, `loading="lazy"`, `decoding="async"`,
@@ -49,9 +48,9 @@ func TestBaseImageRendersAVIFAndWebPCandidates(t *testing.T) {
 }
 
 func TestBaseImageCropsToRatioAndPrioritizes(t *testing.T) {
-	out := renderBase(t, "base-image", BaseImage{
+	out := renderBase(t, baseImage(BaseImage{
 		Asset: storyblok.Asset{Filename: photo}, Ratio: ParseRatio("1:1"), Priority: true, Sizes: "50vw",
-	})
+	}))
 	for _, want := range []string{`/m/320x320 320w`, `width="1000"`, `height="1000"`, `loading="eager"`, `fetchpriority="high"`, `alt=""`} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %s in\n%s", want, out)
@@ -61,14 +60,14 @@ func TestBaseImageCropsToRatioAndPrioritizes(t *testing.T) {
 
 func TestBaseImageWithoutKnownSize(t *testing.T) {
 	unsized := "https://a.storyblok.com/f/1/abc/photo.jpg"
-	out := renderBase(t, "base-image", BaseImage{Asset: storyblok.Asset{Filename: unsized}, Sizes: "100vw"})
+	out := renderBase(t, baseImage(BaseImage{Asset: storyblok.Asset{Filename: unsized}, Sizes: "100vw"}))
 	if strings.Contains(out, "width=") || strings.Contains(out, "height=") {
 		t.Errorf("dimensions guessed for an unsized asset:\n%s", out)
 	}
 	if !strings.Contains(out, unsized+"/m/2560x0 2560w") {
 		t.Errorf("srcset skipped widths of an unsized asset:\n%s", out)
 	}
-	withRatio := renderBase(t, "base-image", BaseImage{Asset: storyblok.Asset{Filename: unsized}, Ratio: ParseRatio("16:9")})
+	withRatio := renderBase(t, baseImage(BaseImage{Asset: storyblok.Asset{Filename: unsized}, Ratio: ParseRatio("16:9")}))
 	if !strings.Contains(withRatio, `width="16" height="9"`) {
 		t.Errorf("ratio does not reserve space:\n%s", withRatio)
 	}
@@ -76,7 +75,7 @@ func TestBaseImageWithoutKnownSize(t *testing.T) {
 
 func TestBaseImageKeepsSVGs(t *testing.T) {
 	logo := "https://a.storyblok.com/f/1/41x41/abc/logo.svg"
-	out := renderBase(t, "base-image", BaseImage{Asset: storyblok.Asset{Filename: logo, Alt: "Logo"}})
+	out := renderBase(t, baseImage(BaseImage{Asset: storyblok.Asset{Filename: logo, Alt: "Logo"}}))
 	if strings.Contains(out, "<picture") || !strings.Contains(out, `src="`+logo+`"`) || !strings.Contains(out, `width="41"`) {
 		t.Errorf("SVG rendered as raster:\n%s", out)
 	}

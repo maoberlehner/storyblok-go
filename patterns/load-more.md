@@ -1,7 +1,7 @@
 # Load more
 
 Appends the next page of a listing. Reference:
-`internal/components/block-section-articles.{go,html,css}`.
+`internal/components/block-section-articles.{go,templ,css}`.
 
 ## Markup
 
@@ -17,7 +17,7 @@ A link to the page with the next state, enhanced with htmx (`base-button` with
     class="base-button"
     href="/landing/launch?page-<other short id>=3&page-<short id>=2"
     hx-get="/landing/launch?page-<other short id>=3&page-<short id>=2"
-    hx-vals='{"_block": "<short id>"}'
+    hx-vals="{&#34;_block&#34;:&#34;<short id>&#34;}"
     hx-target="#b-<short id>-list"
     hx-swap="beforeend"
     hx-sync="this:drop"
@@ -74,6 +74,6 @@ page with more items and are not separate content.
    fetch one page for `req.Enhanced && req.Targets(b)`, all pages otherwise, and
    return a view of the block with the items.
 2. Link to `req.StateQuery()` with your parameter set to the next state.
-3. Define the items template once and use it in the section and in its
-   `-fragment` template.
+3. Define the items view once and use it in the section and in the view its
+   `Fragment()` method returns.
 4. Test both paths (see `TestLoadMore` in `internal/server`).

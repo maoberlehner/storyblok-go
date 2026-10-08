@@ -9,5 +9,5 @@ func init() {
 			{Name: "question", Type: "text", Label: "Question", Required: true},
 			{Name: "answer", Type: "textarea", Label: "Answer", Required: true},
 		},
-	})
+	}, blockContentQuestion)
 }

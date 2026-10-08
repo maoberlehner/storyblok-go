@@ -1,5 +1,7 @@
 package components
 
+import "encoding/json/v2"
+
 // BaseButton is a link styled as a call to action.
 type BaseButton struct {
 	Href  string
@@ -22,4 +24,10 @@ type ButtonEnhancement struct {
 	Target string
 	// Swap is the htmx swap style, such as "beforeend".
 	Swap string
+}
+
+// vals are the htmx request parameters that address the block.
+func (e ButtonEnhancement) vals() (string, error) {
+	data, err := json.Marshal(map[string]string{TargetParam: e.Block})
+	return string(data), err
 }

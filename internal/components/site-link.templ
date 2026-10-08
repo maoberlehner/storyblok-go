@@ -1,0 +1,7 @@
+package components
+
+templ siteLink(l *SiteLink) {
+	if !l.IsZero() {
+		<a { editable(ctx, l)... } class="site-link" href={ l.Link.Href() }>{ l.Label }</a>
+	}
+}

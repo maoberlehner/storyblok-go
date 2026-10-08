@@ -87,7 +87,7 @@ func TestLoadMore(t *testing.T) {
 			"Showing 6 of 14 articles",
 			`href="/landing?page-arts=2"`,
 			`hx-get="/landing?page-arts=2"`,
-			`hx-vals='{"_block": "arts"}'`,
+			`hx-vals="{&#34;_block&#34;:&#34;arts&#34;}"`,
 			`hx-sync="this:drop"`,
 		} {
 			if !strings.Contains(section, want) {

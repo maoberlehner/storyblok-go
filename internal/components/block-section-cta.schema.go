@@ -12,5 +12,5 @@ func init() {
 			{Name: "link_label", Type: "text", Label: "Link label", Required: true},
 			sectionBackgroundField("accent"),
 		},
-	})
+	}, blockSectionCta)
 }

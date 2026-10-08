@@ -1,0 +1,13 @@
+package components
+
+templ pageArticle(p *PageArticle) {
+	<article { editable(ctx, p)... } class="page-article">
+		<header class="page-article__header">
+			<h1 class="page-article__title">{ p.Title }</h1>
+			if p.Description != "" {
+				<p class="page-article__description">{ p.Description }</p>
+			}
+		</header>
+		@renderSections(p.Sections)
+	</article>
+}

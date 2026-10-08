@@ -10,5 +10,5 @@ func init() {
 			{Name: "items", Type: "bloks", Label: "Items", Allow: schema.Content},
 			sectionBackgroundField("default"),
 		},
-	})
+	}, blockSectionTestimonials)
 }

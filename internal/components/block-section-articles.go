@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/a-h/templ"
+
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -111,3 +113,5 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 	}
 	return view, nil
 }
+
+func (b *articlesView) Fragment() templ.Component { return blockSectionArticlesFragment(b) }

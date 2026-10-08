@@ -22,3 +22,4 @@ otherwise have to repeat. Use the format of the existing records.
   responses in memory, keyed by `cv`
 - [0007](0007-decoded-stories-in-memory.md): Share decoded published stories
   between requests
+- [0008](0008-templ-views.md): Render components with templ

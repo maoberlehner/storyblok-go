@@ -11,5 +11,5 @@ func init() {
 			{Name: "success_message", Type: "textarea", Label: "Success message", Description: "Shown after the message was sent."},
 			sectionBackgroundField("default"),
 		},
-	})
+	}, blockSectionContact)
 }

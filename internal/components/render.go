@@ -3,27 +3,25 @@ package components
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"crypto/sha256"
 	"embed"
 	"encoding/hex"
 	"fmt"
-	"html/template"
 	"io"
 	"io/fs"
 	"path"
 	"slices"
 	"strings"
 
+	"github.com/a-h/templ"
+
 	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
 
-var (
-	//go:embed *.html
-	templateFS embed.FS
-	//go:embed *.css *.js
-	assetFS embed.FS
-)
+//go:embed *.css *.js
+var assetFS embed.FS
 
 // ResolveRelations lists the relation fields components expect as resolved
 // stories, both from the Content Delivery API and the Visual Editor bridge.
@@ -104,14 +102,13 @@ type Page struct {
 	// Loaded holds the request's versions of the page's blocks.
 	Loaded Loaded
 
-	body             template.HTML
-	siteHeader       template.HTML
-	siteFooter       template.HTML
-	head             template.HTML
-	scriptURL        string
-	resolveRelations []string
-	storyID          int64
-	devToolbar       *DevToolbar
+	body       string
+	siteHeader string
+	siteFooter string
+	css        string
+	scriptURL  string
+	storyID    int64
+	devToolbar *DevToolbar
 }
 
 // DevToolbar links rendered blocks to the Visual Editor during local
@@ -133,19 +130,9 @@ func NewPage(story storyblok.Story[AnyBlock]) Page {
 	return page
 }
 
-func (p Page) Body() template.HTML        { return p.body }
-func (p Page) Head() template.HTML        { return p.head }
-func (p Page) SiteHeader() template.HTML  { return p.siteHeader }
-func (p Page) SiteFooter() template.HTML  { return p.siteFooter }
-func (p Page) ScriptURL() string          { return p.scriptURL }
-func (p Page) ResolveRelations() []string { return p.resolveRelations }
-func (p Page) DevToolbar() *DevToolbar    { return p.devToolbar }
-
 // HTMXURL is the self-hosted htmx build. The version in the file name makes
 // it cacheable forever.
 const HTMXURL = "/assets/vendor/htmx-4.0.0.min.js"
-
-func (p Page) HTMXURL() string { return HTMXURL }
 
 // Alternate is the page in one language. OG is empty for x-default.
 type Alternate struct {
@@ -158,33 +145,20 @@ func (p Page) OGLocale() string { return cmp.Or(p.Locale.OG, locale.Default.OG) 
 // FontURL is the self-hosted Inter variable font (Latin subset, all weights).
 const FontURL = "/assets/vendor/inter-4.1-latin.woff2"
 
-func (p Page) FontURL() string { return FontURL }
-
 // WebVitalsURL is the self-hosted web-vitals build, versioned like HTMXURL.
 const WebVitalsURL = "/assets/vendor/web-vitals-6.2.3.iife.js"
-
-func (p Page) WebVitalsURL() string { return WebVitalsURL }
 
 type componentAssets struct {
 	css, js string
 }
 
 type Renderer struct {
-	templates  *template.Template
 	assets     map[string]componentAssets
 	globalCSS  string
 	script     []byte
 	scriptHash string
 	devSpaceID int64
-	// idleRenders holds finished renders for reuse. Unlike a sync.Pool, it
-	// keeps them across garbage collections, which run about once per page
-	// under load, so each template clone escapes its templates only once.
-	idleRenders chan *render
 }
-
-// maxIdleRenders bounds the template clones kept for reuse; renders beyond it
-// clone the templates again.
-const maxIdleRenders = 64
 
 type RendererOption func(*Renderer)
 
@@ -201,18 +175,6 @@ func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 	r := &Renderer{}
 	for _, opt := range opts {
 		opt(r)
-	}
-	// Each render replaces the functions with ones bound to its state.
-	templates, err := template.New("").Funcs((&render{}).funcs()).ParseFS(templateFS, "*.html")
-	if err != nil {
-		return nil, err
-	}
-	r.templates = templates
-	r.idleRenders = make(chan *render, maxIdleRenders)
-	for name := range registry {
-		if templates.Lookup(name) == nil {
-			return nil, fmt.Errorf("%s: missing named HTML template", name)
-		}
 	}
 	if err := r.loadAssets(); err != nil {
 		return nil, err
@@ -264,72 +226,92 @@ func (r *Renderer) loadAssets() error {
 // Script returns all component scripts.
 func (r *Renderer) Script() []byte { return r.script }
 
-// Page renders a full HTML document.
+// Page renders a full HTML document. The body renders first, so the head
+// can inline the styles of exactly the components it used.
 func (r *Renderer) Page(w io.Writer, page Page) error {
-	rn := r.newRender(page.Locale, page.Loaded)
-	defer r.releaseRender(rn)
-	body, err := rn.block(page.Content)
-	if err != nil {
+	rn, ctx := r.newRender(page.Locale, page.Loaded)
+	var buf strings.Builder
+	if err := renderBlock(page.Content).Render(ctx, &buf); err != nil {
 		return err
 	}
-	page.body = body
+	page.body = buf.String()
 	if page.Chrome != nil && page.Chrome.Settings != nil {
 		rn.chrome = true
-		if page.siteHeader, err = rn.component("site-header", "site-settings", *page.Chrome); err != nil {
+		rn.markUsed("site-settings")
+		buf.Reset()
+		if err := siteHeader(*page.Chrome).Render(ctx, &buf); err != nil {
 			return err
 		}
-		if page.siteFooter, err = rn.component("site-footer", "site-settings", *page.Chrome); err != nil {
+		page.siteHeader = buf.String()
+		buf.Reset()
+		if err := siteFooter(*page.Chrome).Render(ctx, &buf); err != nil {
 			return err
 		}
+		page.siteFooter = buf.String()
 	}
-	page.resolveRelations = ResolveRelations
 	if len(r.script) > 0 {
 		page.scriptURL = "/assets/app.js?v=" + r.scriptHash
 	}
-	page.head = r.styleElement(rn.used)
+	css, err := r.styles(rn.used)
+	if err != nil {
+		return err
+	}
+	page.css = css
 	// Inside the Visual Editor the bridge already makes blocks clickable.
 	if r.devSpaceID != 0 && !page.Preview {
 		page.devToolbar = &DevToolbar{SpaceID: r.devSpaceID, StoryID: page.storyID}
 	}
-	return rn.templates.ExecuteTemplate(w, "layout", page)
+	return layout(page).Render(ctx, w)
+}
+
+// styles returns the global styles and those of the given components.
+func (r *Renderer) styles(components []string) (string, error) {
+	size := len(r.globalCSS)
+	for _, name := range components {
+		// Every component has a stylesheet, so a missing one is a misspelled
+		// name.
+		if r.assets[name].css == "" {
+			return "", fmt.Errorf("%s: no component stylesheet", name)
+		}
+		size += len(r.assets[name].css)
+	}
+	var css strings.Builder
+	css.Grow(size)
+	css.WriteString(r.globalCSS)
+	for _, name := range components {
+		css.WriteString(r.assets[name].css)
+	}
+	return css.String(), nil
 }
 
 // Block renders a single block, such as a story's content type.
 func (r *Renderer) Block(w io.Writer, block Block, loc locale.Locale, loaded Loaded) error {
-	rn := r.newRender(loc, loaded)
-	defer r.releaseRender(rn)
-	html, err := rn.block(block)
-	if err != nil {
-		return err
-	}
-	_, err = io.WriteString(w, string(html))
-	return err
+	_, ctx := r.newRender(loc, loaded)
+	return renderBlock(block).Render(ctx, w)
+}
+
+// fragmenter is a block whose enhanced requests replace only part of it.
+type fragmenter interface {
+	Fragment() templ.Component
 }
 
 // Fragment renders the part of a block that an enhanced request replaces:
-// the "<component>-fragment" template if the component defines one, else the
-// whole block. Fragments update components their page already rendered, so
-// their CSS is in place.
+// the block's Fragment if it has one, else the whole block. Fragments update
+// components their page already rendered, so their CSS is in place.
 func (r *Renderer) Fragment(w io.Writer, block Block, loc locale.Locale) error {
-	name := block.Meta().Component + "-fragment"
-	if r.templates.Lookup(name) == nil {
+	f, ok := block.(fragmenter)
+	if !ok {
 		return r.Block(w, block, loc, nil)
 	}
-	rn := r.newRender(loc, nil)
-	defer r.releaseRender(rn)
-	html, err := rn.component(name, block.Meta().Component, block)
-	if err != nil {
-		return err
-	}
-	_, err = io.WriteString(w, string(html))
-	return err
+	_, ctx := r.newRender(loc, nil)
+	return f.Fragment().Render(ctx, w)
 }
 
-// render holds the state of one rendering pass.
+// render holds the state of one rendering pass. Components reach it through
+// their context.
 type render struct {
 	*Renderer
-	templates *template.Template
-	used      []string
+	used []string
 	// firstSection is set while rendering a page's first section, whose
 	// images are likely the Largest Contentful Paint.
 	firstSection bool
@@ -341,165 +323,117 @@ type render struct {
 	loaded Loaded
 }
 
-func (r *Renderer) newRender(loc locale.Locale, loaded Loaded) *render {
-	var rn *render
-	select {
-	case rn = <-r.idleRenders:
-	default:
-		rn = &render{Renderer: r}
-		// Each clone binds the template functions to its own render. Reusing
-		// clones keeps html/template from escaping templates every request.
-		rn.templates = template.Must(r.templates.Clone()).Funcs(rn.funcs())
+type renderKey struct{}
+
+func (r *Renderer) newRender(loc locale.Locale, loaded Loaded) (*render, context.Context) {
+	if loc.Code == "" {
+		loc = locale.Default
 	}
-	rn.locale = loc
-	if rn.locale.Code == "" {
-		rn.locale = locale.Default
-	}
-	rn.loaded = loaded
-	rn.used = rn.used[:0]
-	rn.firstSection = false
-	rn.chrome = false
-	return rn
+	rn := &render{Renderer: r, locale: loc, loaded: loaded}
+	return rn, context.WithValue(context.Background(), renderKey{}, rn)
 }
 
-func (r *Renderer) releaseRender(rn *render) {
-	rn.loaded = nil
-	select {
-	case r.idleRenders <- rn:
-	default:
-	}
-}
+func renderState(ctx context.Context) *render { return ctx.Value(renderKey{}).(*render) }
 
-func (rn *render) funcs() template.FuncMap {
-	return template.FuncMap{
-		"render":    rn.block,
-		"renderAll": rn.blocks,
-		"markdown":  renderMarkdown,
-		"t":         func(key string, args ...any) string { return rn.locale.T(key, args...) },
-		"number":    func(n int) string { return rn.locale.FormatNumber(n) },
-		"section": func(block Block) string {
-			rn.markUsed("base-section")
-			return sectionClass(block)
-		},
-		"renderSections": rn.sections,
-		"firstSection":   func() bool { return rn.firstSection },
-		"base":           rn.base,
-		"editable":       rn.editableAttrs,
-		"id":             ElementID,
-		"shortID":        ShortID,
-		"join":           strings.Join,
-		"contains":       slices.Contains[[]string],
-	}
-}
-
-func (rn *render) block(block Block) (template.HTML, error) {
-	if block == nil {
-		return "", nil
-	}
-	if view, ok := rn.loaded[block]; ok {
-		block = view
-	}
-	name := block.Meta().Component
-	if _, unknown := block.(*Unknown); unknown || rn.templates.Lookup(name) == nil {
-		name = "unknown"
-	}
-	return rn.component(name, name, block)
-}
-
-func (rn *render) blocks(blocks Blocks) (template.HTML, error) {
-	var buf strings.Builder
-	for _, block := range blocks {
-		html, err := rn.block(block)
-		if err != nil {
-			return "", err
-		}
-		buf.WriteString(string(html))
-	}
-	return template.HTML(buf.String()), nil
-}
-
-// sections renders a page's sections and marks the first one, so its images
-// load with priority.
-func (rn *render) sections(blocks Blocks) (template.HTML, error) {
-	defer func() { rn.firstSection = false }()
-	var buf strings.Builder
-	for i, block := range blocks {
-		rn.firstSection = i == 0
-		html, err := rn.block(block)
-		if err != nil {
-			return "", err
-		}
-		buf.WriteString(string(html))
-	}
-	return template.HTML(buf.String()), nil
-}
-
-// base renders a base component, such as {{base "base-card" .Card}}.
-func (rn *render) base(name string, data any) (template.HTML, error) {
-	if !strings.HasPrefix(name, "base-") {
-		return "", fmt.Errorf("%s is not a base component", name)
-	}
-	return rn.component(name, name, data)
-}
-
+// markUsed records a component whose styles the page needs.
 func (rn *render) markUsed(component string) {
 	if !slices.Contains(rn.used, component) {
 		rn.used = append(rn.used, component)
 	}
 }
 
-// component executes a template and records the component whose styles the
-// page needs.
-func (rn *render) component(templateName, component string, data any) (template.HTML, error) {
-	rn.markUsed(component)
-	var buf strings.Builder
-	if err := rn.templates.ExecuteTemplate(&buf, templateName, data); err != nil {
-		return "", err
-	}
-	return template.HTML(buf.String()), nil
+// renderBlock renders a block with the view registered for its component.
+func renderBlock(block Block) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		if block == nil {
+			return nil
+		}
+		if view, ok := renderState(ctx).loaded[block]; ok {
+			block = view
+		}
+		name := block.Meta().Component
+		view, ok := views[name]
+		if u, unknown := block.(*Unknown); unknown {
+			name, view, ok = "unknown", func(Block) templ.Component { return unknownBlock(u) }, true
+		}
+		if !ok {
+			return fmt.Errorf("%s: no registered view", name)
+		}
+		renderState(ctx).markUsed(name)
+		return view(block).Render(ctx, w)
+	})
 }
 
-// styleElement returns the global styles and those of the given components
-// in one <style> element.
-func (r *Renderer) styleElement(components []string) template.HTML {
-	size := len(r.globalCSS)
-	for _, name := range components {
-		size += len(r.assets[name].css)
-	}
-	if size == 0 {
-		return ""
-	}
-	var css strings.Builder
-	css.Grow(len("<style></style>") + size)
-	css.WriteString("<style>")
-	css.WriteString(r.globalCSS)
-	for _, name := range components {
-		css.WriteString(r.assets[name].css)
-	}
-	css.WriteString("</style>")
-	return template.HTML(css.String())
+func renderBlocks(blocks Blocks) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		for _, block := range blocks {
+			if err := renderBlock(block).Render(ctx, w); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// renderSections renders a page's sections and marks the first one, so its
+// images load with priority.
+func renderSections(blocks Blocks) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		rn := renderState(ctx)
+		defer func() { rn.firstSection = false }()
+		for i, block := range blocks {
+			rn.firstSection = i == 0
+			if err := renderBlock(block).Render(ctx, w); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// styled renders a base component's markup, its children, and records that
+// the page needs its styles.
+func styled(component string) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		renderState(ctx).markUsed(component)
+		return templ.GetChildren(ctx).Render(ctx, w)
+	})
+}
+
+// t translates a UI string into the language of the page.
+func t(ctx context.Context, key string, args ...any) string {
+	return renderState(ctx).locale.T(key, args...)
+}
+
+func number(ctx context.Context, n int) string { return renderState(ctx).locale.FormatNumber(n) }
+
+func isFirstSection(ctx context.Context) bool { return renderState(ctx).firstSection }
+
+// section returns the class list of a section's root element.
+func section(ctx context.Context, block Block) string {
+	renderState(ctx).markUsed("base-section")
+	return sectionClass(block)
 }
 
 // ElementID derives a document-unique ID from a block's short ID, which can
 // start with a digit, which CSS ID selectors don't allow.
 func ElementID(block Block) string { return "b-" + ShortID(block) }
 
-// editableAttrs returns the attributes the Visual Editor uses to make a blok
+// editable returns the attributes the Visual Editor uses to make a blok
 // clickable. Published content has no editable marker, so this is empty
 // unless the dev toolbar needs the blok's UID.
-func (rn *render) editableAttrs(block Block) template.HTMLAttr {
+func editable(ctx context.Context, block Block) templ.Attributer {
+	rn := renderState(ctx)
 	if block == nil || rn.chrome {
-		return ""
+		return templ.OrderedAttributes{}
 	}
 	meta := block.Meta()
 	options, uid, ok := meta.EditableOptions()
 	if !ok {
 		if rn.devSpaceID == 0 || meta.UID == "" {
-			return ""
+			return templ.OrderedAttributes{}
 		}
-		return template.HTMLAttr(`data-dev-blok="` + template.HTMLEscapeString(meta.UID) +
-			`" data-dev-component="` + template.HTMLEscapeString(meta.Component) + `"`)
+		return templ.OrderedAttributes{{Key: "data-dev-blok", Value: meta.UID}, {Key: "data-dev-component", Value: meta.Component}}
 	}
-	return template.HTMLAttr(`data-blok-c="` + template.HTMLEscapeString(options) +
-		`" data-blok-uid="` + template.HTMLEscapeString(uid) + `"`)
+	return templ.OrderedAttributes{{Key: "data-blok-c", Value: options}, {Key: "data-blok-uid", Value: uid}}
 }

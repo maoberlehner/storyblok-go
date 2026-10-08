@@ -9,6 +9,8 @@ import (
 	"strings"
 	"unicode/utf16"
 
+	"github.com/a-h/templ"
+
 	"storyblok-go-website/internal/locale"
 	"storyblok-go-website/internal/storyblok"
 )
@@ -190,3 +192,5 @@ func (b *contactView) BaseForm() BaseForm {
 		},
 	}
 }
+
+func (b *contactView) Fragment() templ.Component { return blockSectionContactFragment(b) }

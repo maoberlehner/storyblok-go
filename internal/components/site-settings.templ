@@ -1,0 +1,81 @@
+package components
+
+// Previews the settings story in the Visual Editor.
+templ siteSettings(s *SiteSettings) {
+	<div { editable(ctx, s)... } class="site-settings">
+		@siteHeader(s.PreviewChrome())
+		@siteFooter(s.PreviewChrome())
+	</div>
+}
+
+// The navigation is a native popover on small screens, so it opens and closes
+// without JavaScript, and an inline list on wide screens.
+templ siteHeader(c Chrome) {
+	<header class="site-header">
+		<a class="site-header__skip" href="#main">{ t(ctx, "skip_to_content") }</a>
+		<div class="site-header__bar">
+			<a class="site-header__home" href={ c.HomeHref }>{ c.Settings.SiteName }</a>
+			<button class="site-header__toggle" type="button" popovertarget="site-nav">{ t(ctx, "menu") }</button>
+			<nav class="site-header__nav" id="site-nav" popover aria-label={ t(ctx, "nav.main") }>
+				<ul class="site-header__links">
+					for _, link := range c.NavLinks() {
+						<li>
+							<a
+								{ editable(ctx, link.Block)... }
+								class="site-header__link"
+								href={ link.Href }
+								if link.Current {
+									aria-current="page"
+								}
+							>{ link.Label }</a>
+						</li>
+					}
+				</ul>
+				if button := c.Settings.Button(); button != nil {
+					@baseButton(*button)
+				}
+				if len(c.Languages) > 0 {
+					<ul class="site-header__languages" aria-label={ t(ctx, "nav.languages") }>
+						for _, language := range c.Languages {
+							<li>
+								<a
+									class="site-header__language"
+									href={ language.Href }
+									hreflang={ language.Lang }
+									lang={ language.Lang }
+									if language.Current {
+										aria-current="true"
+									}
+								>{ language.Label }</a>
+							</li>
+						}
+					</ul>
+				}
+			</nav>
+		</div>
+	</header>
+}
+
+templ siteFooter(c Chrome) {
+	<footer class="site-footer">
+		if len(c.Settings.FooterColumns) > 0 {
+			<div class="site-footer__columns">
+				@renderBlocks(c.Settings.FooterColumns)
+			</div>
+		}
+		<div class="site-footer__bottom">
+			if len(c.Settings.LegalLinks) > 0 {
+				<ul class="site-footer__legal">
+					for _, link := range c.Settings.LegalLinks {
+						<li>
+							@renderBlock(link)
+						</li>
+					}
+				</ul>
+			}
+			if c.Settings.Copyright != "" {
+				<p class="site-footer__copyright">{ c.Settings.Copyright }</p>
+			}
+		</div>
+	</footer>
+}

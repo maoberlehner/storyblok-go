@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json/v2"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,10 +17,32 @@ func TestEveryCMSComponentHasCompanionFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range schemas {
-		for _, suffix := range []string{".go", ".schema.go", ".html", ".css"} {
+		for _, suffix := range []string{".go", ".schema.go", ".templ", ".css"} {
 			if _, err := os.Stat(s.Name + suffix); err != nil {
 				t.Errorf("missing companion: %v", err)
 			}
+		}
+	}
+}
+
+func TestEveryCMSViewHasASchema(t *testing.T) {
+	schemas, err := Schemas()
+	if err != nil {
+		t.Fatal(err)
+	}
+	registered := map[string]bool{}
+	for _, s := range schemas {
+		registered[s.Name] = true
+	}
+	views, err := filepath.Glob("*.templ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, view := range views {
+		name := strings.TrimSuffix(view, ".templ")
+		isCMS := strings.HasPrefix(name, "page-") || strings.HasPrefix(name, "block-") || strings.HasPrefix(name, "site-")
+		if isCMS && !registered[name] {
+			t.Errorf("%s: CMS view has no registered schema", name)
 		}
 	}
 }

@@ -9,5 +9,5 @@ func init() {
 			{Name: "heading", Type: "text", Label: "Heading", Required: true},
 			{Name: "links", Type: "bloks", Label: "Links", Components: []string{"site-link"}},
 		},
-	})
+	}, siteLinkGroup)
 }

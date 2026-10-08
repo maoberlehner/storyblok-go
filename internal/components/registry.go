@@ -1,14 +1,18 @@
 // Package components renders Storyblok bloks to HTML. Each component is a Go
-// struct, an html/template definition named after the component, and a
-// stylesheet, and mandatory schema, kept side by side.
+// struct, a templ view, a stylesheet, and for CMS components a schema, kept
+// side by side.
 package components
 
 import (
+	"context"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
+
+	"github.com/a-h/templ"
 
 	"storyblok-go-website/internal/schema"
 	"storyblok-go-website/internal/storyblok"
@@ -22,13 +26,15 @@ type Block interface {
 var registry = map[string]func() Block{}
 var categories = map[string]schema.Category{}
 var definitions = map[string]func(map[string]schema.Category) (schema.Component, error){}
+var views = map[string]func(Block) templ.Component{}
 
-// register makes a component decodable. Call it from an init function in the
-// component's .schema.go file.
+// register makes a component decodable and renderable. Call it from an init
+// function in the component's .schema.go file.
+// The view takes the block, or for loaders the type their Load returns.
 func register[T any, P interface {
 	*T
 	Block
-}](definition schema.Definition[T]) {
+}, V Block](definition schema.Definition[T], view func(V) templ.Component) {
 	name := definition.Name
 	if _, exists := registry[name]; exists {
 		panic("duplicate component: " + name)
@@ -36,26 +42,30 @@ func register[T any, P interface {
 	registry[name] = func() Block { return P(new(T)) }
 	categories[name] = definition.Category
 	definitions[name] = definition.Compile
+	registerView(name, view)
+}
+
+// registerView renders blocks of a component, including built-in ones that
+// never come from the CMS.
+func registerView[V Block](name string, view func(V) templ.Component) {
+	views[name] = func(block Block) templ.Component {
+		v, ok := block.(V)
+		if !ok {
+			return errorComponent(fmt.Errorf("%s: cannot render %T; is it loaded?", name, block))
+		}
+		return view(v)
+	}
+}
+
+func errorComponent(err error) templ.Component {
+	return templ.ComponentFunc(func(context.Context, io.Writer) error { return err })
 }
 
 // IsPage reports whether component is a registered page content type.
 func IsPage(component string) bool { return categories[component] == schema.Page }
 
 // Schemas validates every CMS component and resolves its allowed children.
-// Registration requires a schema definition; base templates are not registered.
 func Schemas() ([]schema.Component, error) {
-	files, err := templateFS.ReadDir(".")
-	if err != nil {
-		return nil, err
-	}
-	for _, file := range files {
-		name := strings.TrimSuffix(file.Name(), ".html")
-		if strings.HasPrefix(name, "page-") || strings.HasPrefix(name, "block-") || strings.HasPrefix(name, "site-") {
-			if _, ok := definitions[name]; !ok {
-				return nil, fmt.Errorf("%s: CMS template has no registered schema", name)
-			}
-		}
-	}
 	names := make([]string, 0, len(definitions))
 	for name := range definitions {
 		names = append(names, name)
@@ -66,9 +76,6 @@ func Schemas() ([]schema.Component, error) {
 		component, err := definitions[name](categories)
 		if err != nil {
 			return nil, err
-		}
-		if _, err := templateFS.ReadFile(name + ".html"); err != nil {
-			return nil, fmt.Errorf("%s: missing rendering template: %w", name, err)
 		}
 		result = append(result, component)
 	}

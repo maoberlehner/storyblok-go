@@ -1,0 +1,10 @@
+package components
+
+templ blockSectionStats(b *BlockSectionStats) {
+	<section { editable(ctx, b)... } class={ section(ctx, b) } aria-labelledby={ ElementID(b) + "-heading" }>
+		<h2 class="block-section-stats__heading" id={ ElementID(b) + "-heading" }>{ b.Heading }</h2>
+		<div class="block-section-stats__items">
+			@renderBlocks(b.Items)
+		</div>
+	</section>
+}

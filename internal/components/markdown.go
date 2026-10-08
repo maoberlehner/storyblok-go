@@ -1,9 +1,10 @@
 package components
 
 import (
-	"bytes"
-	"html/template"
+	"context"
+	"io"
 
+	"github.com/a-h/templ"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -33,10 +34,8 @@ func (headingShift) Transform(doc *ast.Document, _ text.Reader, _ parser.Context
 	})
 }
 
-func renderMarkdown(source storyblok.Markdown) (template.HTML, error) {
-	var buf bytes.Buffer
-	if err := markdownRenderer.Convert([]byte(source), &buf); err != nil {
-		return "", err
-	}
-	return template.HTML(buf.String()), nil
+func markdown(source storyblok.Markdown) templ.Component {
+	return templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
+		return markdownRenderer.Convert([]byte(source), w)
+	})
 }

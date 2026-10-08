@@ -1,6 +1,0 @@
-{{/* Missing or broken components are only surfaced to editors. */}}
-{{define "unknown"}}{{if .Editable -}}
-<div {{editable .}} class="unknown-block">
-  {{if .Err}}Could not render <code>{{.Component}}</code>: {{.Err}}{{else}}No component for <code>{{.Component}}</code>{{end}}
-</div>
-{{- end}}{{end}}

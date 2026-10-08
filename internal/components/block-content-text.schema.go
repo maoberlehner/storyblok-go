@@ -9,5 +9,5 @@ func init() {
 			{Name: "text", Type: "markdown", Label: "Text", Required: true,
 				Description: "Markdown. Headings start at level 2; HTML is not rendered."},
 		},
-	})
+	}, blockContentText)
 }

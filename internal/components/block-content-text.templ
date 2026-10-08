@@ -1,0 +1,7 @@
+package components
+
+templ blockContentText(b *BlockContentText) {
+	<div { editable(ctx, b)... } class="block-content-text">
+		@markdown(b.Text)
+	</div>
+}

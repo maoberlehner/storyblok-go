@@ -13,5 +13,5 @@ func init() {
 				Options:     []schema.Option{{Value: "end", Label: "End"}, {Value: "start", Label: "Start"}}},
 			sectionBackgroundField("default"),
 		},
-	})
+	}, blockSectionContent)
 }

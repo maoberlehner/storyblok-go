@@ -202,9 +202,8 @@ make test
 make fmt
 ```
 
-Runs `gofmt` and [oxfmt](https://oxc.rs/docs/guide/usage/formatter) (Markdown,
-CSS, JS). Go templates (`*.html`) are excluded because oxfmt cannot parse
-template actions inside tags.
+Runs `templ fmt`, `gofmt`, and
+[oxfmt](https://oxc.rs/docs/guide/usage/formatter) (Markdown, CSS, JS).
 
 ## Components and schemas
 
@@ -224,18 +223,18 @@ CMS components:
 - `block-content-feature`, `block-content-quote`, `block-content-question`
   (native disclosure), `block-content-stat`: items for content areas.
 
-Every CMS component has matching `.go`, `.schema.go`, `.html`, and `.css` files
-in `internal/components/`. Register the typed definition from `.schema.go`;
-registration without a schema is not supported. JSON field names and Go types
-must match the schema. Field order determines editor order. Base components are
-not registered with the CMS.
+Every CMS component has matching `.go`, `.schema.go`, `.templ`, and `.css` files
+in `internal/components/`. Register the typed definition and its view from
+`.schema.go`; registration without a schema is not supported. JSON field names
+and Go types must match the schema. Field order determines editor order. Base
+components are not registered with the CMS.
 
 The schema package currently supports `text`, `textarea`, `multilink`, and
 `bloks`. Extend its field validation and compiler when adding other field types.
 Block categories resolve to explicit, sorted component allowlists; pages can
 only contain sections and must define required `title` (text) and `description`
-(textarea) fields. `validate` checks definitions and templates offline;
-`make test` also checks companion files and rendering.
+(textarea) fields. `validate` checks definitions offline; `make test` also
+checks companion files and rendering.
 
 ```sh
 go run ./cmd/storyblok-schema validate
