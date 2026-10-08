@@ -147,16 +147,18 @@ Content Delivery API:
 Published requests send the latest known `cv`
 ([Storyblok's caching model](https://www.storyblok.com/docs/concepts/caching)).
 The client learns it from story responses and never moves it backwards. An old
-`cv` can stay cached indefinitely, so every 30 seconds one published request
-omits `cv` to discover the current one while concurrent requests keep using the
-known value. `space.version` is not used because it differs from `cv` for tokens
-with a minimum cache TTL. Drafts never send or change `cv`.
+`cv` can stay cached indefinitely, so the first published request after 30
+seconds starts a request without `cv` in the background to discover the current
+one; meanwhile, every request keeps using the known value. Only before the first
+`cv` is known do requests wait for the discovery. `space.version` is not used
+because it differs from `cv` for tokens with a minimum cache TTL. Drafts never
+send or change `cv`.
 
 Responses to published requests with a `cv` stay in memory, keyed by request
 URL, up to 64 MiB; the least recently used leave first. Content published later
 has a new `cv`, so entries never go stale and need no invalidation. Pages
-therefore wait for Storyblok only on the first request per `cv` and during `cv`
-discovery ([ADR 0006](adr/0006-storyblok-responses-in-memory.md)).
+therefore wait for Storyblok only on the first request per `cv`
+([ADR 0006](adr/0006-storyblok-responses-in-memory.md)).
 
 Management API:
 

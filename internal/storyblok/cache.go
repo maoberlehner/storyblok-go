@@ -19,27 +19,30 @@ type cacheVersionTracker struct {
 	discovery chan struct{}
 }
 
-// next returns the cv for a published request. When discover is true, the
-// caller sends no cv and must report the outcome with record.
-func (c *cacheVersionTracker) next(ctx context.Context) (cv int64, discover bool, err error) {
+// next returns the cv for a published request. When discover is true, there
+// is no cv yet: the caller sends none and must report the outcome with
+// record. When refresh is true, the caller uses cv and discovers the current
+// one in the background, reporting it with record.
+func (c *cacheVersionTracker) next(ctx context.Context) (cv int64, discover, refresh bool, err error) {
 	for {
 		c.mu.Lock()
 		if c.discovery == nil && (c.version == 0 || !time.Now().Before(c.nextRefresh)) {
 			c.discovery = make(chan struct{})
+			version := c.version
 			c.mu.Unlock()
-			return 0, true, nil
+			return version, version == 0, version > 0, nil
 		}
 		version, discovery := c.version, c.discovery
 		c.mu.Unlock()
 		if version > 0 {
-			return version, false, nil
+			return version, false, false, nil
 		}
 		// No cv yet: wait for the first discovery instead of sending more
 		// requests without one.
 		select {
 		case <-discovery:
 		case <-ctx.Done():
-			return 0, false, ctx.Err()
+			return 0, false, false, ctx.Err()
 		}
 	}
 }

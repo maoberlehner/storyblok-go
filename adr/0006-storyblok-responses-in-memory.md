@@ -44,7 +44,8 @@ requests always reach the API.
   within the 30-second discovery interval.
 - Every page misses once after a publish, since the `cv` changes for the whole
   space.
-- One request per discovery interval still waits for Storyblok.
+- `cv` discovery runs in the background, so no request waits for it once a `cv`
+  is known.
 - Memory grows with the content in use, by at most 64 MiB per instance.
 - Responses are still decoded per request; caching decoded stories remains an
   option if CPU becomes the bottleneck.

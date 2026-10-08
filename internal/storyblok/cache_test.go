@@ -38,29 +38,27 @@ func TestClientLearnsAndUpdatesCacheVersion(t *testing.T) {
 	})
 }
 
-func TestClientRefreshesCacheVersion(t *testing.T) {
+func TestClientRefreshesCacheVersionInBackground(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		client := NewClient(DefaultBaseURL, "secret")
-		queries := []string{"", "100", "", "200"}
-		calls := 0
-		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			if got := r.URL.Query().Get("cv"); got != queries[calls] {
-				t.Errorf("request %d cv = %q, want %q", calls, got, queries[calls])
-			}
-			cv := int64(100)
-			if calls >= 2 {
-				cv = 200
-			}
-			calls++
-			return storyResponse(cv, nil), nil
-		})
-		for i := range queries {
-			if i == 2 {
-				time.Sleep(cacheVersionRefreshInterval)
-			}
-			if _, err := client.Story(t.Context(), "home", StoryOptions{Version: Published}); err != nil {
-				t.Fatal(err)
-			}
+		client, cdn := newVersionedCDNClient(100)
+		cdn.discoveryDelay = time.Second
+		storyName(t, client, "home", Published)
+		storyName(t, client, "home", Published)
+		cdn.cv = 200
+		time.Sleep(cacheVersionRefreshInterval)
+
+		start := time.Now()
+		if got := storyName(t, client, "home", Published); !strings.Contains(got, "Version 100") {
+			t.Errorf("story during the refresh = %s, want version 100", got)
+		}
+		if waited := time.Since(start); waited > 0 {
+			t.Errorf("request waited %s for the refresh", waited)
+		}
+		synctest.Wait()
+		time.Sleep(cdn.discoveryDelay)
+		synctest.Wait()
+		if got := storyName(t, client, "home", Published); !strings.Contains(got, "Version 200") {
+			t.Errorf("story after the refresh = %s, want version 200", got)
 		}
 	})
 }
@@ -142,23 +140,18 @@ func TestClientRediscoversCacheVersionAfterFailedDiscovery(t *testing.T) {
 
 func TestClientKeepsRefreshScheduleWhenDiscoveryReportsOlderCacheVersion(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		client := NewClient(DefaultBaseURL, "secret")
-		responses := []int64{100, 50, 100}
-		var queries []string
-		client.api.HTTPClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			queries = append(queries, r.URL.Query().Get("cv"))
-			return storyResponse(responses[len(queries)-1], nil), nil
-		})
-		for i := range responses {
-			if i == 1 {
-				time.Sleep(cacheVersionRefreshInterval)
-			}
-			if _, err := client.Story(t.Context(), "home", StoryOptions{Version: Published}); err != nil {
-				t.Fatal(err)
-			}
+		client, cdn := newVersionedCDNClient(100)
+		storyName(t, client, "home", Published)
+		time.Sleep(cacheVersionRefreshInterval)
+		cdn.discoveryCV = 50
+		storyName(t, client, "home", Published)
+		synctest.Wait()
+		storyName(t, client, "home", Published)
+		if cdn.discoveries != 2 {
+			t.Errorf("%d discoveries, want 2", cdn.discoveries)
 		}
-		if want := []string{"", "", "100"}; fmt.Sprint(queries) != fmt.Sprint(want) {
-			t.Errorf("cv per request = %q, want %q", queries, want)
+		if cv, _ := client.CacheVersion(); cv != 100 {
+			t.Errorf("cv = %d, want 100", cv)
 		}
 	})
 }

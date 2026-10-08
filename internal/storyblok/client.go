@@ -151,63 +151,101 @@ func (c *Client) fetch(ctx context.Context, path string, version Version, query 
 	version = cmp.Or(version, Published)
 	query.Set("token", c.token)
 	query.Set("version", string(version))
-	var reportedCV int64
-	if version == Published {
-		cv, discover, err := c.versions.next(ctx)
+	if version != Published {
+		res, err := c.send(ctx, c.endpoint(path, query))
 		if err != nil {
 			return nil, err
 		}
-		if !discover {
-			query.Set("cv", strconv.FormatInt(cv, 10))
-		}
-		defer func() { c.recordCacheVersion(reportedCV, discover) }()
+		return res.header, decodeResponse(res.body, out)
 	}
 
-	endpoint := c.baseURL + path + "?" + query.Encode()
-	// Responses to requests with a cv never change.
-	cacheable := query.Has("cv")
-	if cacheable {
-		if cached, ok := c.responses.get(endpoint); ok {
-			return cached.header, decodeResponse(cached.body, out)
-		}
-	}
-
-	res, err := c.get(ctx, endpoint)
+	cv, discover, refresh, err := c.versions.next(ctx)
 	if err != nil {
 		return nil, err
 	}
+	if discover {
+		res, err := c.send(ctx, c.endpoint(path, query))
+		c.recordCacheVersion(res.cv, true)
+		if err != nil {
+			return nil, err
+		}
+		return res.header, decodeResponse(res.body, out)
+	}
+	if refresh {
+		go c.discoverCacheVersion(c.endpoint(path, query))
+	}
+
+	query.Set("cv", strconv.FormatInt(cv, 10))
+	endpoint := c.endpoint(path, query)
+	// Responses to requests with a cv never change.
+	if cached, ok := c.responses.get(endpoint); ok {
+		return cached.header, decodeResponse(cached.body, out)
+	}
+	res, err := c.send(ctx, endpoint)
+	c.recordCacheVersion(res.cv, false)
+	if err != nil {
+		return nil, err
+	}
+	if err := decodeResponse(res.body, out); err != nil {
+		return nil, err
+	}
+	c.responses.add(endpoint, cachedResponse{header: res.header, body: res.body})
+	return res.header, nil
+}
+
+func (c *Client) endpoint(path string, query url.Values) string {
+	return c.baseURL + path + "?" + query.Encode()
+}
+
+// discoverCacheVersion sends a published request without cv, whose response
+// reports the current cv. It runs in the background, so no page waits for it.
+func (c *Client) discoverCacheVersion(endpoint string) {
+	ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
+	defer cancel()
+	res, _ := c.send(ctx, endpoint)
+	c.recordCacheVersion(res.cv, true)
+}
+
+type contentResponse struct {
+	header http.Header
+	body   []byte
+	// cv is the cache version the response reflects, also for missing
+	// stories, or 0 if unknown.
+	cv int64
+}
+
+func (c *Client) send(ctx context.Context, endpoint string) (contentResponse, error) {
+	res, err := c.get(ctx, endpoint)
+	if err != nil {
+		return contentResponse{}, err
+	}
 	defer res.Body.Close()
+	var response contentResponse
 	// Storyblok redirects published requests without a current cv to the
 	// current one, also for missing stories.
 	if res.Request != nil {
-		reportedCV, _ = strconv.ParseInt(res.Request.URL.Query().Get("cv"), 10, 64)
+		response.cv, _ = strconv.ParseInt(res.Request.URL.Query().Get("cv"), 10, 64)
 	}
 
 	switch {
 	case res.StatusCode == http.StatusNotFound:
-		return nil, ErrNotFound
+		return response, ErrNotFound
 	case res.StatusCode != http.StatusOK:
-		return nil, fmt.Errorf("unexpected status %s", res.Status)
+		return response, fmt.Errorf("unexpected status %s", res.Status)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return response, err
 	}
 	var meta struct {
 		CV int64 `json:"cv"`
 	}
 	if err := json.Unmarshal(body, &meta); err != nil {
-		return nil, fmt.Errorf("decoding response: %w", err)
+		return response, fmt.Errorf("decoding response: %w", err)
 	}
-	reportedCV = meta.CV
-	if err := decodeResponse(body, out); err != nil {
-		return nil, err
-	}
-	if cacheable {
-		c.responses.add(endpoint, cachedResponse{header: res.Header, body: body})
-	}
-	return res.Header, nil
+	response.header, response.body, response.cv = res.Header, body, meta.CV
+	return response, nil
 }
 
 func decodeResponse(body []byte, out any) error {

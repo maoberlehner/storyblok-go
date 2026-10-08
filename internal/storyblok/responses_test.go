@@ -1,10 +1,12 @@
 package storyblok
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -13,13 +15,30 @@ import (
 // versionedCDN answers with the story name current for the cv it reports and
 // counts the requests that reach it.
 type versionedCDN struct {
+	mu       sync.Mutex
 	cv       int64
 	requests int
+	// discoveries counts requests without cv, which discoveryDelay slows down
+	// and which report discoveryCV instead of cv if set.
+	discoveries    int
+	discoveryDelay time.Duration
+	discoveryCV    int64
 }
 
 func (f *versionedCDN) roundTrip(r *http.Request) (*http.Response, error) {
+	f.mu.Lock()
 	f.requests++
-	body := fmt.Sprintf(`{"story":{"name":"Version %d"},"stories":[],"cv":%d}`, f.cv, f.cv)
+	cv := f.cv
+	discovery := !r.URL.Query().Has("cv")
+	if discovery {
+		f.discoveries++
+		cv = cmp.Or(f.discoveryCV, cv)
+	}
+	f.mu.Unlock()
+	if discovery {
+		time.Sleep(f.discoveryDelay)
+	}
+	body := fmt.Sprintf(`{"story":{"name":"Version %d"},"stories":[],"cv":%d}`, cv, cv)
 	return apiResponse(200, http.Header{"Total": {"42"}}, io.NopCloser(strings.NewReader(body))), nil
 }
 
@@ -64,6 +83,7 @@ func TestClientFetchesPublishedContentAgainForNewCacheVersion(t *testing.T) {
 		cdn.cv = 200
 		time.Sleep(cacheVersionRefreshInterval)
 		storyName(t, client, "home", Published)
+		synctest.Wait()
 		if got := storyName(t, client, "home", Published); !strings.Contains(got, "Version 200") {
 			t.Errorf("story after publishing = %s, want version 200", got)
 		}
