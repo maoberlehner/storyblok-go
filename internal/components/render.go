@@ -286,12 +286,7 @@ func (r *Renderer) Page(w io.Writer, page Page) error {
 	if len(r.script) > 0 {
 		page.scriptURL = "/assets/app.js?v=" + r.scriptHash
 	}
-	var css strings.Builder
-	css.WriteString(r.globalCSS)
-	for _, name := range rn.used {
-		css.WriteString(r.assets[name].css)
-	}
-	page.head = styleElement(css.String())
+	page.head = r.styleElement(rn.used)
 	// Inside the Visual Editor the bridge already makes blocks clickable.
 	if r.devSpaceID != 0 && !page.Preview {
 		page.devToolbar = &DevToolbar{SpaceID: r.devSpaceID, StoryID: page.storyID}
@@ -464,11 +459,25 @@ func (rn *render) component(templateName, component string, data any) (template.
 	return template.HTML(buf.String()), nil
 }
 
-func styleElement(css string) template.HTML {
-	if css == "" {
+// styleElement returns the global styles and those of the given components
+// in one <style> element.
+func (r *Renderer) styleElement(components []string) template.HTML {
+	size := len(r.globalCSS)
+	for _, name := range components {
+		size += len(r.assets[name].css)
+	}
+	if size == 0 {
 		return ""
 	}
-	return template.HTML("<style>" + css + "</style>")
+	var css strings.Builder
+	css.Grow(len("<style></style>") + size)
+	css.WriteString("<style>")
+	css.WriteString(r.globalCSS)
+	for _, name := range components {
+		css.WriteString(r.assets[name].css)
+	}
+	css.WriteString("</style>")
+	return template.HTML(css.String())
 }
 
 // ElementID derives a document-unique ID from a block's short ID, which can

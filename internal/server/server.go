@@ -3,7 +3,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/json/jsontext"
@@ -299,8 +298,9 @@ func (s *Server) previewStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var buf bytes.Buffer
-	if err := s.renderer.Block(&buf, story.Content.Block, loc, loaded); err != nil {
+	buf := getBuffer()
+	defer putBuffer(buf)
+	if err := s.renderer.Block(buf, story.Content.Block, loc, loaded); err != nil {
 		s.fail(w, r, err)
 		return
 	}
@@ -366,8 +366,9 @@ func (s *Server) componentRequest(r *http.Request, version storyblok.Version, lo
 }
 
 func (s *Server) writePage(w http.ResponseWriter, r *http.Request, status int, page components.Page) {
-	var buf bytes.Buffer
-	if err := s.renderer.Page(&buf, page); err != nil {
+	buf := getBuffer()
+	defer putBuffer(buf)
+	if err := s.renderer.Page(buf, page); err != nil {
 		s.fail(w, r, err)
 		return
 	}
@@ -377,8 +378,9 @@ func (s *Server) writePage(w http.ResponseWriter, r *http.Request, status int, p
 }
 
 func (s *Server) writeFragment(w http.ResponseWriter, r *http.Request, status int, block components.Block, loc locale.Locale) {
-	var buf bytes.Buffer
-	if err := s.renderer.Fragment(&buf, block, loc); err != nil {
+	buf := getBuffer()
+	defer putBuffer(buf)
+	if err := s.renderer.Fragment(buf, block, loc); err != nil {
 		s.fail(w, r, err)
 		return
 	}

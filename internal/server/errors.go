@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"errors"
 	"net/http"
 
@@ -75,8 +74,9 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 		page.Chrome = &components.Chrome{Settings: settings, HomeHref: loc.HomePath(), CurrentPath: r.URL.Path,
 			Languages: languageLinks(loc, nil)}
 	}
-	var buf bytes.Buffer
-	if renderErr := s.renderer.Page(&buf, page); renderErr != nil {
+	buf := getBuffer()
+	defer putBuffer(buf)
+	if renderErr := s.renderer.Page(buf, page); renderErr != nil {
 		s.logger.ErrorContext(r.Context(), "rendering error page failed", "err", renderErr)
 		http.Error(w, http.StatusText(status), status)
 		return
