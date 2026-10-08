@@ -25,7 +25,7 @@ lint: generate
 fmt:
 	go tool templ fmt internal
 	gofmt -w .
-	npx -y oxfmt@0
+	npx -y oxfmt@0.72.0
 
 schema-validate: generate
 	go run ./cmd/storyblok-schema validate
