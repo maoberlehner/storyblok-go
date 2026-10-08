@@ -24,5 +24,8 @@ Both share these conventions:
   swap and browsers on page load, so both paths behave the same. Browsers skip
   autofocus when the URL has a fragment, so links, redirects, and form actions
   don't use one.
-- Blocks that need more than their content implement `Load(ctx, content, req)`.
-  Form blocks implement `components.FormHandler`.
+- Blocks that need more than their content or the request implement
+  `Load(ctx, content, req)`. Decoded stories are shared between requests, so
+  `Load` leaves the block unchanged and returns a view that embeds it and holds
+  the request's data (`articlesView`, `contactView`); the view renders in the
+  block's place. Form views implement `components.FormHandler`.

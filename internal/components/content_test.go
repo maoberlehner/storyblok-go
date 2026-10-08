@@ -96,7 +96,8 @@ func TestArticleCountUsesTheLocalesNumberFormat(t *testing.T) {
 		"sections":[{"component":"block-section-articles","_uid":"a1","heading":"H","folder":"articles"}]}}`), &story); err != nil {
 		t.Fatal(err)
 	}
-	if err := LoadSections(t.Context(), manyArticles{}, story.Content.Block, Request{Locale: locale.German}); err != nil {
+	loaded, err := LoadSections(t.Context(), manyArticles{}, story.Content.Block, Request{Locale: locale.German})
+	if err != nil {
 		t.Fatal(err)
 	}
 	r, err := NewRenderer()
@@ -105,6 +106,7 @@ func TestArticleCountUsesTheLocalesNumberFormat(t *testing.T) {
 	}
 	page := NewPage(story)
 	page.Locale = locale.German
+	page.Loaded = loaded
 	var out bytes.Buffer
 	if err := r.Page(&out, page); err != nil {
 		t.Fatal(err)

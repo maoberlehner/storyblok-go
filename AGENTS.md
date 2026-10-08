@@ -49,6 +49,9 @@ measurements or research.
 - Scope component styles to their component. Keep base components independent of
   page/block implementations. Preserve existing Storyblok identifiers until an
   explicit mapping or content migration is in place.
+- Published stories are decoded once and shared between requests: blocks never
+  change after decoding. Request data lives in the view a block's `Load` returns
+  (see [patterns](patterns/README.md)).
 - Schema sync validates, plans, and applies component definitions; it flags
   changes that may require content migrations. Perform migrations on demand with
   separate one-off scripts, not an automatic migration engine.

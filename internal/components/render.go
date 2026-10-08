@@ -101,6 +101,8 @@ type Page struct {
 	Locale locale.Locale
 	// Alternates are hreflang links to the page in each language.
 	Alternates []Alternate
+	// Loaded holds the request's versions of the page's blocks.
+	Loaded Loaded
 
 	body             template.HTML
 	siteHeader       template.HTML
@@ -264,7 +266,7 @@ func (r *Renderer) Script() []byte { return r.script }
 
 // Page renders a full HTML document.
 func (r *Renderer) Page(w io.Writer, page Page) error {
-	rn := r.newRender(page.Locale)
+	rn := r.newRender(page.Locale, page.Loaded)
 	defer r.releaseRender(rn)
 	body, err := rn.block(page.Content)
 	if err != nil {
@@ -298,8 +300,8 @@ func (r *Renderer) Page(w io.Writer, page Page) error {
 }
 
 // Block renders a single block, such as a story's content type.
-func (r *Renderer) Block(w io.Writer, block Block, loc locale.Locale) error {
-	rn := r.newRender(loc)
+func (r *Renderer) Block(w io.Writer, block Block, loc locale.Locale, loaded Loaded) error {
+	rn := r.newRender(loc, loaded)
 	defer r.releaseRender(rn)
 	html, err := rn.block(block)
 	if err != nil {
@@ -316,9 +318,9 @@ func (r *Renderer) Block(w io.Writer, block Block, loc locale.Locale) error {
 func (r *Renderer) Fragment(w io.Writer, block Block, loc locale.Locale) error {
 	name := block.Meta().Component + "-fragment"
 	if r.templates.Lookup(name) == nil {
-		return r.Block(w, block, loc)
+		return r.Block(w, block, loc, nil)
 	}
-	rn := r.newRender(loc)
+	rn := r.newRender(loc, nil)
 	defer r.releaseRender(rn)
 	html, err := rn.component(name, block.Meta().Component, block)
 	if err != nil {
@@ -341,9 +343,10 @@ type render struct {
 	// not treat them as the page's blocks.
 	chrome bool
 	locale locale.Locale
+	loaded Loaded
 }
 
-func (r *Renderer) newRender(loc locale.Locale) *render {
+func (r *Renderer) newRender(loc locale.Locale, loaded Loaded) *render {
 	var rn *render
 	select {
 	case rn = <-r.idleRenders:
@@ -357,6 +360,7 @@ func (r *Renderer) newRender(loc locale.Locale) *render {
 	if rn.locale.Code == "" {
 		rn.locale = locale.Default
 	}
+	rn.loaded = loaded
 	rn.used = rn.used[:0]
 	rn.firstSection = false
 	rn.chrome = false
@@ -364,6 +368,7 @@ func (r *Renderer) newRender(loc locale.Locale) *render {
 }
 
 func (r *Renderer) releaseRender(rn *render) {
+	rn.loaded = nil
 	select {
 	case r.idleRenders <- rn:
 	default:
@@ -395,6 +400,9 @@ func (rn *render) funcs() template.FuncMap {
 func (rn *render) block(block Block) (template.HTML, error) {
 	if block == nil {
 		return "", nil
+	}
+	if view, ok := rn.loaded[block]; ok {
+		block = view
 	}
 	name := block.Meta().Component
 	if _, unknown := block.(*Unknown); unknown || rn.templates.Lookup(name) == nil {

@@ -21,6 +21,7 @@ import (
 
 	"storyblok-go-website/internal/components"
 	"storyblok-go-website/internal/locale"
+	"storyblok-go-website/internal/lru"
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -58,6 +59,7 @@ type Server struct {
 	lastSettings map[string]*atomic.Pointer[components.SiteSettings]
 	formSecret   []byte
 	guard        components.FormGuard
+	stories      *lru.Cache[storyKey, decodedStory]
 }
 
 type Option func(*Server)
@@ -89,6 +91,7 @@ func New(content ContentSource, renderer *components.Renderer, assets fs.FS, inb
 		previewToken: previewToken,
 		logger:       logger,
 		now:          time.Now,
+		stories:      newStoryCache(),
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -157,21 +160,24 @@ func (s *Server) showStory(w http.ResponseWriter, r *http.Request) {
 
 	// Enhanced requests addressed to a section only render its fragment.
 	if target, ok := components.FindSection(res.story.Content.Block, req.Query.Get(components.TargetParam)); ok && req.Enhanced {
-		if err := components.Load(r.Context(), s.content, target, req); err != nil {
+		view, err := components.Load(r.Context(), s.content, target, req)
+		if err != nil {
 			s.fail(w, r, err)
 			return
 		}
 		// Reloading the page then shows the same state without JavaScript.
 		w.Header().Set("HX-Replace-Url", replaceURL(r, req, target))
-		s.writeFragment(w, r, http.StatusOK, target, res.locale)
+		s.writeFragment(w, r, http.StatusOK, view, res.locale)
 		return
 	}
 
-	if err := components.LoadSections(r.Context(), s.content, res.story.Content.Block, req); err != nil {
+	loaded, err := components.LoadSections(r.Context(), s.content, res.story.Content.Block, req)
+	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
 	page := components.NewPage(res.story)
+	page.Loaded = loaded
 	page.Preview = preview
 	page.Locale = res.locale
 	page.Canonical = s.canonicalURL(res)
@@ -198,20 +204,30 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	section, _ := components.FindSection(res.story.Content.Block, r.PostForm.Get(components.TargetParam))
-	form, ok := section.(components.FormHandler)
+	section, ok := components.FindSection(res.story.Content.Block, r.PostForm.Get(components.TargetParam))
 	if !ok {
 		http.Error(w, "unknown form", http.StatusBadRequest)
 		return
 	}
 
+	// Without JavaScript, invalid submissions render the whole page.
 	req := s.componentRequest(r, storyblok.Published, res.locale)
-	load := func() error { return components.Load(r.Context(), s.content, form, req) }
-	if !req.Enhanced {
-		load = func() error { return components.LoadSections(r.Context(), s.content, res.story.Content.Block, req) }
+	var loaded components.Loaded
+	var view components.Block
+	var err error
+	if req.Enhanced {
+		view, err = components.Load(r.Context(), s.content, section, req)
+	} else {
+		loaded, err = components.LoadSections(r.Context(), s.content, res.story.Content.Block, req)
+		view = loaded[section]
 	}
-	if err := load(); err != nil {
+	if err != nil {
 		s.fail(w, r, err)
+		return
+	}
+	form, ok := view.(components.FormHandler)
+	if !ok {
+		http.Error(w, "unknown form", http.StatusBadRequest)
 		return
 	}
 	valid := false
@@ -246,6 +262,7 @@ func (s *Server) submitForm(w http.ResponseWriter, r *http.Request) {
 	default:
 		page := components.NewPage(res.story)
 		page.Title = res.locale.T("error.title_prefix", page.Title)
+		page.Loaded = loaded
 		page.Locale = res.locale
 		page.Canonical = s.canonicalURL(res)
 		versions := res.versions(storyblok.Published)
@@ -276,13 +293,14 @@ func (s *Server) previewStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := s.componentRequest(r, storyblok.Draft, loc)
-	if err := components.LoadSections(r.Context(), s.content, story.Content.Block, req); err != nil {
+	loaded, err := components.LoadSections(r.Context(), s.content, story.Content.Block, req)
+	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
 
 	var buf bytes.Buffer
-	if err := s.renderer.Block(&buf, story.Content.Block, loc); err != nil {
+	if err := s.renderer.Block(&buf, story.Content.Block, loc, loaded); err != nil {
 		s.fail(w, r, err)
 		return
 	}

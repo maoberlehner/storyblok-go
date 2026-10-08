@@ -36,9 +36,15 @@ func (s *Server) notFound(w http.ResponseWriter, r *http.Request, version storyb
 		return
 	}
 	var page components.Page
+	var loaded components.Loaded
 	story, err := s.fetch(r.Context(), notFoundSlug, version, loc.StoryLanguage(), loc)
-	if err == nil && components.IsPage(story.Content.Block.Meta().Component) {
+	isPage := err == nil && components.IsPage(story.Content.Block.Meta().Component)
+	if isPage {
+		loaded, err = components.LoadSections(r.Context(), s.content, story.Content.Block, s.componentRequest(r, version, loc))
+	}
+	if isPage && err == nil {
 		page = components.NewPage(story)
+		page.Loaded = loaded
 		page.Locale = loc
 		page.NoIndex = true
 	} else {

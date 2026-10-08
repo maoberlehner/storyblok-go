@@ -11,6 +11,7 @@ import (
 
 	"storyblok-go-website/internal/components"
 	"storyblok-go-website/internal/locale"
+	"storyblok-go-website/internal/lru"
 	"storyblok-go-website/internal/storyblok"
 )
 
@@ -84,17 +85,56 @@ func (s *Server) resolve(ctx context.Context, loc locale.Locale, rest string, ve
 	return res, nil
 }
 
-// fetch loads and decodes a story, pointing its story links to loc's pages.
+// storyCacheBytes bounds the decoded stories kept in memory, measured by the
+// size of their JSON.
+const storyCacheBytes = 32 << 20
+
+// storyKey identifies a decoded published story. Content published later has
+// a new cv, so entries never go stale.
+type storyKey struct {
+	slug, language, locale string
+	cv                     int64
+}
+
+type decodedStory struct {
+	story storyblok.Story[components.AnyBlock]
+	// jsonBytes approximates the memory the story takes up.
+	jsonBytes int
+}
+
+func newStoryCache() *lru.Cache[storyKey, decodedStory] {
+	return lru.New(storyCacheBytes, func(_ storyKey, s decodedStory) int { return s.jsonBytes })
+}
+
+// fetch returns a story, with its story links pointing to loc's pages.
+// Published stories are decoded once per cv and shared between requests, so
+// their blocks must not change after decoding.
 func (s *Server) fetch(ctx context.Context, slug string, version storyblok.Version, language string, loc locale.Locale) (storyblok.Story[components.AnyBlock], error) {
-	var story storyblok.Story[components.AnyBlock]
+	// The story fetched next reflects at least this cv, so a cached entry can
+	// only be newer than its key, never older.
+	cv, _ := s.content.CacheVersion()
+	if version == storyblok.Draft || cv == 0 {
+		decoded, err := s.decode(ctx, slug, version, language, loc)
+		return decoded.story, err
+	}
+	key := storyKey{slug: slug, language: language, locale: loc.Code, cv: cv}
+	decoded, err := s.stories.Load(ctx, key, func(ctx context.Context) (decodedStory, error) {
+		return s.decode(ctx, slug, version, language, loc)
+	})
+	return decoded.story, err
+}
+
+func (s *Server) decode(ctx context.Context, slug string, version storyblok.Version, language string, loc locale.Locale) (decodedStory, error) {
+	var decoded decodedStory
 	raw, err := s.content.Story(ctx, slug, storyblok.StoryOptions{Version: version, Language: language, ResolveRelations: components.ResolveRelations})
 	if err != nil {
-		return story, err
+		return decoded, err
 	}
 	if raw, err = localizeLinks(raw, loc); err != nil {
-		return story, err
+		return decoded, err
 	}
-	return story, json.Unmarshal(raw, &story)
+	decoded.jsonBytes = len(raw)
+	return decoded, json.Unmarshal(raw, &decoded.story)
 }
 
 // localizeLinks points story links in content shown in a non-default locale

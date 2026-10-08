@@ -93,30 +93,43 @@ type Content interface {
 }
 
 // loader is a block that needs data beyond its own content to render.
+// Decoded stories are shared between requests, so Load leaves the block
+// unchanged and returns the block to render in its place: typically a view
+// that embeds it and holds this request's data.
 type loader interface {
-	Load(ctx context.Context, content Content, req Request) error
+	Load(ctx context.Context, content Content, req Request) (Block, error)
 }
 
-// Load lets block fetch the data it needs beyond its content, if any.
-func Load(ctx context.Context, content Content, block Block, req Request) error {
+// Load returns block with the data it needs beyond its content, if any.
+func Load(ctx context.Context, content Content, block Block, req Request) (Block, error) {
 	if l, ok := block.(loader); ok {
 		return l.Load(ctx, content, req)
 	}
-	return nil
+	return block, nil
 }
 
+// Loaded maps a page's blocks to the versions loaded for one request, which
+// render in their place.
+type Loaded map[Block]Block
+
 // LoadSections loads the data of every section of page.
-func LoadSections(ctx context.Context, content Content, page Block, req Request) error {
+func LoadSections(ctx context.Context, content Content, page Block, req Request) (Loaded, error) {
 	p, ok := page.(sectioned)
 	if !ok {
-		return nil
+		return nil, nil
 	}
+	loaded := Loaded{}
 	for _, section := range p.SectionBlocks() {
-		if err := Load(ctx, content, section, req); err != nil {
-			return err
+		if _, ok := section.(loader); !ok {
+			continue
 		}
+		view, err := Load(ctx, content, section, req)
+		if err != nil {
+			return nil, err
+		}
+		loaded[section] = view
 	}
-	return nil
+	return loaded, nil
 }
 
 // FindSection returns the section of page with the given short ID.

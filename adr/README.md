@@ -20,3 +20,5 @@ otherwise have to repeat. Use the format of the existing records.
   side
 - [0006](0006-storyblok-responses-in-memory.md): Keep published Storyblok
   responses in memory, keyed by `cv`
+- [0007](0007-decoded-stories-in-memory.md): Share decoded published stories
+  between requests

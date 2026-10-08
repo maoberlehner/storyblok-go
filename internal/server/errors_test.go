@@ -31,6 +31,18 @@ func TestNotFoundPageFromCMS(t *testing.T) {
 	}
 }
 
+func TestNotFoundPageLoadsItsSections(t *testing.T) {
+	ts, content := newServerWithContent(t, &recordingInbox{}, nil)
+	content.stories["error-404"] = `{"id": 4, "name": "Not found", "content": {
+		"component": "page-landing-page", "_uid": "nf", "title": "Lost?",
+		"sections": [{"component": "block-section-articles", "_uid": "arts", "heading": "Latest", "folder": "articles"}]
+	}}`
+	status, body := do(t, http.MethodGet, ts.URL+"/missing", "")
+	if status != http.StatusNotFound || !strings.Contains(body, ">Article 14</a>") {
+		t.Errorf("status %d, body:\n%s", status, body)
+	}
+}
+
 func TestBuiltInNotFoundPage(t *testing.T) {
 	status, body := do(t, http.MethodGet, newServer(t).URL+"/missing", "")
 	if status != http.StatusNotFound || !strings.Contains(body, "Page not found") || !strings.Contains(body, `class="site-header__home"`) {

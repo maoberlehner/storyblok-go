@@ -44,8 +44,12 @@ type BlockSectionContact struct {
 	Heading        string `json:"heading"`
 	Text           string `json:"text"`
 	SuccessMessage string `json:"success_message"`
+}
 
-	State ContactState `json:"-"`
+// contactView is the form as one request shows it.
+type contactView struct {
+	*BlockSectionContact
+	State ContactState
 }
 
 type ContactState struct {
@@ -63,16 +67,17 @@ type ContactValues struct {
 	Consent                     bool
 }
 
-func (b *BlockSectionContact) Load(_ context.Context, _ Content, req Request) error {
-	// Submitting keeps the state of the page's other blocks.
-	b.State.Path = req.URLWithState()
-	b.State.Sent = ShortID(b) != "" && req.Query.Get(SentParam) == ShortID(b)
-	b.State.Guard = req.FormGuard()
-	b.State.Locale = req.Locale
-	return nil
+func (b *BlockSectionContact) Load(_ context.Context, _ Content, req Request) (Block, error) {
+	return &contactView{BlockSectionContact: b, State: ContactState{
+		// Submitting keeps the state of the page's other blocks.
+		Path:   req.URLWithState(),
+		Sent:   ShortID(b) != "" && req.Query.Get(SentParam) == ShortID(b),
+		Guard:  req.FormGuard(),
+		Locale: req.Locale,
+	}}, nil
 }
 
-func (b *BlockSectionContact) Submit(ctx context.Context, inbox Inbox, form url.Values) (bool, error) {
+func (b *contactView) Submit(ctx context.Context, inbox Inbox, form url.Values) (bool, error) {
 	v := contactValues(form)
 	for i, field := range b.State.Guard.Attribution {
 		b.State.Guard.Attribution[i].Value = truncate(form.Get(field.Name), maxAttributionChars)
@@ -106,9 +111,9 @@ func contactValues(form url.Values) ContactValues {
 	}
 }
 
-func (b *BlockSectionContact) Confirm() { b.State.Sent = true }
+func (b *contactView) Confirm() { b.State.Sent = true }
 
-func (b *BlockSectionContact) Reject(form url.Values, message string) {
+func (b *contactView) Reject(form url.Values, message string) {
 	b.State.Values = contactValues(form)
 	b.State.FormError = message
 }
@@ -146,12 +151,12 @@ func validateContact(v ContactValues, loc locale.Locale) map[string]string {
 // count shows while typing.
 func characters(s string) int { return len(utf16.Encode([]rune(s))) }
 
-func (b *BlockSectionContact) Success() string {
+func (b *contactView) Success() string {
 	return cmp.Or(b.SuccessMessage, b.State.Locale.T("contact.success"))
 }
 
 // BaseForm returns the form with the submitted values and errors.
-func (b *BlockSectionContact) BaseForm() BaseForm {
+func (b *contactView) BaseForm() BaseForm {
 	id := ElementID(b)
 	v, errs, loc := b.State.Values, b.State.Errors, b.State.Locale
 	consent := ""

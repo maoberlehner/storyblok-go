@@ -24,8 +24,12 @@ type BlockSectionArticles struct {
 	SectionStyle
 	Heading string `json:"heading"`
 	Folder  string `json:"folder"`
+}
 
-	Listing ArticleListing `json:"-"`
+// articlesView is the listing as one request shows it.
+type articlesView struct {
+	*BlockSectionArticles
+	Listing ArticleListing
 }
 
 type ArticleListing struct {
@@ -50,7 +54,7 @@ type articleSummary struct {
 // per listing, so several listings on a page keep their state.
 func (b *BlockSectionArticles) StateParams() []string { return []string{"page-" + ShortID(b)} }
 
-func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Request) error {
+func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Request) (Block, error) {
 	param := b.StateParams()[0]
 	page := 1
 	if n, err := strconv.Atoi(req.Query.Get(param)); err == nil {
@@ -77,18 +81,18 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 	}
 	list, err := content.Stories(ctx, opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var stories []storyblok.Story[articleSummary]
 	if err := json.Unmarshal(list.Stories, &stories); err != nil {
-		return fmt.Errorf("decoding articles: %w", err)
+		return nil, fmt.Errorf("decoding articles: %w", err)
 	}
 
-	b.Listing = ArticleListing{Page: page, Total: list.Total}
-	if b.Listing.Shown() < b.Listing.Total {
+	view := &articlesView{BlockSectionArticles: b, Listing: ArticleListing{Page: page, Total: list.Total}}
+	if view.Listing.Shown() < view.Listing.Total {
 		next := req.StateQuery()
 		next.Set(param, strconv.Itoa(page+1))
-		b.Listing.More = &BaseButton{
+		view.Listing.More = &BaseButton{
 			Href:    req.Path + "?" + next.Encode(),
 			Label:   req.Locale.T("articles.load_more"),
 			Enhance: &ButtonEnhancement{Block: ShortID(b), Target: "#" + ElementID(b) + "-list", Swap: "beforeend"},
@@ -97,7 +101,7 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 	firstNew := (page-1)*articlesPerPage + 1
 	for i, story := range stories {
 		position := firstPosition + i
-		b.Listing.Cards = append(b.Listing.Cards, BaseCard{
+		view.Listing.Cards = append(view.Listing.Cards, BaseCard{
 			ID:        fmt.Sprintf("%s-item-%d", ElementID(b), position),
 			Title:     story.Content.Title,
 			Text:      story.Content.Description,
@@ -105,5 +109,5 @@ func (b *BlockSectionArticles) Load(ctx context.Context, content Content, req Re
 			Autofocus: page > 1 && position == firstNew,
 		})
 	}
-	return nil
+	return view, nil
 }

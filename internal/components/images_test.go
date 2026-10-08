@@ -18,7 +18,7 @@ func renderBase(t *testing.T, name string, data any) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rn := r.newRender(locale.Default)
+	rn := r.newRender(locale.Default, nil)
 	defer r.releaseRender(rn)
 	html, err := rn.base(name, data)
 	if err != nil {

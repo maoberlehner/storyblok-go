@@ -86,10 +86,11 @@ Without JavaScript, attribution carries the current URL's UTM parameters.
 
 1. Define fields as `BaseFormField` values in Go, with IDs derived from the
    section's `ElementID`.
-2. Implement `Submit`: normalize values, validate into a field → message map,
-   deliver valid submissions to the `Inbox` with `AttributionFrom(values)`.
-   Implement `Confirm` and `Reject`, and pass `req.FormGuard()` from `Load` to
-   `BaseForm.Guard`.
+2. Return a view of the block from `Load` that holds the form state, with
+   `req.FormGuard()` for `BaseForm.Guard`. On the view, implement `Submit`:
+   normalize values, validate into a field → message map, deliver valid
+   submissions to the `Inbox` with `AttributionFrom(values)`. Implement
+   `Confirm` and `Reject` there as well.
 3. Render `{{base "base-form" .BaseForm}}` in the section's `-fragment`
    template, or the success message once it is sent.
 4. Test both paths (see `TestContactForm` in `internal/server`).

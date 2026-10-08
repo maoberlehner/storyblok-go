@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"testing/fstest"
@@ -64,6 +65,15 @@ type fakeContent struct {
 	cv        atomic.Int64
 	confirmed atomic.Bool
 	fetches   atomic.Int64
+
+	mu          sync.Mutex
+	slugFetches map[string]int
+}
+
+func (f *fakeContent) fetchesOf(slug string) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.slugFetches[slug]
 }
 
 const totalArticles = 14
@@ -105,6 +115,12 @@ func (f *fakeContent) CacheVersion() (int64, bool) { return f.cv.Load(), f.confi
 
 func (f *fakeContent) Story(_ context.Context, slug string, opts storyblok.StoryOptions) (jsontext.Value, error) {
 	f.fetches.Add(1)
+	f.mu.Lock()
+	if f.slugFetches == nil {
+		f.slugFetches = map[string]int{}
+	}
+	f.slugFetches[slug]++
+	f.mu.Unlock()
 	story, ok := f.stories[slug]
 	if !ok {
 		return nil, storyblok.ErrNotFound

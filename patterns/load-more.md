@@ -71,7 +71,8 @@ page with more items and are not separate content.
 ## Adapting
 
 1. Declare the state parameters with `StateParams()` and read them in `Load`;
-   fetch one page for `req.Enhanced && req.Targets(b)`, all pages otherwise.
+   fetch one page for `req.Enhanced && req.Targets(b)`, all pages otherwise, and
+   return a view of the block with the items.
 2. Link to `req.StateQuery()` with your parameter set to the next state.
 3. Define the items template once and use it in the section and in its
    `-fragment` template.

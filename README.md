@@ -160,6 +160,12 @@ has a new `cv`, so entries never go stale and need no invalidation. Pages
 therefore wait for Storyblok only on the first request per `cv`
 ([ADR 0006](adr/0006-storyblok-responses-in-memory.md)).
 
+The server also keeps published stories decoded, keyed by slug, language,
+locale, and `cv`, up to 32 MiB of their JSON. Concurrent requests for a story
+that isn't cached share one fetch. Requests render the same decoded blocks, so
+blocks never change after decoding: `Load` returns a view with the request's
+data instead ([ADR 0007](adr/0007-decoded-stories-in-memory.md)).
+
 Management API:
 
 - Requests are paced at 6/s, the limit of paid plans, with a burst of one. 429s
