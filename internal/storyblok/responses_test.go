@@ -116,23 +116,3 @@ func TestClientKeepsTotalOfCachedStoryLists(t *testing.T) {
 		}
 	})
 }
-
-func TestResponseCacheEvictsLeastRecentlyUsed(t *testing.T) {
-	cache := newResponseCache(10)
-	cache.add("a", cachedResponse{body: []byte("1234")})
-	cache.add("b", cachedResponse{body: []byte("1234")})
-	cache.get("a")
-	cache.add("c", cachedResponse{body: []byte("1234")})
-	if _, ok := cache.get("b"); ok {
-		t.Error("b is cached, want it evicted")
-	}
-	for _, key := range []string{"a", "c"} {
-		if _, ok := cache.get(key); !ok {
-			t.Errorf("%s is not cached", key)
-		}
-	}
-	cache.add("big", cachedResponse{body: []byte("12345678901")})
-	if _, ok := cache.get("big"); ok {
-		t.Error("caches a response larger than the budget")
-	}
-}

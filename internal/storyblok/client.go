@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"storyblok-go-website/internal/apihttp"
+	"storyblok-go-website/internal/lru"
 )
 
 const DefaultBaseURL = "https://api.storyblok.com/v2/cdn"
@@ -36,7 +37,7 @@ type Client struct {
 	pacer    *cdnPacer
 	versions cacheVersionTracker
 	// responses is nil when every request goes to the API.
-	responses *responseCache
+	responses *lru.Cache[string, cachedResponse]
 }
 
 func NewClient(baseURL, token string) *Client {
@@ -178,7 +179,7 @@ func (c *Client) fetch(ctx context.Context, path string, version Version, query 
 	query.Set("cv", strconv.FormatInt(cv, 10))
 	endpoint := c.endpoint(path, query)
 	// Responses to requests with a cv never change.
-	if cached, ok := c.responses.get(endpoint); ok {
+	if cached, ok := c.responses.Get(endpoint); ok {
 		return cached.header, decodeResponse(cached.body, out)
 	}
 	res, err := c.send(ctx, endpoint)
@@ -189,7 +190,7 @@ func (c *Client) fetch(ctx context.Context, path string, version Version, query 
 	if err := decodeResponse(res.body, out); err != nil {
 		return nil, err
 	}
-	c.responses.add(endpoint, cachedResponse{header: res.header, body: res.body})
+	c.responses.Add(endpoint, cachedResponse{header: res.header, body: res.body})
 	return res.header, nil
 }
 
